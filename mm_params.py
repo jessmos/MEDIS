@@ -20,7 +20,7 @@ class IO_params:
 
     def __init__(self, testname='example1'):  # testname should be the name of the particular example you are running,
                                               # for example 'BetaPic' or 'simple_telescope'
-        self.rootdir = '/home/captainkay/mazinlab/MKIDSim/MEDIS/'
+        self.rootdir = '/home/captainkay/mazinlab/MKIDSim/miniMEDIS/'
         self.datadir = '/home/captainkay/mazinlab/MKIDSim/CDIsim_data/'
 
         # Unprocessed Science Data
