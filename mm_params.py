@@ -94,7 +94,7 @@ class Astro_params:
         self.w_bins = 8  # final number of wavelength bins in spectral cube after interpolation
         self.wvl_range = np.array([800, 1500]) / 1e9  # wavelength range in m (formerly ap.band)
             # eg. DARKNESS band is [800, 1500], J band =  [1100,1400])
-        self.grid_size = 256  # creates a nxn array (of samples of the wavefront)
+        self.grid_size = 128  # creates a nxn array (of samples of the wavefront)
             # must be bigger than the beam size to avoid FT effects at edges; must be factor of 2
             # NOT the size of your detector/# of pixels
         self.interp_wvl = True  # Set to interpolate wavelengths from ap.nwsamp to ap.w_bins
@@ -119,17 +119,16 @@ class Telescope_params:
         self.flen_primary = 108.512  # m
         self.ao_act = 188  # number of actuators on the DM (total number, not array shape)
         self.piston_error = False  # flag for allowing error on DM surface shape
-        self.platescale = 13.61  # mas # have to run get_sampling at the focus to find this
-        self.beam_ratio = 20 / 64.  # parameter dealing with the sampling of the beam in the pupil/focal plane vs grid size
+        # self.platescale = 13.61  # mas # have to run get_sampling at the focus to find this
+        self.beam_ratio = 20 / 64.  # parameter dealing with the sampling of the beam in the pupil/focal
+                                    # plane vs grid size. See Proper manual pgs 36-37 and 71-74 for discussion
         self.detector = 'ideal'  # 'MKIDs'
         self.pix_shift = [0, 0]  # False?  Shifts the central star to off-axis (mimics conex mirror, tip/tilt error)
 
         # Aberrations
         self.servo_error = [0, 1]  # [0,1] # False # No delay and rate of 1/frame_time
         self.abertime = 0.5  # time scale of optic aberrations in seconds
-        self.aber_params = {'CPA': True,
-                            'NCPA': True,
-                            'QuasiStatic': False,  # or 'Static'
+        self.aber_params = {'QuasiStatic': False,  # or 'Static'
                             'Phase': True,
                             'Amp': False}
         # Coefficients used to calcuate PSD errormap in Proper (see pg 56 in manual)

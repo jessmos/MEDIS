@@ -30,7 +30,7 @@ class Wavefronts():
     def __init__(self):
 
         # Using Proper to propagate wavefront from primary through optical system, loop over wavelength
-        self.wsamples = np.linspace(ap.wvl_range[0], ap.wvl_range[1], ap.nwsamp)
+        self.wsamples = np.linspace(ap.wvl_range[0], ap.wvl_range[1], ap.nwsamp)  # units set in params (should be m)
 
         # wf_array is an array of arrays; the wf_array is (number_wavelengths x number_astro_objects)
         # each 2D field in the wf_array is the 2D array of complex E-field values at that wavelength, per object
@@ -40,17 +40,23 @@ class Wavefronts():
         else:
             self.wf_array = np.empty((len(self.wsamples), 1), dtype=object)
 
-        self.save_E_fields = np.empty((0,np.shape(self.wf_array)[0],
-                                        np.shape(self.wf_array)[1],
-                                        ap.grid_size,
-                                        ap.grid_size), dtype=np.complex64)
+        # Init Beam Ratios
+        self.beam_ratios = np.zeros_like(self.wsamples)
+
+        # Init Locations of saved E-field
+        self.save_E_fields = np.empty((0, np.shape(self.wf_array)[0],
+                                       np.shape(self.wf_array)[1],
+                                       ap.grid_size,
+                                       ap.grid_size), dtype=np.complex64)
 
     def initialize_proper(self):
         # Initialize the Wavefront in Proper
-        self.beam_ratios = np.zeros_like(self.wsamples)
         for iw, w in enumerate(self.wsamples):
-            # Initialize the wavefront at entrance pupil
+            # Scale beam ratio by wavelength to achieve consistent sampling across wavelengths
+            # see Proper manual pg 37
             self.beam_ratios[iw] = tp.beam_ratio * ap.wvl_range[0] / w
+
+            # Initialize the wavefront at entrance pupil
             wfp = proper.prop_begin(tp.enterance_d, w, ap.grid_size, self.beam_ratios[iw])
 
             wfs = [wfp]
@@ -79,12 +85,13 @@ class Wavefronts():
         """
         shape = self.wf_array.shape
         optic_E_fields = np.zeros((1, np.shape(self.wf_array)[0],
-                                    np.shape(self.wf_array)[1],
-                                    ap.grid_size,
-                                    ap.grid_size), dtype=np.complex64)
+                                   np.shape(self.wf_array)[1],
+                                   ap.grid_size,
+                                   ap.grid_size), dtype=np.complex64)
         for iw in range(shape[0]):
             for iwf in range(shape[1]):
                 func(self.wf_array[iw, iwf], *args, **kwargs)
+                # Saving E-field
         #         if self.save_locs is not None and func.__name__ in self.save_locs:
         #             wf = proper.prop_shift_center(self.wf_array[iw, iwf].wfarr)
         #             optic_E_fields[0, iw, iwf] = copy.copy(wf)
@@ -124,6 +131,7 @@ def prop_mid_optics(wfo, fl_lens, dist):
     """
     pass the wavefront through a lens then propagate to the next surface
 
+    :param wfo: wavefront object, shape=(n_wavelengths, n_astro_objects, grid_sz, grid_sz)
     :param fl_lens: focal length in m
     :param dist: distance in m
     """

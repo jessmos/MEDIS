@@ -44,7 +44,6 @@ def run_mmedis():
     print('***************************************')
     start = time.time()
 
-
     check = mmu.check_exists_obs_sequence(False)
     if check:
         if iop.obs_seq[-3:] == '.h5':
@@ -111,7 +110,7 @@ def run_mmedis():
         tstep = sp.numframes-1
         view_datacube(obs_sequence[tstep], logAmp=True,
                       title=f"Spectral Bins at Timestep {tstep}", subplt_cols=sp.subplt_cols,
-                      vlim=(1e-8,1e-3))
+                      vlim=(1e-8, 1e-3))
 
     print('mini-MEDIS Data Run Completed')
     print('**************************************')
@@ -133,9 +132,11 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
     """
     generates observation sequence by calling optics_propagate in time series
 
-    is the time loop wrapper for optics_propagate
-    this is where the observation sequence is generated (timeseries of observations by the detector)
-    thus, where the detector observes the wavefront created by optics_propagate (for MKIDs, the probability distribution)
+    is the time loop wrapper for the proper perscription, so multiple calls to the proper perscription as aberrations
+        or atmosphere evolve
+    this is where the detector observes the wavefront created by proper, thus creating the observation sequence
+        of spectrl cubes at each timestep (for MKIDs, the probability distribution of the observed parameters is saved
+        instead)
 
     :param inqueue: time index for parallelization (used by multiprocess)
     :param photons_queue: photon table (list of photon packets) in the multiprocessing format
@@ -175,10 +176,10 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
 
         if tp.detector == 'ideal':
             image = np.sum(spectralcube, axis=0)  # sum 3D spectralcube over wavelength (at this timestep)
-            vmin = np.min(spectralcube) * 10
 
         # Plotting
         if sp.show_wframe:
+            # vlim = (np.min(spectralcube) * 10, np.max(spectralcube))  # setting z-axis limits
             quick2D(image, title=f"White light image at timestep {it}", logAmp=True)
         # loop_frames(obs_sequence[:, 0])
         # loop_frames(obs_sequence[0])

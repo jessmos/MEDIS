@@ -182,7 +182,8 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     for iw in range(shape[0]):
         wframes = np.zeros((ap.grid_size, ap.grid_size))
         for io in range(shape[1]):
-            (wframe, sampling) = proper.prop_end(wfo.wf_array[iw, io])
+            (wframe, sampling) = proper.prop_end(wfo.wf_array[iw, io])  # Sampling returned by proper is in m
+            print(f"sampling in focal plane at wavelength={iw} object={io} is {sampling} m")
             wframes += wframe  # adds 2D wavefront from all astro_objects together into single wavefront, per wavelength
         datacube.append(wframes)  # puts each wavlength's wavefront into an array
                                   # (number_wavelengths x ap.grid_size x ap.grid_size)
