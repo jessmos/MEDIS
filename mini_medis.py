@@ -103,13 +103,13 @@ def run_mmedis():
     photons_queue.put(None)
     spectral_queue.put(None)
     obs_sequence = np.array(obs_sequence)  # obs sequence is returned by gen_timeseries (called above)
-                                           # (n_timesteps x n_wavelength_bins x x_grid x y_grid)
+                                           # (n_timesteps , n_wavelength_bins , x_grid , y_grid)
 
     # Plotting Datacube
     if sp.show_cube:
         tstep = sp.numframes-1
         view_datacube(obs_sequence[tstep], logAmp=True,
-                      title=f"Spectral Bins at Timestep {tstep}", subplt_cols=sp.subplt_cols,
+                      title=f"Intensity per Spectral Bin at Timestep {tstep}", subplt_cols=sp.subplt_cols,
                       vlim=(1e-8, 1e-3))
 
     print('mini-MEDIS Data Run Completed')

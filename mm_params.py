@@ -57,8 +57,6 @@ class IO_params:
             os.makedirs(self.testdir, exist_ok=True)
         if not os.path.isdir(self.scidir):
             os.makedirs(self.scidir, exist_ok=True)
-        if not os.path.isdir(self.aberroot):
-            os.makedirs(self.aberroot, exist_ok=True)
         if not os.path.isdir(self.aberdir):
             os.makedirs(self.aberdir, exist_ok=True)
         if not os.path.isdir(self.atmosdir):

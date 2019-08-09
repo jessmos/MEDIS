@@ -47,7 +47,7 @@ tp.dist_pri_second = 12.652  # m distance primary -> secondary
 
 tp.enterance_d = tp.d_nsmyth
 
-    # For the record, these are the actual dimenstions of the Subaru telescope. However, the proper.prop_lens uses the
+    # For the record, below are the actual dimenstions of the Subaru telescope. However, the proper.prop_lens uses the
     #  thin-lens approximation to propagate through a lens, and the secondary mirror does not meet that criterea. There
     #  are problems with proper introducing a lot of high-order modes due when trying to simulate the secondary mirror,
     #  so we use the Nasmyth effective primary-secondary to avoid this issue.
