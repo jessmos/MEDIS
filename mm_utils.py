@@ -31,6 +31,27 @@ def make_datacube(cube, size):
     return datacube
 
 
+def mask_obs_sequence(obs_seq, grid_size, maskd_size):
+    """
+    spatially masks the obs sequence to contain only the inner range of datapoints. This truncates the array
+      so that any rectangular sampling errors/FFT artifacts (see Proper manual pgs 36-37 and 71-74) are removed
+      for post-processing
+
+    :param obs_seq: the 4D np array obs sequence (n_timesteps, n_wavelengths, tp.grid_size, tp.grid_size)
+    :param grid_size: original grid size (single value, usually tp.grid_size)
+    :param maskd_size: new grid size (single value, usually tp.maskd_size) (does not support non-square arrays)
+    :return: obs_seq: masked obs sequence containing only inner portion of orig array
+                     (n_timesteps, n_wavelengths, tp.maskd_size, tp.maskd_size)
+    """
+    if maskd_size != grid_size:
+        half_range = np.int(np.floor(maskd_size / 2))
+        half_grid = np.int(np.floor(grid_size / 2))
+        obs_seq = obs_seq[:, :, half_grid - half_range:half_grid + half_range + 1,
+                   half_grid - half_range:half_grid + half_range + 1]
+        dprint(f"obs sequence masked shape is {obs_seq.shape}")
+    return obs_seq
+
+
 def phase_cal(wavelengths):
     """Wavelength in nm"""
     phase = tp.wavecal_coeffs[0] * wavelengths + tp.wavecal_coeffs[1]

@@ -23,8 +23,8 @@ plt.register_cmap(name='magma', cmap=cmaps.plasma)
 # MEDIUM_SIZE = 17
 # plt.rc('font', size=MEDIUM_SIZE)  # controls default text sizes
 
-# from matplotlib import rcParams
-# rcParams['font.family'] = 'STIXGeneral'  # 'Times New Roman'
+from matplotlib import rcParams
+rcParams['font.family'] = 'STIXGeneral'  # 'Times New Roman'
 # rcParams['mathtext.fontset'] = 'custom'
 # rcParams['mathtext.fontset'] = 'stix'
 # rcParams['mathtext.rm'] = 'Bitstream Vera Sans'
@@ -76,8 +76,7 @@ def quick2D(image, title=None, logAmp=False, vlim=(None,None), colormap=None):
     plt.show()
 
 
-def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, vlim =(None,None),
-                 xylims=(tp.grid_size,tp.grid_size), subplt_cols=3):
+def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, vlim =(None,None), subplt_cols=3):
     """
     view plot of each wavelength bin intensity at a single timestep
 
@@ -94,18 +93,10 @@ def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, 
     plt.close('all')
 
     w_string = np.array(np.linspace(ap.wvl_range[0]*1e9, ap.wvl_range[1]*1e9, ap.w_bins, dtype=int), dtype=str)
-    dprint(f"datacube shape is {datacube.shape}")
-    # XY lim Settings
-    if xylims[0] != tp.grid_size:
-        half_range = np.int(np.ceil(xylims[0]/2))
-        half_grid = np.int(np.ceil(tp.grid_size/2))
-        datacube = datacube[:, half_grid-half_range:half_grid+half_range+1, half_grid-half_range:half_grid+half_range+1]
-        dprint(f"datacube shape is {datacube.shape}")
 
     # Number of subplots size
     fig = plt.figure()
     n_colors = len(datacube)
-    dprint(f"n_colors = {n_colors}")
     n_rows = int(np.ceil(n_colors / float(subplt_cols))+1)
     plt.axis('off')
     gs = gridspec.GridSpec(n_rows, subplt_cols, wspace=0.08, top=0.9, bottom=0.2)

@@ -104,21 +104,22 @@ def run_mmedis():
     spectral_queue.put(None)
     obs_sequence = np.array(obs_sequence)  # obs sequence is returned by gen_timeseries (called above)
                                            # (n_timesteps , n_wavelength_bins , x_grid , y_grid)
+    # Masking
+    obs_sequence = mmu.mask_obs_sequence(obs_sequence, tp.grid_size, tp.maskd_size)
 
     # Plotting Datacube
     if sp.show_cube:
         tstep = sp.numframes-1
         view_datacube(obs_sequence[tstep], logAmp=True,
                       title=f"Intensity per Spectral Bin at Timestep {tstep} \n"
-                            f"Grid Size = {tp.grid_size}, Beam Ratio = {tp.beam_ratio}", subplt_cols=sp.subplt_cols,
-                      vlim=(1e-8, 1e-3), xylims=(128, 128))
+                            f"Beam Ratio = {tp.beam_ratio}", subplt_cols=sp.subplt_cols,
+                      vlim=(1e-8, 1e-3))
 
     print('mini-MEDIS Data Run Completed')
     print('**************************************')
     finish = time.time()
     print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
 
-    print(f"Shape of obs_sequence = {np.shape(obs_sequence)}")
     print(f"Number of timesteps = {np.shape(obs_sequence)[0]}")
     print(f"Number of wavelength bins = {np.shape(obs_sequence)[1]}")
 
@@ -145,7 +146,6 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
     :param xxx_todo_changeme:
     :return:
     """
-
     try:
         start = time.time()
 
@@ -192,6 +192,7 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
         # raise e
         pass
 
+    return sampling
 
 if __name__ == '__main__':
     # testname = input("Please enter test name: ")
