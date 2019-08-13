@@ -71,7 +71,7 @@ def run_mmedis():
         ap.contrast = []
 
     # Initialize Atmosphere
-    mmu.dprint("Atmosdir = %s " % iop.atmosdir)
+    # mmu.dprint("Atmosdir = %s " % iop.atmosdir)
     if glob.glob(iop.atmosdir + '/*.fits') == []:
         atmos.gen_atmos(plot=True)
 
@@ -94,7 +94,7 @@ def run_mmedis():
         inqueue.put(sentinel)  # Send the sentinel to tell Simulation to end
 
     for t in range(sp.numframes):
-        t, spectralcube = spectral_queue.get()
+        t, spectralcube, sampling = spectral_queue.get()
         obs_sequence[t - sp.startframe] = spectralcube  # should be in the right order now because of the identifier
 
     for i, p in enumerate(jobs):
@@ -112,8 +112,8 @@ def run_mmedis():
         tstep = sp.numframes-1
         view_datacube(obs_sequence[tstep], logAmp=True,
                       title=f"Intensity per Spectral Bin at Timestep {tstep} \n"
-                            f"Beam Ratio = {tp.beam_ratio}", subplt_cols=sp.subplt_cols,
-                      vlim=(1e-8, 1e-3))
+                            f"Beam Ratio = {tp.beam_ratio:.4f}, sampling = {sampling*1e6:.4f} [units/um]",
+                      subplt_cols=sp.subplt_cols, vlim=(1e-8, 1e-3))
 
     print('mini-MEDIS Data Run Completed')
     print('**************************************')
@@ -166,7 +166,7 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
 
             # Sentinels if saving or plotting the datacube
             if sp.save_cube or sp.show_cube:
-                spectral_queue.put((t, spectralcube))
+                spectral_queue.put((t, spectralcube, sampling))
 
         now = time.time()
         elapsed = float(now - start) / 60.
@@ -192,7 +192,7 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
         # raise e
         pass
 
-    return sampling
+
 
 if __name__ == '__main__':
     # testname = input("Please enter test name: ")

@@ -24,7 +24,8 @@ plt.register_cmap(name='magma', cmap=cmaps.plasma)
 # plt.rc('font', size=MEDIUM_SIZE)  # controls default text sizes
 
 from matplotlib import rcParams
-rcParams['font.family'] = 'STIXGeneral'  # 'Times New Roman'
+rcParams['text.usetex'] = False
+rcParams['font.family'] = 'DejaVu Sans'
 # rcParams['mathtext.fontset'] = 'custom'
 # rcParams['mathtext.fontset'] = 'stix'
 # rcParams['mathtext.rm'] = 'Bitstream Vera Sans'
