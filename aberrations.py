@@ -47,18 +47,18 @@ def generate_maps(lens_diam, lens_name='lens'):
     dprint('Generating optic aberration maps using Proper')
     dprint(f"Abberation directory = {iop.aberdir}")
 
-    wfo = proper.prop_begin(lens_diam, 1., ap.grid_size, tp.beam_ratio)
-    aber_cube = np.zeros((sp.numframes, ap.grid_size, ap.grid_size))
+    wfo = proper.prop_begin(lens_diam, 1., tp.grid_size, tp.beam_ratio)
+    aber_cube = np.zeros((sp.numframes, tp.grid_size, tp.grid_size))
 
     # Randomly select a value from the range of values for each constant
     rms_error = np.random.normal(tp.aber_vals['a'][0], tp.aber_vals['a'][1])
     c_freq = np.random.normal(tp.aber_vals['b'][0], tp.aber_vals['b'][1])  # correlation frequency (cycles/meter)
     high_power = np.random.normal(tp.aber_vals['c'][0], tp.aber_vals['c'][1])  # high frewquency falloff (r^-high_power)
 
-    perms = np.random.rand(sp.numframes, ap.grid_size, ap.grid_size)-0.5
+    perms = np.random.rand(sp.numframes, tp.grid_size, tp.grid_size)-0.5
     perms *= 1e-7
 
-    phase = 2 * np.pi * np.random.uniform(size=(ap.grid_size, ap.grid_size)) - np.pi
+    phase = 2 * np.pi * np.random.uniform(size=(tp.grid_size, tp.grid_size)) - np.pi
     aber_cube[0] = proper.prop_psd_errormap(wfo, rms_error, c_freq, high_power, TPF=True, PHASE_HISTORY=phase)
 
     filename = f"{iop.aberdir}/t{0}_{lens_name}.fits"
@@ -68,7 +68,7 @@ def generate_maps(lens_diam, lens_name='lens'):
 
     # I think this part does quasi-static aberrations, but not sure if the random error is correct. On 7-10-19
     for a in range(1, sp.numframes):
-        perms = np.random.rand(ap.grid_size, ap.grid_size) - 0.5
+        perms = np.random.rand(tp.grid_size, tp.grid_size) - 0.5
         perms *= 0.05
         phase += perms
         aber_cube[a] = proper.prop_psd_errormap(wfo, rms_error, c_freq, high_power,
@@ -122,15 +122,15 @@ def initialize_CPA_meas():
     required_servo = int(tp.servo_error[0])
     required_band = int(tp.servo_error[1])
     required_nframes = required_servo + required_band + 1
-    CPA_maps = np.zeros((required_nframes, ap.nwsamp, ap.grid_size, ap.grid_size))
+    CPA_maps = np.zeros((required_nframes, ap.nwsamp, tp.grid_size, tp.grid_size))
 
     with open(iop.CPA_meas, 'wb') as handle:
         pickle.dump((CPA_maps, np.arange(0, -required_nframes, -1)), handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def initialize_NCPA_meas():
-    Imaps = np.zeros((4, ap.grid_size, ap.grid_size))
-    phase_map = np.zeros((tp.ao_act, tp.ao_act))  # np.zeros((ap.grid_size,ap.grid_size))
+    Imaps = np.zeros((4, tp.grid_size, tp.grid_size))
+    phase_map = np.zeros((tp.ao_act, tp.ao_act))  # np.zeros((tp.grid_size,tp.grid_size))
     with open(iop.NCPA_meas, 'wb') as handle:
         pickle.dump((Imaps, phase_map, 0), handle, protocol=pickle.HIGHEST_PROTOCOL)
 

@@ -22,10 +22,10 @@ def arange_into_cube(packets, size):
 
 def get_packets(datacube, step, dp, mp):
     if (mp.array_size != datacube[0].shape + np.array([1 ,1])).all():
-        left = int(np.floor(float(ap.grid_size -mp.array_size[0] ) /2))
-        right = int(np.ceil(float(ap.grid_size -mp.array_size[0] ) /2))
-        top = int(np.floor(float(ap.grid_size -mp.array_size[1] ) /2))
-        bottom = int(np.ceil(float(ap.grid_size -mp.array_size[1] ) /2))
+        left = int(np.floor(float(tp.grid_size -mp.array_size[0] ) /2))
+        right = int(np.ceil(float(tp.grid_size -mp.array_size[0] ) /2))
+        top = int(np.floor(float(tp.grid_size -mp.array_size[1] ) /2))
+        bottom = int(np.ceil(float(tp.grid_size -mp.array_size[1] ) /2))
 
         dprint(f"left={left},right={right},top={top},bottom={bottom}")
         datacube = datacube[:, bottom:-top, left:-right]

@@ -89,12 +89,9 @@ class Astro_params:
         # given by ap.nwsamp. Later, in gen_timeseries(), the 3rd axis of the spectral cube is interpolated so that
         # there are ap.w_bins over the range in ap.band.
         self.nwsamp = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
-        self.w_bins = 8  # final number of wavelength bins in spectral cube after interpolation
+        self.w_bins = 9  # final number of wavelength bins in spectral cube after interpolation
         self.wvl_range = np.array([800, 1500]) / 1e9  # wavelength range in m (formerly ap.band)
             # eg. DARKNESS band is [800, 1500], J band =  [1100,1400])
-        self.grid_size = 128  # creates a nxn array (of samples of the wavefront)
-            # must be bigger than the beam size to avoid FT effects at edges; must be factor of 2
-            # NOT the size of your detector/# of pixels
         self.interp_wvl = True  # Set to interpolate wavelengths from ap.nwsamp to ap.w_bins
 
     def __iter__(self):
@@ -118,8 +115,11 @@ class Telescope_params:
         self.ao_act = 188  # number of actuators on the DM (total number, not array shape)
         self.piston_error = False  # flag for allowing error on DM surface shape
         # self.platescale = 13.61  # mas # have to run get_sampling at the focus to find this
-        self.beam_ratio = 20 / 64.  # parameter dealing with the sampling of the beam in the pupil/focal
+        self.beam_ratio = 10 / 64.  # parameter dealing with the sampling of the beam in the pupil/focal
                                     # plane vs grid size. See Proper manual pgs 36-37 and 71-74 for discussion
+        self.grid_size = 512  # creates a nxn array (of samples of the wavefront)
+                              # must be bigger than the beam size to avoid FT effects at edges; must be factor of 2
+                              # NOT the size of your detector/# of pixels
         self.detector = 'ideal'  # 'MKIDs'
         self.pix_shift = [0, 0]  # False?  Shifts the central star to off-axis (mimics conex mirror, tip/tilt error)
 
@@ -149,7 +149,6 @@ class Telescope_params:
         return self.__str__().split(' ')[0].split('.')[-1]
 
 
-
 class Simulation_params:
     """
     Default parameters for outputs of the simulation. What plots you want to see etc
@@ -166,10 +165,10 @@ class Simulation_params:
 
         # Plotting Params
         self.show_cube = True  # Plot datacube
-        self.show_wframe = False  # Plot image frame
+        self.show_wframe = True  # Plot image frame
         self.cbar = None
         self.fig = None
-        self.subplt_cols = 4  # number of subplots per row in view_datacube
+        self.subplt_cols = 3  # number of subplots per row in view_datacube
 
         # Reading/Saving Params
         self.save_obs = False

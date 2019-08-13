@@ -34,7 +34,7 @@ class Wavefronts():
 
         # wf_array is an array of arrays; the wf_array is (number_wavelengths x number_astro_objects)
         # each 2D field in the wf_array is the 2D array of complex E-field values at that wavelength, per object
-        # the E-field size is given by (ap.grid_size x ap.grid_size)
+        # the E-field size is given by (tp.grid_size x tp.grid_size)
         if ap.companion:
             self.wf_array = np.empty((len(self.wsamples), 1 + len(ap.contrast)), dtype=object)
         else:
@@ -46,8 +46,8 @@ class Wavefronts():
         # Init Locations of saved E-field
         self.save_E_fields = np.empty((0, np.shape(self.wf_array)[0],
                                        np.shape(self.wf_array)[1],
-                                       ap.grid_size,
-                                       ap.grid_size), dtype=np.complex64)
+                                       tp.grid_size,
+                                       tp.grid_size), dtype=np.complex64)
 
     def initialize_proper(self):
         # Initialize the Wavefront in Proper
@@ -57,14 +57,14 @@ class Wavefronts():
             self.beam_ratios[iw] = tp.beam_ratio * ap.wvl_range[0] / w
 
             # Initialize the wavefront at entrance pupil
-            wfp = proper.prop_begin(tp.enterance_d, w, ap.grid_size, self.beam_ratios[iw])
+            wfp = proper.prop_begin(tp.enterance_d, w, tp.grid_size, self.beam_ratios[iw])
 
             wfs = [wfp]
             names = ['primary']
             # Initiate wavefronts for companion(s)
             if ap.companion:
                 for ix in range(len(ap.contrast)):
-                    wfc = proper.prop_begin(tp.enterance_d, w, ap.grid_size, self.beam_ratios[iw])
+                    wfc = proper.prop_begin(tp.enterance_d, w, tp.grid_size, self.beam_ratios[iw])
                     wfs.append(wfc)
                     names.append('companion_%i' % ix)
 
@@ -86,8 +86,8 @@ class Wavefronts():
         shape = self.wf_array.shape
         optic_E_fields = np.zeros((1, np.shape(self.wf_array)[0],
                                    np.shape(self.wf_array)[1],
-                                   ap.grid_size,
-                                   ap.grid_size), dtype=np.complex64)
+                                   tp.grid_size,
+                                   tp.grid_size), dtype=np.complex64)
         for iw in range(shape[0]):
             for iwf in range(shape[1]):
                 func(self.wf_array[iw, iwf], *args, **kwargs)

@@ -70,13 +70,14 @@ def quick2D(image, title=None, logAmp=False, vlim=(None,None), colormap=None):
         clabel = "Normalized Intensity"
 
     # Plotting
-    plt.title(title)
+    plt.title(title, fontweight='bold', fontsize=16)
     cb = plt.colorbar(cax)
     cb.set_label(clabel)
     plt.show()
 
 
-def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, vlim =(None,None), subplt_cols=3):
+def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, vlim =(None,None),
+                 xylims=(tp.grid_size,tp.grid_size), subplt_cols=3):
     """
     view plot of each wavelength bin intensity at a single timestep
 
@@ -86,16 +87,25 @@ def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, 
     :param logAmp: turn logscale plotting on or off
     :param use_axis: turn on/off using axis ticks, colorbar, etc
     :param vlim: tuple of colorbar axis limits (min,max)
+    :param xylims: range of x-y axis to plot (inner portion of grid)
     :param subplt_cols: number of subplots per row
     :return:
     """
     plt.close('all')
 
     w_string = np.array(np.linspace(ap.wvl_range[0]*1e9, ap.wvl_range[1]*1e9, ap.w_bins, dtype=int), dtype=str)
+    dprint(f"datacube shape is {datacube.shape}")
+    # XY lim Settings
+    if xylims[0] != tp.grid_size:
+        half_range = np.int(np.ceil(xylims[0]/2))
+        half_grid = np.int(np.ceil(tp.grid_size/2))
+        datacube = datacube[:, half_grid-half_range:half_grid+half_range+1, half_grid-half_range:half_grid+half_range+1]
+        dprint(f"datacube shape is {datacube.shape}")
 
     # Number of subplots size
     fig = plt.figure()
     n_colors = len(datacube)
+    dprint(f"n_colors = {n_colors}")
     n_rows = int(np.ceil(n_colors / float(subplt_cols))+1)
     plt.axis('off')
     gs = gridspec.GridSpec(n_rows, subplt_cols, wspace=0.08, top=0.9, bottom=0.2)
@@ -432,13 +442,13 @@ def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, 
 #             ax1.imshow(after_dm, origin='lower', cmap="YlGnBu_r")
 #         ax2.imshow(phase_afterdm, origin='lower', cmap="YlGnBu_r")  # , vmin=-0.5, vmax=0.5)
 #
-#         ax3.plot(after_dm[int(ap.grid_size / 2)])
-#         ax3.plot(np.sum(np.eye(ap.grid_size) * after_dm, axis=1))
+#         ax3.plot(after_dm[int(tp.grid_size / 2)])
+#         ax3.plot(np.sum(np.eye(tp.grid_size) * after_dm, axis=1))
 #
 #         # plt.plot(np.sum(after_dm,axis=1)/after_dm[128,128])
 #
-#         ax4.plot(phase_afterdm[int(ap.grid_size / 2)])
-#         # ax4.plot(np.sum(np.eye(ap.grid_size)*phase_afterdm,axis=1))
+#         ax4.plot(phase_afterdm[int(tp.grid_size / 2)])
+#         # ax4.plot(np.sum(np.eye(tp.grid_size)*phase_afterdm,axis=1))
 #         plt.xlim([0, proper.prop_get_gridsize(wfo)])
 #         fig.set_tight_layout(True)
 #
@@ -448,7 +458,7 @@ def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, 
 #         ws = sp.get_ints['w']
 #         cs = sp.get_ints['c']
 #
-#         int_maps = np.empty((0, ap.grid_size, ap.grid_size))
+#         int_maps = np.empty((0, tp.grid_size, tp.grid_size))
 #         for iw in ws:
 #             for iwf in cs:
 #                 # int_maps.append(proper.prop_shift_center(np.abs(wf_array[iw, iwf].wfarr) ** 2))
@@ -504,7 +514,7 @@ def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, 
 #     fig = plt.figure()
 #     if pupil:
 #         import medis.Analysis.phot
-#         image = image * Analysis.phot.aperture(ap.grid_size / 2, ap.grid_size / 2, ap.grid_size / 2)
+#         image = image * Analysis.phot.aperture(tp.grid_size / 2, tp.grid_size / 2, tp.grid_size / 2)
 #
 #     if title is None:
 #         title = r'  $I / I^{*}$'
@@ -634,13 +644,13 @@ def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, 
 #         ax1.imshow(after_dm, origin='lower', cmap="YlGnBu_r")
 #     ax2.imshow(phase_afterdm, origin='lower', cmap="YlGnBu_r")  # , vmin=-0.5, vmax=0.5)
 #
-#     ax3.plot(after_dm[int(ap.grid_size / 2)])
-#     ax3.plot(np.sum(np.eye(ap.grid_size) * after_dm, axis=1))
+#     ax3.plot(after_dm[int(tp.grid_size / 2)])
+#     ax3.plot(np.sum(np.eye(tp.grid_size) * after_dm, axis=1))
 #
 #     # plt.plot(np.sum(after_dm,axis=1)/after_dm[128,128])
 #
-#     ax4.plot(phase_afterdm[int(ap.grid_size / 2)])
-#     # ax4.plot(np.sum(np.eye(ap.grid_size)*phase_afterdm,axis=1))
+#     ax4.plot(phase_afterdm[int(tp.grid_size / 2)])
+#     # ax4.plot(np.sum(np.eye(tp.grid_size)*phase_afterdm,axis=1))
 #     plt.xlim([0, proper.prop_get_gridsize(wfo)])
 #     fig.set_tight_layout(True)
 #
@@ -667,13 +677,13 @@ def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, 
 #         ax1.imshow(I, origin='lower', cmap="YlGnBu_r")
 #     ax2.imshow(Q, origin='lower', cmap="YlGnBu_r")  # , vmin=-0.5, vmax=0.5)
 #
-#     ax3.plot(I[int(ap.grid_size / 2)])
-#     ax3.plot(np.sum(np.eye(ap.grid_size) * I, axis=1))
+#     ax3.plot(I[int(tp.grid_size / 2)])
+#     ax3.plot(np.sum(np.eye(tp.grid_size) * I, axis=1))
 #
 #     # plt.plot(np.sum(after_dm,axis=1)/after_dm[128,128])
 #
-#     ax4.plot(Q[int(ap.grid_size / 2)])
-#     # ax4.plot(np.sum(np.eye(ap.grid_size)*phase_afterdm,axis=1))
+#     ax4.plot(Q[int(tp.grid_size / 2)])
+#     # ax4.plot(np.sum(np.eye(tp.grid_size)*phase_afterdm,axis=1))
 #     plt.xlim([0, proper.prop_get_gridsize(wfo)])
 #     fig.set_tight_layout(True)
 #     if show == True:

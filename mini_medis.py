@@ -54,7 +54,7 @@ def run_mmedis():
         return obs_sequence
 
     # Initialize Obs Sequence
-    obs_sequence = np.zeros((sp.numframes, ap.w_bins, ap.grid_size, ap.grid_size))
+    obs_sequence = np.zeros((sp.numframes, ap.w_bins, tp.grid_size, tp.grid_size))
 
     try:
         multiprocessing.set_start_method('spawn')
@@ -76,8 +76,8 @@ def run_mmedis():
         atmos.gen_atmos(plot=True)
 
     # Initialize CPA and NCPA
-    aber.initialize_CPA_meas()
-    aber.initialize_NCPA_meas()
+    # aber.initialize_CPA_meas()
+    # aber.initialize_NCPA_meas()
 
     # Sending Queues to gen_timeseries
     for i in range(sp.num_processes):
@@ -91,7 +91,7 @@ def run_mmedis():
         inqueue.put(t)
 
     for i in range(sp.num_processes):
-        inqueue.put(sentinel)  # Send the sentinal to tell Simulation to end
+        inqueue.put(sentinel)  # Send the sentinel to tell Simulation to end
 
     for t in range(sp.numframes):
         t, spectralcube = spectral_queue.get()
@@ -109,8 +109,9 @@ def run_mmedis():
     if sp.show_cube:
         tstep = sp.numframes-1
         view_datacube(obs_sequence[tstep], logAmp=True,
-                      title=f"Intensity per Spectral Bin at Timestep {tstep}", subplt_cols=sp.subplt_cols,
-                      vlim=(1e-8, 1e-3))
+                      title=f"Intensity per Spectral Bin at Timestep {tstep} \n"
+                            f"Grid Size = {tp.grid_size}, Beam Ratio = {tp.beam_ratio}", subplt_cols=sp.subplt_cols,
+                      vlim=(1e-8, 1e-3), xylims=(128, 128))
 
     print('mini-MEDIS Data Run Completed')
     print('**************************************')
@@ -151,8 +152,8 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
         for it, t in enumerate(iter(inqueue.get, sentinel)):
 
             kwargs = {'iter': t, 'params': [ap, tp, iop, sp]}
-            spectralcube, save_E_fields = pm.prop_run(tp.perscription, 1, ap.grid_size, PASSVALUE=kwargs,
-                                                   VERBOSE=False, PHASE_OFFSET=1)
+            spectralcube, sampling = pm.prop_run(tp.perscription, 1, tp.grid_size, PASSVALUE=kwargs,
+                                                   VERBOSE=False)
 
             # for cx in range(len(ap.contrast) + 1):
             #     mmu.dprint(f"E-field shape is {save_E_fields.shape}")
@@ -180,7 +181,9 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
         # Plotting
         if sp.show_wframe:
             # vlim = (np.min(spectralcube) * 10, np.max(spectralcube))  # setting z-axis limits
-            quick2D(image, title=f"White light image at timestep {it}", logAmp=True)
+            quick2D(image, title=f"White light image at timestep {it} \n"
+                                 f"Grid Size = {tp.grid_size}, Beam Ratio = {tp.beam_ratio}, "
+                                 f"sampling = {sampling*1e6:.4f} (um)", logAmp=True)
         # loop_frames(obs_sequence[:, 0])
         # loop_frames(obs_sequence[0])
 

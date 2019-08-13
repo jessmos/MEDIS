@@ -31,7 +31,7 @@ def gen_atmos(plot=False):
     """
     dprint("Making New Atmosphere Model")
 
-    pupil_grid = hcipy.make_pupil_grid(ap.grid_size, tp.enterance_d)
+    pupil_grid = hcipy.make_pupil_grid(tp.grid_size, tp.enterance_d)
 
     if atmp.model == 'single':
         layers = [hcipy.InfiniteAtmosphericLayer(pupil_grid, atmp.cn_sq, atmp.L0, atmp.vel, atmp.h, 2)]
@@ -56,8 +56,8 @@ def gen_atmos(plot=False):
             wf2 = atmos.forward(wf)
 
             filename = get_filename(it, wsamples[iw])
-            hdu = fits.ImageHDU(wf2.phase.reshape(ap.grid_size, ap.grid_size))
-            hdu.header['PIXSIZE'] = tp.enterance_d/ap.grid_size
+            hdu = fits.ImageHDU(wf2.phase.reshape(tp.grid_size, tp.grid_size))
+            hdu.header['PIXSIZE'] = tp.enterance_d/tp.grid_size
             hdu.writeto(filename, overwrite=True)
 
             if plot:
