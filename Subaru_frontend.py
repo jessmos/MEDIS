@@ -138,7 +138,6 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     wfo.apply_func(proper.prop_define_entrance)  # normalizes the intensity
 
     # Test Sampling
-    # dprint(f"wfo.wf_array.shape is {wfo.wf_array.shape}")
     # initial_sampling = proper.prop_get_sampling(wfo.wf_array[0,0])
     # dprint(f"initial sampling is {initial_sampling:.4f}")
 
