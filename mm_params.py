@@ -135,6 +135,10 @@ class Telescope_params:
                            'b': [0.8, 0.2],  # correlation length
                            'c': [3.1, 0.5],  #
                            'a_amp': [0.05, 0.01]}
+        # Zernike Settinnnngs- see pg 192 for details
+        self.zernike_orders = [2, 3, 4]  # Order of Zernike Polynomials to include
+        self.zernike_vals = np.array([175, -150, 200])*1.0e-9  # value of Zernike order in nm,
+                                                               # must be same length as zernike_orders
 
         # Ideal Detector Params (not bothering with MKIDs yet)
         self.array_size = np.array([129, 129])  # np.array([125,80])#np.array([125,125])#

@@ -41,3 +41,5 @@ init_sampling = init_grid_width / tp.grid_size
 spider_width = tp.enterance_d * legs_frac
 npix_on_spiders = spider_width / init_sampling
 print(f"Number of pixels across the spiders = {npix_on_spiders}")
+
+

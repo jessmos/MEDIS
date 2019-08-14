@@ -154,14 +154,6 @@ def abs_zeros(wf_array):
     return wf_array
 
 
-def add_zern_ab(wfo):
-    """
-    adds low-order aberrations from Zernike polynomials
 
-    see good example in Proper manual pg 51
-    quote: These [polynomials] form an orthogonal set of aberrations that include:
-     wavefront tilt, defocus, coma, astigmatism, spherical aberration, and others
-    """
-    proper.prop_zernikes(wfo, [2,3,4], np.array([175,150,200])*1.0e-9)
 
 

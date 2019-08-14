@@ -117,6 +117,29 @@ def add_aber(wf_array, d_lens, aber_params, step=0, lens_name='lens'):
                 dprint("Outdated code-please update")
                 raise NotImplementedError
 
+def add_zern_ab(wfo, zern_order=[2,3,4], zern_vals=np.array([175,-150,200])*1.0e-9):
+    """
+    adds low-order aberrations from Zernike polynomials
+
+    see Proper Manual pg 192 for full details
+    see good example in Proper manual pg 51
+    quote: These [polynomials] form an orthogonal set of aberrations that include:
+     wavefront tilt, defocus, coma, astigmatism, spherical aberration, and others
+
+    Orders are:
+    1 Piston
+    2 X tilt
+    3 Y tilt
+    4 Focus
+    5 45º astigmatism
+    6 0º astigmatism
+    7 Y coma
+    8 X coma
+    9 Y clover (trefoil)
+    10 X clover (trefoil)
+    """
+    proper.prop_zernikes(wfo, zern_order, zern_vals)
+
 
 def initialize_CPA_meas():
     required_servo = int(tp.servo_error[0])

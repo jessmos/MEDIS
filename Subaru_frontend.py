@@ -128,7 +128,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
 
     # Atmosphere
     #  There is a line turned on/off as desired in atmos.add_atmos to zero outside of the pupil or not
-    atmos.add_atmos(wfo, PASSVALUE['iter'])
+    # atmos.add_atmos(wfo, PASSVALUE['iter'])
 
     ########################################
     # Subaru Propagation
@@ -145,10 +145,10 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # wfo.apply_func(opx.add_obscurations, d_primary=tp.enterance_d, d_secondary=tp.d_secondary)
 
     # Primary
-    # # CPA from Effective Primary
-    # aber.add_aber(wfo.wf_array, tp.enterance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='nasmyth')
-    # # Zernike Aberrations- Low Order
-    # wfo.apply_func(opx.add_zern_ab)
+    # CPA from Effective Primary
+    aber.add_aber(wfo.wf_array, tp.enterance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='nasmyth')
+    # Zernike Aberrations- Low Order
+    wfo.apply_func(aber.add_zern_ab, tp.zernike_orders, tp.zernike_vals)
 
     # wfo.apply_func(opx.prop_mid_optics, tp.fl_nsmyth, tp.dist_nsmyth_ao1)
     wfo.apply_func(opx.prop_mid_optics, tp.fl_nsmyth, tp.fl_nsmyth)

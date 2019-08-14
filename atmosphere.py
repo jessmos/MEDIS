@@ -95,7 +95,7 @@ def add_atmos(wfo, it):
             obj_map *= wavelength/np.pi
             proper.prop_add_phase(wfo.wf_array[iw,io], obj_map)
 
-    # Spatial Masking outside of Telescope Aperture -depricated when spatially masking at end of run_medis
+    # Spatial Masking outside of Telescope Aperture -depricated when using mask_obs_sequence
     # wfo.wf_array = opx.abs_zeros(wfo.wf_array)  # Zeroing outside the pupil
     # wfo.apply_func(proper.prop_circular_aperture, tp.enterance_d/2)
 
