@@ -128,14 +128,19 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
 
     # Atmosphere
     #  There is a line turned on/off as desired in atmos.add_atmos to zero outside of the pupil or not
-    # atmos.add_atmos(wfo, PASSVALUE['iter'])
+    atmos.add_atmos(wfo, PASSVALUE['iter'])
 
     ########################################
     # Subaru Propagation
     #######################################
     # Defines aperture (baffle-before primary)
-    wfo.apply_func(proper.prop_circular_aperture, **{'radius': tp.enterance_d / 2})
+    wfo.apply_func(proper.prop_circular_aperture, **{'radius': tp.enterance_d / 2})  # clear inside, dark outside
     wfo.apply_func(proper.prop_define_entrance)  # normalizes the intensity
+
+    # Test Sampling
+    # dprint(f"wfo.wf_array.shape is {wfo.wf_array.shape}")
+    # initial_sampling = proper.prop_get_sampling(wfo.wf_array[0,0])
+    # dprint(f"initial sampling is {initial_sampling:.4f}")
 
     # Obscurations
     # wfo.apply_func(opx.add_obscurations, d_primary=tp.enterance_d, d_secondary=tp.d_secondary)

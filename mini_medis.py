@@ -44,6 +44,7 @@ def run_mmedis():
     print('***************************************')
     start = time.time()
 
+    # Check for Existing File
     check = mmu.check_exists_obs_sequence(False)
     if check:
         if iop.obs_seq[-3:] == '.h5':
@@ -55,18 +56,6 @@ def run_mmedis():
 
     # Initialize Obs Sequence
     obs_sequence = np.zeros((sp.numframes, ap.w_bins, tp.grid_size, tp.grid_size))
-
-    try:
-        multiprocessing.set_start_method('spawn')
-    except RuntimeError:
-        pass
-
-    # Multiprocessing Settings
-    inqueue = multiprocessing.Queue()
-    spectral_queue = multiprocessing.Queue()
-    photons_queue = multiprocessing.Queue()
-    jobs = []
-
     if ap.companion is False:
         ap.contrast = []
 
@@ -75,9 +64,20 @@ def run_mmedis():
     if glob.glob(iop.atmosdir + '/*.fits') == []:
         atmos.gen_atmos(plot=True)
 
-    # Initialize CPA and NCPA
-    # aber.initialize_CPA_meas()
-    # aber.initialize_NCPA_meas()
+    try:
+        multiprocessing.set_start_method('spawn')
+    except RuntimeError:
+        pass
+
+    # =======================================================================================================
+    # Multiprocessing with gen_timeseries
+    # =======================================================================================================
+
+    # Multiprocessing Settings
+    inqueue = multiprocessing.Queue()
+    spectral_queue = multiprocessing.Queue()
+    photons_queue = multiprocessing.Queue()
+    jobs = []
 
     # Sending Queues to gen_timeseries
     for i in range(sp.num_processes):
@@ -102,6 +102,8 @@ def run_mmedis():
 
     photons_queue.put(None)
     spectral_queue.put(None)
+    # =======================================================================
+
     obs_sequence = np.array(obs_sequence)  # obs sequence is returned by gen_timeseries (called above)
                                            # (n_timesteps , n_wavelength_bins , x_grid , y_grid)
     # Masking
@@ -112,7 +114,7 @@ def run_mmedis():
         tstep = sp.numframes-1
         view_datacube(obs_sequence[tstep], logAmp=True,
                       title=f"Intensity per Spectral Bin at Timestep {tstep} \n"
-                            f"Beam Ratio = {tp.beam_ratio:.4f}, sampling = {sampling*1e6:.4f} [units/um]",
+                            f"Beam Ratio = {tp.beam_ratio:.4f}, sampling = {sampling*1e6:.4f} [um/gridpt]",
                       subplt_cols=sp.subplt_cols, vlim=(1e-8, 1e-3))
 
     print('mini-MEDIS Data Run Completed')
@@ -183,7 +185,7 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
             # vlim = (np.min(spectralcube) * 10, np.max(spectralcube))  # setting z-axis limits
             quick2D(image, title=f"White light image at timestep {it} \n"
                                  f"Grid Size = {tp.grid_size}, Beam Ratio = {tp.beam_ratio}, "
-                                 f"sampling = {sampling*1e6:.4f} (um)", logAmp=True)
+                                 f"sampling = {sampling*1e6:.4f} (um/gridpt)", logAmp=True)
         # loop_frames(obs_sequence[:, 0])
         # loop_frames(obs_sequence[0])
 

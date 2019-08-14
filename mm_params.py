@@ -37,13 +37,13 @@ class IO_params:
 
         # Aberration Metadata
         self.aberroot = 'aberrations'
-        self.aberdata = 'Subaru'
+        self.aberdata = 'Subaru-gridsz512'
         self.aberdir = os.path.join(self.scidir, self.aberroot, self.aberdata)
         self.NCPA_meas = os.path.join(self.aberdir, 'NCPA_meas.pkl')  #
         self.CPA_meas = os.path.join(self.aberdir, 'CPA_meas.pkl')
 
         # Atmosphere Metadata
-        self.atmosroot = 'atmos'  #
+        self.atmosroot = 'atmos-gridsz512'  #
         self.atmosdir = os.path.join(self.scidir, self.atmosroot)  # full path to FITS files
 
     def update(self, new_name='example1'):

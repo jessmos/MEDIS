@@ -19,9 +19,6 @@ class Wavefronts():
     An object containing all of the complex E fields (for each sample wavelength and astronomical object) for this timestep
 
     :params
-    :save_locs e.g. np.array(['entrance pupil', 'after ao', 'before coron.'])
-    :gui_maps_type np.array(['phase', 'phase', 'amp'])
-    The shape of self.selec_E_fiels is probe locs x nwsamp x nobjects x tp.grid_size
 
     :returns
     self.wf_array: a matrix of proper wavefront objects after all optic modifications have been applied
