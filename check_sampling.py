@@ -23,7 +23,7 @@ from mm_params import tp
 #######################################
 # Basics-not imported
 tp.enterance_d = 8.2  # m
-tp.beam_ratio = 25/64
+tp.beam_ratio = 24/64
 tp.grid_size = 512
 
 # From Params Buried in mini-medis

@@ -54,7 +54,10 @@ def run_mmedis():
         return obs_sequence
 
     # Initialize Obs Sequence
-    obs_sequence = np.zeros((sp.numframes, ap.w_bins, tp.grid_size, tp.grid_size))
+    if tp.maskd_size != tp.grid_size:
+        obs_sequence = np.zeros((sp.numframes, ap.w_bins, tp.maskd_size, tp.maskd_size))
+    else:
+        obs_sequence = np.zeros((sp.numframes, ap.w_bins, tp.grid_size, tp.grid_size))
     if ap.companion is False:
         ap.contrast = []
 
@@ -105,8 +108,6 @@ def run_mmedis():
 
     obs_sequence = np.array(obs_sequence)  # obs sequence is returned by gen_timeseries (called above)
                                            # (n_timesteps , n_wavelength_bins , x_grid , y_grid)
-    # Masking
-    obs_sequence = mmu.mask_obs_sequence(obs_sequence, tp.grid_size, tp.maskd_size)
 
     # Plotting Datacube
     if sp.show_cube:

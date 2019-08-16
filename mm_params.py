@@ -78,7 +78,7 @@ class Astro_params:
     def __init__(self):
         # Companion Object Params
         self.star_photons = int(1e5)  # A 5 apparent mag star 1e6 cts/cm^2/s
-        self.companion = True
+        self.companion = False
         self.contrast = [0.05]
         self.C_spec = 1.5  # the gradient of the increase in contrast towards shorter wavelengths
         self.lods = [[-1.0, 1.0]]  # initial location (no rotation)
@@ -119,7 +119,8 @@ class Telescope_params:
         self.grid_size = 512  # creates a nxn array (of samples of the wavefront)
                               # must be bigger than the beam size to avoid FT effects at edges; must be factor of 2
                               # NOT the size of your detector/# of pixels
-        self.maskd_size = 159  # will truncate obs_sequence to this range (avoids FFT artifacts)
+        self.maskd_size = 254  # will truncate obs_sequence to this range (avoids FFT artifacts)
+                               # set to grid_size if undesired
         self.detector = 'ideal'  # 'MKIDs'
         self.pix_shift = [0, 0]  # False?  Shifts the central star to off-axis (mimics conex mirror, tip/tilt error)
 
@@ -168,7 +169,7 @@ class Simulation_params:
         self.numframes = 3  # number of timesteps in the simulation
 
         # Plotting Params
-        self.show_cube = False  # Plot datacube
+        self.show_cube = True  # Plot datacube
         self.show_wframe = True  # Plot image frame
         self.cbar = None
         self.fig = None
