@@ -41,25 +41,26 @@ import atmosphere as atmos
 # # but then feeds it to the IR Nasmyth f/13.6 focusing arrangement. So instead of simulating the full Subaru system,
 # # we can use the effective focal length at the Nasmyth focus, and simulate it as a single lens.
 tp.d_nsmyth = 7.971  # m pupil diameter
-tp.fn_nsmyth = 13.612  # f# Nasmyth focus
-tp.fl_nsmyth = tp.d_nsmyth * tp.fn_nsmyth  # m focal length
+# tp.fn_nsmyth = 13.612  # f# Nasmyth focus
+# tp.fl_nsmyth = tp.d_nsmyth * tp.fn_nsmyth  # m focal length
+tp.flen_nsmyth = 15
 tp.dist_pri_second = 12.652  # m distance primary -> secondary
 
-tp.enterance_d = tp.d_nsmyth
+# tp.enterance_d = tp.d_nsmyth
 
     # For the record, below are the actual dimenstions of the Subaru telescope. However, the proper.prop_lens uses the
     #  thin-lens approximation to propagate through a lens, and the secondary mirror does not meet that criterea. There
     #  are problems with proper introducing a lot of high-order modes due when trying to simulate the secondary mirror,
     #  so we use the Nasmyth effective primary-secondary to avoid this issue.
     # tp.enterence_d = 8.2  # m diameter of primary
-    # tp.fl_primary = 15  # m focal length of primary
+    # tp.flen_primary = 15  # m focal length of primary
 
 #--------------------------------
 # Secondary
 tp.d_secondary = 1.265  # m diameter secondary, used for central obscuration
 tp.fn_secondary = 12.6
-tp.fl_secondary = tp.d_secondary * tp.fn_secondary  # m focal length of secondary
-tp.dist_second_ao1 = tp.fl_secondary + .02  # m distance secondary to M1 of AO188
+tp.flen_secondary = tp.d_secondary * tp.fn_secondary  # m focal length of secondary
+tp.dist_second_ao1 = tp.flen_secondary - 1.2  # m distance secondary to M1 of AO188
 
 #----------------------------
 # AO188 OAP1
@@ -83,7 +84,7 @@ tp.dist_ao1_dm = 1.345  # m distance AO1 to DM
 tp.dist_dm_ao2 = 0.05  # m distance DM to AO2 (again, guess here)
 tp.d_ao2 = 0.090  # m  diamater of AO2
 tp.fn_ao2 = 13.6  # f# AO2
-tp.fl_ao2 = 151.11  # m  focal length AO2
+tp.fl_ao2 = tp.d_ao2 * tp.fn_ao2   # 151.11  # m  focal length AO2
 
 tp.obscure = True
 tp.use_ao = False
@@ -138,8 +139,8 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     wfo.apply_func(proper.prop_define_entrance)  # normalizes the intensity
 
     # Test Sampling
-    # initial_sampling = proper.prop_get_sampling(wfo.wf_array[0,0])
-    # dprint(f"initial sampling is {initial_sampling:.4f}")
+    initial_sampling = proper.prop_get_sampling(wfo.wf_array[0,0])
+    dprint(f"initial sampling is {initial_sampling:.4f}")
 
     # Obscurations
     # wfo.apply_func(opx.add_obscurations, d_primary=tp.enterance_d, d_secondary=tp.d_secondary)
@@ -147,16 +148,18 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # Primary
     # CPA from Effective Primary
     aber.add_aber(wfo.wf_array, tp.enterance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='nasmyth')
-    # Zernike Aberrations- Low Order
-    wfo.apply_func(aber.add_zern_ab, tp.zernike_orders, tp.zernike_vals)
+    # # Zernike Aberrations- Low Order
+    # wfo.apply_func(aber.add_zern_ab, tp.zernike_orders, tp.zernike_vals)
 
     # wfo.apply_func(opx.prop_mid_optics, tp.fl_nsmyth, tp.dist_nsmyth_ao1)
     wfo.apply_func(opx.prop_mid_optics, tp.fl_nsmyth, tp.fl_nsmyth)
-    # wfo.apply_func(opx.prop_mid_optics, tp.fl_nsmyth, tp.dist_pri_second)
+    # wfo.apply_func(opx.prop_mid_optics, tp.flen_nsmyth, tp.dist_pri_second)
+    # wfo.apply_func(opx.prop_mid_optics, tp.flen_primary, tp.dist_pri_second)
 
     # Secondary
-    # aber.add_aber(wfo.wf_array, tp.d_secondary, tp.aber_params, step=PASSVALUE['iter'], lens_name='second')
-    # wfo.apply_func(opx.prop_mid_optics, tp.fl_secondary, tp.fl_secondary)
+    aber.add_aber(wfo.wf_array, tp.d_secondary, tp.aber_params, step=PASSVALUE['iter'], lens_name='second')
+    # wfo.apply_func(opx.prop_mid_optics, tp.flen_secondary, tp.dist_second_ao1)
+    wfo.apply_func(opx.prop_mid_optics, tp.flen_secondary, tp.flen_secondary)
 
     ########################################
     # AO188 Propagation
@@ -166,7 +169,6 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # wfo.apply_func(opx.prop_mid_optics, tp.fl_ao1, tp.dist_ao1_dm)
     # #
     # # AO System
-    # # ao.flat_outside(wfo.wf_array)
     # WFS_maps = ao.quick_wfs(wfo.wf_array[:, 0])
     # ao.quick_ao(wfo, WFS_maps)
     # wfo.apply_func(proper.prop_propagate, tp.dist_dm_ao2)

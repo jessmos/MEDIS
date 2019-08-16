@@ -108,13 +108,13 @@ class Telescope_params:
     def __init__(self):
         # Optics + Detector
         self.perscription = 'Subaru_frontend'
-        self.enterance_d = 7.971  # telescope enterence pupil diameter in meters
+        self.enterance_d = 8.2  # 7.971  # telescope enterence pupil diameter in meters
         self.fnum_primary = 2  # f-number of primary
-        self.flen_primary = 108.512  # m
+        self.flen_primary = 15  # 108.512  # m
         self.ao_act = 188  # number of actuators on the DM (total number, not array shape)
         self.piston_error = False  # flag for allowing error on DM surface shape
         # self.platescale = 13.61  # mas # have to run get_sampling at the focus to find this
-        self.beam_ratio = 9 / 64.  # parameter dealing with the sampling of the beam in the pupil/focal
+        self.beam_ratio = 24 / 64.  # parameter dealing with the sampling of the beam in the pupil/focal
                                     # plane vs grid size. See Proper manual pgs 36-37 and 71-74 for discussion
         self.grid_size = 512  # creates a nxn array (of samples of the wavefront)
                               # must be bigger than the beam size to avoid FT effects at edges; must be factor of 2
@@ -168,7 +168,7 @@ class Simulation_params:
         self.numframes = 3  # number of timesteps in the simulation
 
         # Plotting Params
-        self.show_cube = True  # Plot datacube
+        self.show_cube = False  # Plot datacube
         self.show_wframe = True  # Plot image frame
         self.cbar = None
         self.fig = None
