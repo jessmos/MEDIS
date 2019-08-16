@@ -3,8 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="4c18236a-dfc5-4249-b13b-a88d6fd6e999" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Subaru_frontend.py" beforeDir="false" afterPath="$PROJECT_DIR$/Subaru_frontend.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/check_sampling.py" beforeDir="false" afterPath="$PROJECT_DIR$/check_sampling.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mini_medis.py" beforeDir="false" afterPath="$PROJECT_DIR$/mini_medis.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mm_params.py" beforeDir="false" afterPath="$PROJECT_DIR$/mm_params.py" afterDir="false" />
     </list>
@@ -43,7 +41,7 @@
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="com.intellij.ide.scratch.LRUPopupBuilder$1/New Scratch File" value="Python" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/mm_utils.py" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../MEDIS/medis/get_photon_data.py" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
@@ -164,7 +162,7 @@
       <workItem from="1565894566828" duration="93000" />
       <workItem from="1565894759774" duration="44000" />
       <workItem from="1565894820553" duration="10890000" />
-      <workItem from="1565975100562" duration="4674000" />
+      <workItem from="1565975100562" duration="6410000" />
     </task>
     <task id="LOCAL-00001" summary="changed rootdir in iop">
       <created>1565385158240</created>
@@ -215,7 +213,14 @@
       <option name="project" value="LOCAL" />
       <updated>1565978491869</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="depricated mask_obs_sequence by using the EXTRACT keyword in prop_end. Required using np.int in indices of prop_end.py in Proper source code &#10;eg &#10; wf.wfarr = wf.wfarr[np.int(ny/2-EXTRACT/2):np.int(ny/2+EXTRACT/2),np.int(nx/2-EXTRACT/2):np.int(nx/2+EXTRACT/2)]">
+      <created>1565981601962</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1565981601962</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -242,7 +247,8 @@
     <MESSAGE value="added check_sampling. not part of mini-medis, but a supplemental file helpful to checking sampling of the initial params" />
     <MESSAGE value="moved zernike aberrations from optics.py to aberrations.py; added orders/values as params settings" />
     <MESSAGE value="updates to check_sampling" />
-    <option name="LAST_COMMIT_MESSAGE" value="updates to check_sampling" />
+    <MESSAGE value="depricated mask_obs_sequence by using the EXTRACT keyword in prop_end. Required using np.int in indices of prop_end.py in Proper source code &#10;eg &#10; wf.wfarr = wf.wfarr[np.int(ny/2-EXTRACT/2):np.int(ny/2+EXTRACT/2),np.int(nx/2-EXTRACT/2):np.int(nx/2+EXTRACT/2)]" />
+    <option name="LAST_COMMIT_MESSAGE" value="depricated mask_obs_sequence by using the EXTRACT keyword in prop_end. Required using np.int in indices of prop_end.py in Proper source code &#10;eg &#10; wf.wfarr = wf.wfarr[np.int(ny/2-EXTRACT/2):np.int(ny/2+EXTRACT/2),np.int(nx/2-EXTRACT/2):np.int(nx/2+EXTRACT/2)]" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/miniMEDIS$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1565981306104" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

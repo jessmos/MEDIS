@@ -74,7 +74,6 @@ def run_mmedis():
     # =======================================================================================================
     # Multiprocessing with gen_timeseries
     # =======================================================================================================
-
     # Multiprocessing Settings
     inqueue = multiprocessing.Queue()
     spectral_queue = multiprocessing.Queue()
@@ -93,14 +92,16 @@ def run_mmedis():
         inqueue.put(t)
 
     for i in range(sp.num_processes):
-        inqueue.put(sentinel)  # Send the sentinel to tell Simulation to end
+        inqueue.put(sentinel)
 
+    # Getting Returned Variables from gen_timeseries
     for t in range(sp.numframes):
         t, spectralcube, sampling = spectral_queue.get()
         obs_sequence[t - sp.startframe] = spectralcube  # should be in the right order now because of the identifier
 
+    # Ending the gen_timeseries loop via multiprocessing protocol
     for i, p in enumerate(jobs):
-        p.join()
+        p.join()  # Send the sentinel to tell Simulation to end?
 
     photons_queue.put(None)
     spectral_queue.put(None)
@@ -139,14 +140,15 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
     is the time loop wrapper for the proper perscription, so multiple calls to the proper perscription as aberrations
         or atmosphere evolve
     this is where the detector observes the wavefront created by proper, thus creating the observation sequence
-        of spectrl cubes at each timestep (for MKIDs, the probability distribution of the observed parameters is saved
-        instead)
+        of spectral cubes at each timestep (for MKIDs, the probability distribution of the observed parameters
+        is saved instead)
 
     :param inqueue: time index for parallelization (used by multiprocess)
     :param photons_queue: photon table (list of photon packets) in the multiprocessing format
     :param spectral_queue: series of intensity images (spectral image cube) in the multiprocessing format
-    :param xxx_todo_changeme:
-    :return:
+
+    :return: returns the observation sequence, but through the multiprocessing tools, not through more standard
+      return protocols
     """
     try:
         start = time.time()
@@ -160,13 +162,8 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
             # for cx in range(len(ap.contrast) + 1):
             #     mmu.dprint(f"E-field shape is {save_E_fields.shape}")
             #     cube = np.abs(save_E_fields[-1, :, cx]) ** 2
-            #
-            #     # Interpolating spectral cube from ap.nwsamp discreet wavelengths
-            #     spectralcube = mmu.make_datacube(cube, (tp.array_size[0], tp.array_size[1], ap.w_bins))
-            #
-            #     spectral_queue.put((t, spectralcube))  # if problems, change to cube
 
-            # Sentinels if saving or plotting the datacube
+            # Returning variables to run_mmedis
             if sp.save_cube or sp.show_cube:
                 spectral_queue.put((t, spectralcube, sampling))
 
@@ -193,7 +190,6 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
         traceback.print_exc()
         # raise e
         pass
-
 
 
 if __name__ == '__main__':
