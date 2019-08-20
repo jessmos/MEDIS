@@ -88,8 +88,8 @@ class Astro_params:
         # given by ap.nwsamp. Later, in gen_timeseries(), the 3rd axis of the spectral cube is interpolated so that
         # there are ap.w_bins over the range in ap.band.
         self.nwsamp = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
-        self.w_bins = 9  # final number of wavelength bins in spectral cube after interpolation
-        self.wvl_range = np.array([800, 1500]) / 1e9  # wavelength range in m (formerly ap.band)
+        self.w_bins = 6  # final number of wavelength bins in spectral cube after interpolation
+        self.wvl_range = np.array([450, 580]) / 1e9  # wavelength range in m (formerly ap.band)
             # eg. DARKNESS band is [800, 1500], J band =  [1100,1400])
         self.interp_wvl = True  # Set to interpolate wavelengths from ap.nwsamp to ap.w_bins
 
@@ -107,19 +107,19 @@ class Telescope_params:
     """
     def __init__(self):
         # Optics + Detector
-        self.perscription = 'Subaru_frontend'
-        self.enterance_d = 8.2  # 7.971  # telescope enterence pupil diameter in meters
+        self.perscription = 'Hubble_frontend'
+        self.enterance_d = 2.4  # 7.971  # telescope enterence pupil diameter in meters
         self.fnum_primary = 2  # f-number of primary
         self.flen_primary = 15  # 108.512  # m
         self.ao_act = 188  # number of actuators on the DM (total number, not array shape)
         self.piston_error = False  # flag for allowing error on DM surface shape
         # self.platescale = 13.61  # mas # have to run get_sampling at the focus to find this
-        self.beam_ratio = 24 / 64.  # parameter dealing with the sampling of the beam in the pupil/focal
-                                    # plane vs grid size. See Proper manual pgs 36-37 and 71-74 for discussion
+        self.beam_ratio = 0.5  # parameter dealing with the sampling of the beam in the pupil/focal
+                               # plane vs grid size. See Proper manual pgs 36-37 and 71-74 for discussion
         self.grid_size = 512  # creates a nxn array (of samples of the wavefront)
                               # must be bigger than the beam size to avoid FT effects at edges; must be factor of 2
                               # NOT the size of your detector/# of pixels
-        self.maskd_size = 254  # will truncate obs_sequence to this range (avoids FFT artifacts)
+        self.maskd_size = 100  # will truncate obs_sequence to this range (avoids FFT artifacts)
                                # set to grid_size if undesired
         self.detector = 'ideal'  # 'MKIDs'
         self.pix_shift = [0, 0]  # False?  Shifts the central star to off-axis (mimics conex mirror, tip/tilt error)

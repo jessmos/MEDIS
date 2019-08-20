@@ -9,6 +9,7 @@ import numpy as np
 import proper
 
 from mm_params import ap, tp
+from mm_utils import dprint
 
 
 ############################
@@ -52,12 +53,13 @@ class Wavefronts():
             # Scale beam ratio by wavelength to achieve consistent sampling across wavelengths
             # see Proper manual pg 37
             self.beam_ratios[iw] = tp.beam_ratio * ap.wvl_range[0] / w
+            # dprint(f"Beam ratio at wavelength {w} is {self.beam_ratios[iw]}")
 
             # Initialize the wavefront at entrance pupil
             wfp = proper.prop_begin(tp.enterance_d, w, tp.grid_size, self.beam_ratios[iw])
 
             wfs = [wfp]
-            names = ['primary']
+            names = ['star']
             # Initiate wavefronts for companion(s)
             if ap.companion:
                 for ix in range(len(ap.contrast)):
