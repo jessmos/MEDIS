@@ -116,7 +116,7 @@ def run_mmedis():
         view_datacube(obs_sequence[tstep], logAmp=True,
                       title=f"Intensity per Spectral Bin at Timestep {tstep} \n"
                             f"Beam Ratio = {tp.beam_ratio:.4f}, sampling = {sampling*1e6:.4f} [um/gridpt]",
-                      subplt_cols=sp.subplt_cols, vlim=(1e-8, 1))
+                      subplt_cols=sp.subplt_cols, vlim=(1e-8, 1e-3))
 
     print('mini-MEDIS Data Run Completed')
     print('**************************************')

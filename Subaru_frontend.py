@@ -40,56 +40,45 @@ import atmosphere as atmos
 # # According to Iye-et.al.2004-Optical_Performance_of_Subaru:AstronSocJapan, the AO188 uses the IR-Cass secondary,
 # # but then feeds it to the IR Nasmyth f/13.6 focusing arrangement. So instead of simulating the full Subaru system,
 # # we can use the effective focal length at the Nasmyth focus, and simulate it as a single lens.
-tp.d_nsmyth = 7.971  # m pupil diameter
-# tp.fn_nsmyth = 13.612  # f# Nasmyth focus
-# tp.fl_nsmyth = tp.d_nsmyth * tp.fn_nsmyth  # m focal length
-tp.flen_nsmyth = 15
+tp.d_nsmyth = 7.9716  # m pupil diameter
+tp.fn_nsmyth = 13.612  # f# Nasmyth focus
+tp.flen_nsmyth = tp.d_nsmyth * tp.fn_nsmyth  # m focal length
+
+#  Below are the actual dimenstions of the Subaru telescope.
+tp.enterence_d = 8.2  # m diameter of primary
+tp.flen_primary = 15  # m focal length of primary
 tp.dist_pri_second = 12.652  # m distance primary -> secondary
-
-# tp.enterance_d = tp.d_nsmyth
-
-    # For the record, below are the actual dimenstions of the Subaru telescope. However, the proper.prop_lens uses the
-    #  thin-lens approximation to propagate through a lens, and the secondary mirror does not meet that criterea. There
-    #  are problems with proper introducing a lot of high-order modes due when trying to simulate the secondary mirror,
-    #  so we use the Nasmyth effective primary-secondary to avoid this issue.
-    # tp.enterence_d = 8.2  # m diameter of primary
-    # tp.flen_primary = 15  # m focal length of primary
 
 # --------------------------------
 # Secondary
 tp.d_secondary = 1.265  # m diameter secondary, used for central obscuration
 tp.fn_secondary = 12.6
-tp.flen_secondary = tp.d_secondary * tp.fn_secondary  # m focal length of secondary
-tp.dist_second_ao1 = tp.flen_secondary - 1.2  # m distance secondary to M1 of AO188
+tp.flen_secondary = - tp.d_secondary * tp.fn_secondary  # m focal length of secondary
+tp.dist_nsmyth_ao1 = tp.flen_nsmyth + 1.14  # m distance secondary to M1 of AO188 (hand-tuned, could update with
+                                            # data from literature)
 
 # ----------------------------
 # AO188 OAP1
 ###### from Julien
 tp.d_ao1 = 0.20  # m  diamater of AO1
-tp.fl_ao1 = 1.2  # m  focal length AO1
+tp.fl_ao1 = 1.201  # m  focal length AO1
 tp.dist_ao1_dm = 1.345  # m distance AO1 to DM
-##### From Old
-# tp.d_ao1 = 0.090  # m  diamater of AO1
-# tp.fn_ao1 = 6  # f# AO1
-# tp.fl_ao1 = 0.015  # m  focal length AO1
-# tp.dist_ao1_dm = 0.05  # m distance AO1 to DM (just a guess here, shouldn't matter for the collimated beam)
 
 # ----------------------------
 # AO188 OAP2
 ###### from Julien
-# tp.dist_dm_ao2 = 2.511-tp.dist_ao1_dm  # m distance DM to AO2 (again, guess here)
-# tp.d_ao2 = 0.2  # m  diamater of AO2
-# tp.fl_ao2 = 1.2  # m  focal length AO2
-####### from Old
-tp.dist_dm_ao2 = 0.05  # m distance DM to AO2 (again, guess here)
-tp.d_ao2 = 0.090  # m  diamater of AO2
-tp.fn_ao2 = 13.6  # f# AO2
-tp.fl_ao2 = tp.d_ao2 * tp.fn_ao2   # 151.11  # m  focal length AO2
+tp.dist_dm_ao2 = 2.511-tp.dist_ao1_dm  # m distance DM to AO2 (again, guess here)
+tp.d_ao2 = 0.2  # m  diamater of AO2
+tp.fl_ao2 = 1.201  # m  focal length AO2
+tp.dist_oap2_focus = 1.261
+
+# Wavelength
+# ap.wvl_range = np.array([810, 1500]) / 1e9
+# sp.subplt_cols = 3
 
 tp.obscure = True
 tp.use_ao = False
 tp.use_atmos = True
-
 
 #################################################################################################
 #################################################################################################
@@ -142,35 +131,28 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
         initial_sampling = proper.prop_get_sampling(wfo.wf_array[0,0])
         dprint(f"initial sampling is {initial_sampling:.4f}")
 
-    # Primary
+    # Effective Primary
     # CPA from Effective Primary
     # aber.add_aber(wfo.wf_array, tp.enterance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='nasmyth')
-
-    # wfo.apply_func(opx.prop_mid_optics, tp.flen_primary, tp.flen_primary)
-    wfo.apply_func(opx.prop_mid_optics, tp.flen_primary, tp.dist_pri_second)
-
-    # Secondary
-    # aber.add_aber(wfo.wf_array, tp.d_secondary, tp.aber_params, step=PASSVALUE['iter'], lens_name='second')
     # # Zernike Aberrations- Low Order
     # wfo.apply_func(aber.add_zern_ab, tp.zernike_orders, tp.zernike_vals)
-    # wfo.apply_func(opx.prop_mid_optics, tp.flen_secondary, tp.dist_second_ao1)
-    wfo.apply_func(opx.prop_mid_optics, tp.flen_secondary, tp.flen_secondary)
+    wfo.apply_func(opx.prop_mid_optics, tp.flen_nsmyth, tp.dist_nsmyth_ao1)
 
     ########################################
     # AO188 Propagation
     #######################################
     # # AO188-OAP1
     # aber.add_aber(wfo.wf_array, tp.d_ao1, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP1')
-    # wfo.apply_func(opx.prop_mid_optics, tp.fl_ao1, tp.dist_ao1_dm)
+    wfo.apply_func(opx.prop_mid_optics, tp.fl_ao1, tp.dist_ao1_dm)
     # #
     # # AO System
     # WFS_maps = ao.quick_wfs(wfo.wf_array[:, 0])
     # ao.quick_ao(wfo, WFS_maps)
-    # wfo.apply_func(proper.prop_propagate, tp.dist_dm_ao2)
+    wfo.apply_func(proper.prop_propagate, tp.dist_dm_ao2)
     #
     # # AO188-OAP2
     # aber.add_aber(wfo.wf_array, tp.d_ao2, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP2')
-    # wfo.apply_func(opx.prop_mid_optics, tp.fl_ao2, tp.fl_ao2)
+    wfo.apply_func(opx.prop_mid_optics, tp.fl_ao2, tp.dist_oap2_focus)
 
     ########################################
     # Focal Plane
