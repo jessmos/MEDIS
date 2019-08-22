@@ -53,7 +53,7 @@ def generate_maps(lens_diam, lens_name='lens'):
     # Randomly select a value from the range of values for each constant
     rms_error = np.random.normal(tp.aber_vals['a'][0], tp.aber_vals['a'][1])
     c_freq = np.random.normal(tp.aber_vals['b'][0], tp.aber_vals['b'][1])  # correlation frequency (cycles/meter)
-    high_power = np.random.normal(tp.aber_vals['c'][0], tp.aber_vals['c'][1])  # high frewquency falloff (r^-high_power)
+    high_power = np.random.normal(tp.aber_vals['c'][0], tp.aber_vals['c'][1])  # high frequency falloff (r^-high_power)
 
     perms = np.random.rand(sp.numframes, tp.grid_size, tp.grid_size)-0.5
     perms *= 1e-7

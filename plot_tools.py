@@ -59,7 +59,7 @@ def quick2D(image, title=None, logAmp=False, vlim=(None,None), colormap=None):
     if logAmp:
         if np.min(image) <= 0:
             cax = ax.imshow(image, interpolation='none', origin='lower', vmin=vmin, vmax=vmax,
-                            norm=SymLogNorm(linthresh=1e-5),
+                            norm=LogNorm(),    #norm=SymLogNorm(linthresh=1e-5),
                             cmap="YlGnBu_r")
             clabel = "Log Normalized Intensity"
         else:

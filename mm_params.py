@@ -214,6 +214,26 @@ class Atmos_params():
     def __name__(self):
         return self.__str__().split(' ')[0].split('.')[-1]
 
+class CDI_params():
+    def __init__(self):
+        self.phs_intervals = np.pi/3  # [rad] phase interval over [0, 2pi]
+        self.phase_range = np.arange(0, 2 * np.pi, self.phs_intervals)
+        self.n_probes = len(self.phase_range)
+        self.probe_type = "pairwise"
+
+        # Probe Dimensions (extent in pupil plane coordinates)
+        self.probe_w = 500  # [?] width of the probe
+        self.probe_h = 500  # [?] height of the probe
+        self.probe_center = 200  # [?] center position of the probe
+        self.probe_amp = 1e-5  # [db?] probe amplitude
+
+    def __iter__(self):
+        for attr, value in self.__dict__.items():
+            yield attr, value
+
+    def __name__(self):
+        return self.__str__().split(' ')[0].split('.')[-1]
+
 
 # Creating class structures
 ap = Astro_params()
@@ -221,6 +241,7 @@ iop = IO_params()
 tp = Telescope_params()
 sp = Simulation_params()
 atmp = Atmos_params()
+cdip = CDI_params()
 
 # Turning off messages from Proper
 proper.print_it = False
