@@ -141,6 +141,51 @@ def add_zern_ab(wfo, zern_order=[2,3,4], zern_vals=np.array([175,-150,200])*1.0e
     proper.prop_zernikes(wfo, zern_order, zern_vals)
 
 
+def randomize_zern_values(zern_orders):
+    """
+    selects a value at random for the selected zernike orders
+
+    The ranges specified are all in units of m. From Proper manual pg 192-193
+    'The values must be in meters of RMS phase error or dimensionless RMS amplitude error.'
+
+    :param zern_orders: array containing integers of zernike orders to apply
+    :return: array with randomly selected values in a pre-determined range, per zernike order specified in zern_orders
+    """
+    # Set Range
+    z_range = {
+        'r1': [30e-9, 60e-9],  # m of RMS amplitude error
+        'r2': [30e-9, 40e-9],  # X tilt
+        'r3': [30e-9, 40e-9],  # Y tilt
+        'r4': [60e-9, 120e-9],  # focus
+        'r5': [30e-9, 1200e-9],
+        'r6': [30e-9, 1200e-9],
+        'r7': [30e-9, 1200e-9],
+        'r8': [30e-9, 1200e-9],
+        'r9': [30e-9, 1200e-9],
+        'r10': [30e-9, 1200e-9],
+    }
+
+    zern_vals = np.zeros(len(zern_orders))
+    for iw, w in enumerate(zern_orders):
+        if w == 1:
+            zern_vals[iw] = np.random.normal(z_range['r1'][0], z_range['r1'][1])
+        elif w == 2:
+            zern_vals[iw] = np.random.normal(z_range['r2'][0], z_range['r2'][1])
+        elif w == 3:
+            zern_vals[iw] = np.random.normal(z_range['r3'][0], z_range['r3'][1])
+        elif w == 4:
+            zern_vals[iw] = np.random.normal(z_range['r4'][0], z_range['r4'][1])
+        elif w == 5:
+            zern_vals[iw] = np.random.normal(z_range['r5'][0], z_range['r5'][1])
+        elif w == 6:
+            zern_vals[iw] = np.random.normal(z_range['r6'][0], z_range['r6'][1])
+        elif w == 7:
+            zern_vals[iw] = np.random.normal(z_range['r7'][0], z_range['r7'][1])
+        elif w == 8:
+            zern_vals[iw] = np.random.normal(z_range['r8'][0], z_range['r8'][1])
+    return zern_vals
+
+
 def initialize_CPA_meas():
     required_servo = int(tp.servo_error[0])
     required_band = int(tp.servo_error[1])

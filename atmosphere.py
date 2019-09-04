@@ -97,7 +97,7 @@ def add_atmos(wfo, it):
 
     # Spatial Masking outside of Telescope Aperture -depricated when using mask_obs_sequence
     # wfo.wf_array = opx.abs_zeros(wfo.wf_array)  # Zeroing outside the pupil
-    # wfo.apply_func(proper.prop_circular_aperture, tp.enterance_d/2)
+    # wfo.loop_func(proper.prop_circular_aperture, tp.enterance_d/2)
 
 
 def rotate_atmos(wf, it):

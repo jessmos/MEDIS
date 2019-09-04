@@ -22,28 +22,28 @@ from mm_params import tp
 # Definitions from inside mini-medis
 #######################################
 # Basics-not imported
-# tp.enterance_d = 8.2  # m
-# tp.beam_ratio = .18
-# tp.grid_size = 512
+# tp.enterance_d = 8.2  # [m]
+# tp.beam_ratio = .18  # [unitless]
+# tp.grid_size = 512  # [pix]
 
 # From Params Buried in mini-medis
-legs_frac = 0.05  # m
+legs_frac = 0.05  # [m]
 Fnum = 12.6  # focal ratio of the beam as it approaches the focus
-lmbda = 800e-6  # m  wavelength of interest
+lmbda = 800e-6  # [m]  wavelength of interest
 
 #######################
 # Initial Sampling
 ######################
-init_grid_width = tp.enterance_d / tp.beam_ratio
-init_sampling = init_grid_width / tp.grid_size
-init_npix_on_beam = tp.enterance_d / init_sampling
+init_grid_width = tp.enterance_d / tp.beam_ratio  # [m]
+init_sampling = init_grid_width / tp.grid_size  # [m/pix]
+init_npix_on_beam = tp.enterance_d / init_sampling  # [pix]
 print(f"Initial Grid Width = {init_grid_width:.2f} m")
 
 #################################
 # Checking Sampling of Spiders
 ################################
-spider_width = tp.enterance_d * legs_frac
-npix_on_spiders = spider_width / init_sampling
+spider_width = tp.enterance_d * legs_frac  # [m]
+npix_on_spiders = spider_width / init_sampling  # [pix]
 print(f"Number of pixels across the spiders = {npix_on_spiders}")
 print("********************************")
 
@@ -61,7 +61,7 @@ the image planes, so it is best to only choose a beam ratio that barely resolves
 (spiders), in order to get the best resolution of the image plane. 
 """
 print(f"Ideal Values")
-grid_width = 30  # m
+grid_width = 30  # [m]
 samp_good = Fnum*lmbda*tp.enterance_d / grid_width
 samp_nyq = Fnum*lmbda/2
 print(f"Ideal Sampling is {samp_good:.6f} m/pix \nNyquist Sampling is {samp_nyq:.6f} m/pix")
