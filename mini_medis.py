@@ -29,6 +29,7 @@ import mm_utils as mmu
 
 sentinel = None
 
+
 def run_mmedis():
     """
     main script to organize calls to various aspects of the simulation
@@ -137,7 +138,7 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
     """
     generates observation sequence by calling optics_propagate in time series
 
-    is the time loop wrapper for the proper perscription, so multiple calls to the proper perscription as aberrations
+    is the time loop wrapper for the proper prescription, so multiple calls to the proper prescription as aberrations
         or atmosphere evolve
     this is where the detector observes the wavefront created by proper, thus creating the observation sequence
         of spectral cubes at each timestep (for MKIDs, the probability distribution of the observed parameters
@@ -156,7 +157,7 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
         for it, t in enumerate(iter(inqueue.get, sentinel)):
 
             kwargs = {'iter': t, 'params': [ap, tp, iop, sp]}
-            spectralcube, sampling = pm.prop_run(tp.perscription, 1, tp.grid_size, PASSVALUE=kwargs,
+            spectralcube, sampling = pm.prop_run(tp.prescription, 1, tp.grid_size, PASSVALUE=kwargs,
                                                    VERBOSE=False)
 
             # for cx in range(len(ap.contrast) + 1):
@@ -172,7 +173,7 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
         each_iter = float(elapsed) / (it + 1)
 
         print('***********************************')
-        mmu.dprint(f'{elapsed:.2f} minutes elapsed, each time step took {each_iter:.2f} minutes')
+        mmu.dprint(f'{elapsed:.2f} minutes elapsed, each time step took {each_iter:.4f} minutes')
 
         if tp.detector == 'ideal':
             image = np.sum(spectralcube, axis=0)  # sum 3D spectralcube over wavelength (at this timestep)

@@ -70,6 +70,41 @@ class IO_params:
         return self.__str__().split(' ')[0].split('.')[-1]
 
 
+class Simulation_params:
+    """
+    Default parameters for outputs of the simulation. What plots you want to see etc
+
+    """
+    def __init__(self):
+        self.timing = True  # True will print timing statements in run_medis()
+        self.num_processes = 1  # multiprocessing.cpu_count()
+
+        # Timing Params
+        self.sample_time = 0.01  # s seconds per timestep/frame. used in atmosphere evolution, etc
+        self.startframe = 0  # useful for things like RDI
+        self.numframes = 1  # number of timesteps in the simulation
+
+        # Plotting Params
+        self.show_cube = True  # Plot datacube
+        self.show_wframe = True  # Plot image frame
+        self.cbar = None
+        self.fig = None
+        self.subplt_cols = 3  # number of subplots per row in view_datacube
+
+        # Reading/Saving Params
+        self.save_obs = False
+        self.save_cube = True  #
+        self.get_ints = False
+        self.save_locs = None
+
+    def __iter__(self):
+        for attr, value in self.__dict__.items():
+            yield attr, value
+
+    def __name__(self):
+        return self.__str__().split(' ')[0].split('.')[-1]
+
+
 class Astro_params:
     """
     Default parameters for the astronomical system under investigation
@@ -107,22 +142,31 @@ class Telescope_params:
     """
     def __init__(self):
         # Optics + Detector
-        self.perscription = 'Subaru_frontend'
+        self.prescription = 'Subaru_frontend'
         self.enterance_d = 7.9716  # 7.971  # telescope enterence pupil diameter in meters
         self.fnum_primary = 13.612  # f-number of primary
         self.flen_primary = 108.5124  # m
-        self.ao_act = 188  # number of actuators on the DM (total number, not array shape)
-        self.piston_error = False  # flag for allowing error on DM surface shape
-        # self.platescale = 13.61  # mas # have to run get_sampling at the focus to find this
-        self.beam_ratio = 0.18  # parameter dealing with the sampling of the beam in the pupil/focal
-                               # plane vs grid size. See Proper manual pgs 36-37 and 71-74 for discussion
-        self.grid_size = 512  # creates a nxn array (of samples of the wavefront)
+        self.beam_ratio = 0.22  # parameter dealing with the sampling of the beam in the pupil/focal
+                                # plane vs grid size. See Proper manual pgs 36-37 and 71-74 for discussion
+        self.grid_size = 512  # creates a nxn array of samples of the wavefront
                               # must be bigger than the beam size to avoid FT effects at edges; must be factor of 2
                               # NOT the size of your detector/# of pixels
-        self.maskd_size = 256  # will truncate obs_sequence to this range (avoids FFT artifacts)
+        self.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts)
                                # set to grid_size if undesired
+
+        # AO System Settings
+        self.ao_act = 14  # number of actuators on the DM on one axis (proper only models nxn square DMs)
+        self.piston_error = False  # flag for allowing error on DM surface shape
+        self.fit_dm = True  # flag to use DM surface fitting (see proper manual pg 52, the FIT switch)
+
+        # Ideal Detector Params (not bothering with MKIDs yet)
         self.detector = 'ideal'  # 'MKIDs'
+        self.array_size = np.array([129, 129])  # np.array([125,80])
+        self.wavecal_coeffs = [1. / 12, -157]  # assume linear for now 800nm = -90deg, 1500nm = -30deg
+                                                # used to make phase cubes. I assume this has something to do with the
+                                                # QE of MKIDs at different wavelengths?
         self.pix_shift = [0, 0]  # False?  Shifts the central star to off-axis (mimics conex mirror, tip/tilt error)
+        # self.platescale = 13.61  # mas # have to run get_sampling at the focus to find this
 
         # Aberrations
         self.servo_error = [0, 1]  # [0,1] # False # No delay and rate of 1/frame_time
@@ -130,22 +174,17 @@ class Telescope_params:
         self.aber_params = {'QuasiStatic': False,  # or 'Static'
                             'Phase': True,
                             'Amp': False}
-        # Coefficients used to calcuate PSD errormap in Proper (see pg 56 in manual)
-        # only change these if making new aberration maps
+                            # Coefficients used to calcuate PSD errormap in Proper (see pg 56 in manual)
+                            # only change these if making new aberration maps
         self.aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4)
                            'b': [0.8, 0.2],  # correlation length
                            'c': [3.1, 0.5],  #
                            'a_amp': [0.05, 0.01]}
-        # Zernike Settinnnngs- see pg 192 for details
+        # Zernike Settings- see pg 192 for details
         self.zernike_orders = [2, 3, 4]  # Order of Zernike Polynomials to include
         self.zernike_vals = np.array([175, -150, 200])*1.0e-9  # value of Zernike order in nm,
                                                                # must be same length as zernike_orders
 
-        # Ideal Detector Params (not bothering with MKIDs yet)
-        self.array_size = np.array([129, 129])  # np.array([125,80])#np.array([125,125])#
-        self.wavecal_coeffs = [1. / 12, -157]  # assume linear for now 800nm = -90deg, 1500nm = -30deg
-                                               # used to make phase cubes. I assume this has something to do with the
-                                               # QE of MKIDs at different wavelengths?
     def __iter__(self):
         for attr, value in self.__dict__.items():
             yield attr, value
@@ -154,32 +193,18 @@ class Telescope_params:
         return self.__str__().split(' ')[0].split('.')[-1]
 
 
-class Simulation_params:
-    """
-    Default parameters for outputs of the simulation. What plots you want to see etc
-
-    """
+class CDI_params():
     def __init__(self):
-        self.timing = True  # True will print timing statements in run_medis()
-        self.num_processes = 1  # multiprocessing.cpu_count()
+        self.phs_intervals = np.pi/3  # [rad] phase interval over [0, 2pi]
+        self.phase_range = np.arange(0, 2 * np.pi, self.phs_intervals)
+        self.n_probes = len(self.phase_range)
+        self.probe_type = "pairwise"
 
-        # Timing Params
-        self.sample_time = 0.01  # s seconds per timestep/frame. used in atmosphere evolution, etc
-        self.startframe = 0  # useful for things like RDI
-        self.numframes = 3  # number of timesteps in the simulation
-
-        # Plotting Params
-        self.show_cube = True  # Plot datacube
-        self.show_wframe = True  # Plot image frame
-        self.cbar = None
-        self.fig = None
-        self.subplt_cols = 3  # number of subplots per row in view_datacube
-
-        # Reading/Saving Params
-        self.save_obs = False
-        self.save_cube = True  #
-        self.get_ints = False
-        self.save_locs = None
+        # Probe Dimensions (extent in pupil plane coordinates)
+        self.probe_w = 20  # [?] width of the probe
+        self.probe_h = 20  # [?] height of the probe
+        self.probe_center = 20  # [?] center position of the probe
+        self.probe_amp = 1e-5  # [db?] probe amplitude
 
     def __iter__(self):
         for attr, value in self.__dict__.items():
@@ -206,26 +231,6 @@ class Atmos_params():
         self.vel = 5  # velocity of the layer in m/s
         self.h = 100  # scale height in m
         self.fried = 0.2  # m
-
-    def __iter__(self):
-        for attr, value in self.__dict__.items():
-            yield attr, value
-
-    def __name__(self):
-        return self.__str__().split(' ')[0].split('.')[-1]
-
-class CDI_params():
-    def __init__(self):
-        self.phs_intervals = np.pi/3  # [rad] phase interval over [0, 2pi]
-        self.phase_range = np.arange(0, 2 * np.pi, self.phs_intervals)
-        self.n_probes = len(self.phase_range)
-        self.probe_type = "pairwise"
-
-        # Probe Dimensions (extent in pupil plane coordinates)
-        self.probe_w = 500  # [?] width of the probe
-        self.probe_h = 500  # [?] height of the probe
-        self.probe_center = 200  # [?] center position of the probe
-        self.probe_amp = 1e-5  # [db?] probe amplitude
 
     def __iter__(self):
         for attr, value in self.__dict__.items():
