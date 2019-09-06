@@ -38,6 +38,7 @@ init_grid_width = tp.enterance_d / tp.beam_ratio  # [m]
 init_sampling = init_grid_width / tp.grid_size  # [m/pix]
 init_npix_on_beam = tp.enterance_d / init_sampling  # [pix]
 print(f"Initial Grid Width = {init_grid_width:.2f} m")
+print(f"Initial number of pixels across beam = {tp.beam_ratio*tp.grid_size}")
 
 #################################
 # Checking Sampling of Spiders
