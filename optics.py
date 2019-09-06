@@ -53,7 +53,6 @@ class Wavefronts():
             # Scale beam ratio by wavelength to achieve consistent sampling across wavelengths
             # see Proper manual pg 37
             self.beam_ratios[iw] = tp.beam_ratio * ap.wvl_range[0] / w
-            # dprint(f"Beam ratio at wavelength {w} is {self.beam_ratios[iw]}")
 
             # Initialize the wavefront at entrance pupil
             wfp = proper.prop_begin(tp.enterance_d, w, tp.grid_size, self.beam_ratios[iw])
@@ -70,11 +69,11 @@ class Wavefronts():
             for io, (iwf, wf) in enumerate(zip(names, wfs)):
                 self.wf_array[iw, io] = wf
 
-    def apply_func(self, func, *args, **kwargs):
+    def loop_func(self, func, *args, **kwargs):
         """
         For each wavelength and astronomical object apply a function to the wavefront.
 
-        The wavefront object has dimentions of
+        The wavefront object has dimensions of
         If func is in save_locs then append the E field to save_E_fields
 
         :param func: function to be applied e.g. ap.add_aber()

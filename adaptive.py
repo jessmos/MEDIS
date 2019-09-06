@@ -24,62 +24,128 @@ from mm_utils import dprint
 # Quick AO
 ################################################################################
 def quick_ao(wfo, WFS_maps):
-    # TODO address the kludge. Is it still necessary
+    """
+    calculate the DM phase from the WFS map and apply it with proper.prop_dm
 
-    wf_array = wfo.wf_array
+    The main idea is to apply the DM only to the region of the wavefront that contains the beam. The phase map from
+    the wfs saved the whole wavefront, so that must be cropped. During the wavefront initialization in
+    wavefront.initialize_proper, the beam ratio set in tp.beam_ratio is scaled per wavelength (to achieve constant
+    sampling sto create white light images), so the cropped value must also be scaled by wavelength.
+
+    Then, we interpolate the cropped beam onto a grid of (n_actuators,n_actuators), such that the DM can apply a
+    actuator height to each represented actuator, not a sub-sampled form. In the case that the DM sampling is lower
+    than the simulation sampling, you could use prop_magnify to magnify the cropped beam to match the actuator
+    spacing. (There is a discrepancy between the sampling of the wavefront at this location (the size you cropped) vs
+    the size of the DM. Presumably prop_dm handles this, so just plug in the reduced sized DM map with specified
+    parameters, and assume that prop_dm handles the resampling correctly)
+
+    The scale factor becomes an distance term, so actuator heights are scaled by wavelength
+     you can think of it as the phase term of dm_map is the phase delay in units of cycles, so you need
+     to multiply by the wavelength to get the height of the DM you want to use to correct for the phase delay
+     you need the 4pi because you are treating it as a reflection, so it travels that distance twice
+
+    In the call to proper.prop_dm, we apply the flag tp.fit_dm, which switches between two 'modes' of proper's DM
+    surface fitting. If FALSE, the DM is driven to the heights specified by dm_map, and the influence function will
+    act on these heights to define the final surface shape applied to the DM, which may differ substantially from
+    the initial heights specified by dm_map. If TRUE, proper will iterate applying the influence function to the
+    input heights, and adjust the heights until the difference between the influenced-map and input map meets some
+    proper-defined convergence criterea. Setting tp.fit_dm=TRUE will obviously slow down the code, but will (likely)
+    more accurately represent a well-calibrated DM response function.
+
+    much of this code copied over from example from Proper manual on pg 94
+
+    :param wfo: wavefront object created by optics.Wavefronts() [n_wavelengths, n_objects] of tp.gridsize x tp.gridsize
+    :param WFS_maps: returned from quick_wfs (as of 8/19, its an idealized image)
+    :return:
+    """
     beam_ratios = wfo.beam_ratios
+    shape = wfo.wf_array.shape  # [n_wavelengths, n_astro_objects]
 
-    nact = tp.ao_act  # 49                       # number of DM actuators along one axis
-    nact_across_pupil = nact-2  # 47          # number of DM actuators across pupil
-    dm_xc = (nact / 2)-0.5
-    dm_yc = (nact / 2)-0.5
+    nact = tp.ao_act                    # number of DM actuators along one axis
+    nact_across_pupil = nact-2          # number of full DM actuators across pupil (oversizing DM extent)
+    dm_xc = (nact / 2)-0.5              # The location of the optical axis (center of the wavefront) on the DM in
+    dm_yc = (nact / 2)-0.5              #  actuator units. First actuator is centered on (0.0, 0.0). The 0.5 is a
+                                        #  parameter introduced/tuned by Rupert to remove weird errors (address this).
+                                        # KD verified this needs to be here or else suffer weird errors 9/19
+                                        # TODO address/remove the 0.5 in DM x,y coordinates
 
-    shape = wf_array.shape
-
+    ############################
+    # Creating DM Surface Map
+    ############################
     for iw in range(shape[0]):
         for io in range(shape[1]):
-            d_beam = 2 * proper.prop_get_beamradius(wf_array[iw,io])  # beam diameter
-            act_spacing = d_beam / nact_across_pupil  # actuator spacing
-            # Compensating for chromatic beam size
+            d_beam = 2 * proper.prop_get_beamradius(wfo.wf_array[iw,io])  # beam diameter
+            act_spacing = d_beam / nact_across_pupil  # actuator spacing [m]
+            ###################################
+            # Cropping the Beam from WFS map
+            ###################################
+            # cropping here by beam_ratio rather than d_beam is valid since the beam size was initialized
+            #  using the scaled beam_ratios when the wfo was created
             dm_map = WFS_maps[iw,
                      tp.grid_size//2 - np.int_(beam_ratios[iw]*tp.grid_size//2):
                      tp.grid_size//2 + np.int_(beam_ratios[iw]*tp.grid_size//2)+1,
                      tp.grid_size//2 - np.int_(beam_ratios[iw]*tp.grid_size//2):
                      tp.grid_size//2 + np.int_(beam_ratios[iw]*tp.grid_size//2)+1]
-            f = interpolate.interp2d(list(range(dm_map.shape[0])), list(range(dm_map.shape[0])), dm_map)
+            samp = proper.prop_get_sampling(wfo.wf_array[iw, io])
+            dprint('******************************************')
+            dprint(f"DM map shape at beam ratio {beam_ratios[iw]} is {dm_map.shape}")
+
+            ########################################################
+            # Interpolating the WFS map onto the actuator spacing
+            # (tp.nact,tp.nact)
+            ########################################################
+            f = interpolate.interp2d(range(dm_map.shape[0]), range(dm_map.shape[0]), dm_map)
             dm_map = f(np.linspace(0,dm_map.shape[0],nact), np.linspace(0,dm_map.shape[0], nact))
             # dm_map = proper.prop_magnify(CPA_map, map_spacing / act_spacing, nact)
+            dprint(f"dm_map size after interp is {dm_map.shape}")
 
+            #########################
+            # Applying Piston Error
+            #########################
             if tp.piston_error:
                 mean_dm_map = np.mean(np.abs(dm_map))
                 var = 1e-4  # 1e-11
                 dm_map = dm_map + np.random.normal(0, var, (dm_map.shape[0], dm_map.shape[1]))
 
+            ################################################
+            # Converting phase delay to DM actuator height
+            ################################################
+            # Apply the inverse of the WFS image to the DM, so use -dm_map (dm_map is in phase units)
+            surf_height = proper.prop_get_wavelength(wfo.wf_array[iw, io]) / (4 * np.pi)
+            dm_map = -dm_map * surf_height
+            dprint(f"Scaling factor applied to DM is {surf_height * 1e6:.4f} um")
 
-            dm_map = -dm_map * proper.prop_get_wavelength(wf_array[iw,io]) / (4 * np.pi)  # <--- here
-            # dmap = proper.prop_dm(wfo, dm_map, dm_xc, dm_yc, N_ACT_ACROSS_PUPIL=nact, FIT=True)  # <-- here
-            dmap = proper.prop_dm(wf_array[iw,io], dm_map, dm_xc, dm_yc, act_spacing, FIT=True)  # <-- here
+            #########################
+            # proper.prop_dm
+            #########################
+            proper.prop_dm(wfo.wf_array[iw,io], dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
+            # proper.prop_dm(wfo, dm_map, dm_xc, dm_yc, N_ACT_ACROSS_PUPIL=nact, FIT=True)  #
 
-    # kludge to help with spiders
+    # kludge to help Rupert with weird phase discontinuities he was seeing
+    # kludge is basically a low-pass filter?
+    # TODO address the kludge. Is it still necessary
+    # there is a similar type kludge in the proper.prop_dm code, lines ~249-252
     for iw in range(shape[0]):
-        phase_map = proper.prop_get_phase(wf_array[iw,0])
-        amp_map = proper.prop_get_amplitude(wf_array[iw,0])
+        phase_map = proper.prop_get_phase(wfo.wf_array[iw,0])
+        amp_map = proper.prop_get_amplitude(wfo.wf_array[iw,0])
 
         lowpass = ndimage.gaussian_filter(phase_map, 1, mode='nearest')
         smoothed = phase_map - lowpass
 
-        wf_array[iw,0].wfarr = proper.prop_shift_center(amp_map*np.cos(smoothed)+1j*amp_map*np.sin(smoothed))
+        wfo.wf_array[iw,0].wfarr = proper.prop_shift_center(amp_map*np.cos(smoothed)+1j*amp_map*np.sin(smoothed))
 
     return
 
 
-def flat_outside(wf_array):
-    for iw in range(wf_array.shape[0]):
-        for io in range(wf_array.shape[1]):
-            proper.prop_circular_aperture(wf_array[iw,io], 1, NORM=True)
-
-
 def quick_wfs(wf_vec):
+    """
+    saves the unwrapped phase [arctan2(imag/real)] of the wfo.wf_array at each wavelength
+
+    so it is an idealized image (exact copy) of the wavefront phase per wavelength
+
+    :param wf_vec: array containing wavefront array for each wavelength in the simulation shape=[n_wavelengths]
+    :return: array containing only the unwrapped phase delay of the wavefront; shape=[n_wavelengths], units=radians
+    """
 
     sigma = [2, 2]
     WFS_maps = np.zeros((len(wf_vec), tp.grid_size, tp.grid_size))
@@ -92,3 +158,4 @@ def quick_wfs(wf_vec):
 ################################################################################
 # Full AO
 ################################################################################
+# not implemented. Full AO implies a time delay, and maybe non-ideal WFS
