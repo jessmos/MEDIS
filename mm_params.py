@@ -90,7 +90,7 @@ class Telescope_params:
         self.enterance_d = 7.9716  # 7.971  # telescope enterence pupil diameter in meters
         self.fnum_primary = 13.612  # f-number of primary
         self.flen_primary = 108.5124  # m
-        self.beam_ratio = 0.4  # parameter dealing with the sampling of the beam in the pupil/focal
+        self.beam_ratio = 0.20  # parameter dealing with the sampling of the beam in the pupil/focal
                                 # plane vs grid size. See Proper manual pgs 36-37 and 71-74 for discussion
         self.grid_size = 512  # creates a nxn array of samples of the wavefront
                               # must be bigger than the beam size to avoid FT effects at edges; must be factor of 2
@@ -200,6 +200,10 @@ proper.print_it = False
 class IO_params:
     """
     Define file tree/structure to import and save data
+
+    telescope.gridsize and telescope.beam_ratio affect the sampling of the simulation, so are included in filenames
+    of files genereated based on the sampling parameters, and simulation_params.numframes affects how many files need
+    to be generated, so are also included in filenames
     """
 
     def __init__(self, testname='Subaru-test1'):  # testname should be the name of the particular example you are running,
@@ -221,13 +225,13 @@ class IO_params:
 
         # Aberration Metadata
         self.aberroot = 'aberrations'
-        self.aberdata = f"gridsz{tp.grid_size}_tsteps{sp.numframes}"
+        self.aberdata = f"gridsz{tp.grid_size}_bmratio{tp.beam_ratio}_tsteps{sp.numframes}"
         self.aberdir = os.path.join(self.testdir, self.aberroot, self.aberdata)
         self.NCPA_meas = os.path.join(self.aberdir, 'NCPA_meas.pkl')  #
         self.CPA_meas = os.path.join(self.aberdir, 'CPA_meas.pkl')
 
         # Atmosphere Metadata
-        self.atmosroot = 'atmos/gridsz512_tsteps1'  #
+        self.atmosroot = f"atmos/gridsz{tp.grid_size}_bmratio{tp.beam_ratio}_tsteps{sp.numframes}"
         self.atmosdir = os.path.join(self.testdir, self.atmosroot)  # full path to FITS files
 
     def update(self, new_name='example1'):
