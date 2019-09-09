@@ -2,10 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="4c18236a-dfc5-4249-b13b-a88d6fd6e999" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CDI.py" beforeDir="false" afterPath="$PROJECT_DIR$/CDI.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Subaru_frontend.py" beforeDir="false" afterPath="$PROJECT_DIR$/Subaru_frontend.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/adaptive.py" beforeDir="false" afterPath="$PROJECT_DIR$/adaptive.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/optics.py" beforeDir="false" afterPath="$PROJECT_DIR$/optics.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/atmosphere.py" beforeDir="false" afterPath="$PROJECT_DIR$/atmosphere.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mini_medis.py" beforeDir="false" afterPath="$PROJECT_DIR$/mini_medis.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mm_params.py" beforeDir="false" afterPath="$PROJECT_DIR$/mm_params.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -42,7 +45,7 @@
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="com.intellij.ide.scratch.LRUPopupBuilder$1/New Scratch File" value="Python" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/check_sampling.py" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../MEDIS/medis/get_photon_data.py" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="settings.editor.selected.configurable" value="PyScientificConfigurable" />
@@ -191,7 +194,7 @@
       <workItem from="1566928363734" duration="15013000" />
       <workItem from="1567101201351" duration="11269000" />
       <workItem from="1567277006430" duration="794000" />
-      <workItem from="1567628110290" duration="13258000" />
+      <workItem from="1567628110290" duration="24322000" />
     </task>
     <task id="LOCAL-00001" summary="changed rootdir in iop">
       <created>1565385158240</created>
@@ -298,7 +301,14 @@
       <option name="project" value="LOCAL" />
       <updated>1567803887950</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="considerable annotation to adaptive.py's quick_ao">
+      <created>1567805515790</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1567805515790</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -333,10 +343,11 @@
     <MESSAGE value="adding random zernike polynomials in aberrations" />
     <MESSAGE value="misc cleanup" />
     <MESSAGE value="better equation for number of pixels on beam" />
-    <option name="LAST_COMMIT_MESSAGE" value="better equation for number of pixels on beam" />
+    <MESSAGE value="considerable annotation to adaptive.py's quick_ao" />
+    <option name="LAST_COMMIT_MESSAGE" value="considerable annotation to adaptive.py's quick_ao" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/Hubble_frontend_py$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1567804445526" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Hubble_frontend_py$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1568062156600" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/miniMEDIS$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1566340550553" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/CDI_devel$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1565285433606" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/CDI_devel$run_telescope.coverage" NAME="run_telescope Coverage Results" MODIFIED="1561074032567" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

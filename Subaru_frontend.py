@@ -119,10 +119,10 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # Subaru Propagation
     #######################################
     # Defines aperture (baffle-before primary)
-    wfo.apply_func(proper.prop_circular_aperture, **{'radius': tp.enterance_d / 2})  # clear inside, dark outside
+    wfo.loop_func(proper.prop_circular_aperture, **{'radius': tp.enterance_d / 2})  # clear inside, dark outside
     # Obscurations
-    # wfo.apply_func(opx.add_obscurations, d_primary=tp.d_nsmyth, d_secondary=tp.d_secondary, legs_frac=0.01)
-    wfo.apply_func(proper.prop_define_entrance)  # normalizes the intensity
+    # wfo.loop_func(opx.add_obscurations, d_primary=tp.d_nsmyth, d_secondary=tp.d_secondary, legs_frac=0.01)
+    wfo.loop_func(proper.prop_define_entrance)  # normalizes the intensity
 
     # Test Sampling
     # if PASSVALUE['iter'] == 1:
@@ -133,33 +133,27 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # CPA from Effective Primary
     aber.add_aber(wfo.wf_array, tp.enterance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='effective-primary')
     # # Zernike Aberrations- Low Order
-    wfo.apply_func(aber.add_zern_ab, tp.zernike_orders, tp.zernike_vals)
-    wfo.apply_func(opx.prop_mid_optics, tp.flen_nsmyth, tp.dist_nsmyth_ao1)
+    wfo.loop_func(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
+    wfo.loop_func(opx.prop_mid_optics, tp.flen_nsmyth, tp.dist_nsmyth_ao1)
 
     ########################################
     # AO188 Propagation
     #######################################
     # AO188-OAP1
     aber.add_aber(wfo.wf_array, tp.d_ao1, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP1')
-    wfo.apply_func(opx.prop_mid_optics, tp.fl_ao1, tp.dist_ao1_dm)
+    wfo.loop_func(opx.prop_mid_optics, tp.fl_ao1, tp.dist_ao1_dm)
     #
     # AO System
     WFS_maps = ao.quick_wfs(wfo.wf_array[:, 0])
-    ao.quick_ao(wfo, WFS_maps)
-    ########
-    # CDI
-    ########
-    if PASSVALUE['iter'] == 1:
-        probe = cdi.CDIprobe(np.pi/3, plot=True)
-    else:
-        probe = cdi.CDIprobe(np.pi, plot=False)
-    wfo.apply_func(proper.prop_add_phase, probe)
+    ao.quick_ao(wfo, WFS_maps, PASSVALUE['iter'])
     # Propagate
-    wfo.apply_func(proper.prop_propagate, tp.dist_dm_ao2)
+    wfo.loop_func(proper.prop_propagate, tp.dist_dm_ao2)
+    # ------------------------------------------------
 
     # AO188-OAP2
     aber.add_aber(wfo.wf_array, tp.d_ao2, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP2')
-    wfo.apply_func(opx.prop_mid_optics, tp.fl_ao2, tp.dist_oap2_focus)
+    wfo.loop_func(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
+    wfo.loop_func(opx.prop_mid_optics, tp.fl_ao2, tp.dist_oap2_focus)
 
     ########################################
     # Focal Plane
@@ -188,7 +182,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     datacube = np.abs(datacube)  # get intensity from datacube
 
     # Interpolating spectral cube from ap.nwsamp discreet wavelengths to ap.w_bins
-    if ap.interp_wvl and ap.nwsamp > 1 and ap.nwsamp < ap.w_bins:
+    if ap.interp_wvl and 1 < ap.nwsamp < ap.w_bins:
         wave_samps = np.linspace(0, 1, ap.nwsamp)
         f_out = interp1d(wave_samps, datacube, axis=0)
         new_heights = np.linspace(0, 1, ap.w_bins)

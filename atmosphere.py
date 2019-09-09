@@ -44,7 +44,6 @@ def gen_atmos(plot=False):
     atmos = hcipy.MultiLayerAtmosphere(layers, scintilation=False)
 
     wsamples = np.linspace(ap.wvl_range[0], ap.wvl_range[1], ap.nwsamp)
-    dprint(f"{wsamples}")
     wavefronts = []
 
     for wavelength in wsamples:
@@ -94,10 +93,6 @@ def add_atmos(wfo, it):
             obj_map = unwrap_phase(obj_map)
             obj_map *= wavelength/np.pi
             proper.prop_add_phase(wfo.wf_array[iw,io], obj_map)
-
-    # Spatial Masking outside of Telescope Aperture -depricated when using mask_obs_sequence
-    # wfo.wf_array = opx.abs_zeros(wfo.wf_array)  # Zeroing outside the pupil
-    # wfo.loop_func(proper.prop_circular_aperture, tp.enterance_d/2)
 
 
 def rotate_atmos(wf, it):

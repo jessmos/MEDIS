@@ -195,7 +195,7 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
 
 if __name__ == '__main__':
     # testname = input("Please enter test name: ")
-    testname = 't1'
+    testname = 'Subaru-test1'
     iop.update(testname)
     iop.makedir()
     run_mmedis()
