@@ -42,19 +42,18 @@ import CDI as cdi
 tp.d_nsmyth = 7.9716  # m pupil diameter
 tp.fn_nsmyth = 13.612  # f# Nasmyth focus
 tp.flen_nsmyth = tp.d_nsmyth * tp.fn_nsmyth  # m focal length
-
-#  Below are the actual dimenstions of the Subaru telescope.
-# tp.enterence_d = 8.2  # m diameter of primary
-# tp.flen_primary = 15  # m focal length of primary
-tp.dist_pri_second = 12.652  # m distance primary -> secondary
-
-# --------------------------------
-# Secondary
-tp.d_secondary = 1.265  # m diameter secondary, used for central obscuration
-tp.fn_secondary = 12.6
-tp.flen_secondary = - tp.d_secondary * tp.fn_secondary  # m focal length of secondary
 tp.dist_nsmyth_ao1 = tp.flen_nsmyth + 1.14  # m distance secondary to M1 of AO188 (hand-tuned, could update with
                                             # data from literature)
+
+#  Below are the actual dimenstions of the Subaru telescope.
+# --------------------------------
+# tp.enterence_d = 8.2  # m diameter of primary
+# tp.flen_primary = 15  # m focal length of primary
+# tp.dist_pri_second = 12.652  # m distance primary -> secondary
+# Secondary
+tp.d_secondary = 1.265  # m diameter secondary, used for central obscuration
+# tp.fn_secondary = 12.6
+# tp.flen_secondary = - tp.d_secondary * tp.fn_secondary  # m focal length of secondary
 
 # ----------------------------
 # AO188 OAP1
@@ -112,8 +111,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     wfo.initialize_proper()
 
     # Atmosphere
-    #  There is a line turned on/off as desired in atmos.add_atmos to zero outside of the pupil or not
-    atmos.add_atmos(wfo, PASSVALUE['iter'])
+    # atmos.add_atmos(wfo, PASSVALUE['iter'])
 
     ########################################
     # Subaru Propagation
@@ -132,7 +130,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # Effective Primary
     # CPA from Effective Primary
     aber.add_aber(wfo.wf_array, tp.enterance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='effective-primary')
-    # # Zernike Aberrations- Low Order
+    # Zernike Aberrations- Low Order
     wfo.loop_func(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
     wfo.loop_func(opx.prop_mid_optics, tp.flen_nsmyth, tp.dist_nsmyth_ao1)
 
@@ -143,16 +141,15 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     aber.add_aber(wfo.wf_array, tp.d_ao1, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP1')
     wfo.loop_func(opx.prop_mid_optics, tp.fl_ao1, tp.dist_ao1_dm)
     #
-    # AO System
+    # # AO System
     WFS_maps = ao.quick_wfs(wfo.wf_array[:, 0])
     ao.quick_ao(wfo, WFS_maps, PASSVALUE['iter'])
-    # Propagate
-    wfo.loop_func(proper.prop_propagate, tp.dist_dm_ao2)
     # ------------------------------------------------
+    wfo.loop_func(proper.prop_propagate, tp.dist_dm_ao2)
 
     # AO188-OAP2
     aber.add_aber(wfo.wf_array, tp.d_ao2, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP2')
-    wfo.loop_func(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
+    # wfo.loop_func(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
     wfo.loop_func(opx.prop_mid_optics, tp.fl_ao2, tp.dist_oap2_focus)
 
     ########################################
@@ -165,21 +162,22 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     shape = wfo.wf_array.shape
     for iw in range(shape[0]):
         for io in range(shape[1]):
+            # EXTRACT flag removes only middle portion of the array. Used to remove FFT wrap-around effects
             if tp.maskd_size != tp.grid_size:
                 wframes = np.zeros((tp.maskd_size, tp.maskd_size))
                 (wframe, sampling) = proper.prop_end(wfo.wf_array[iw, io], EXTRACT=np.int(tp.maskd_size))
             else:
                 wframes = np.zeros((tp.grid_size, tp.grid_size))
-                (wframe, sampling) = proper.prop_end(wfo.wf_array[iw, io])  # Sampling returned by proper is in m
+                (wframe, sampling) = proper.prop_end(wfo.wf_array[iw, io])  # Sampling returned by proper is in [m]
             wframes += wframe  # adds 2D wavefront from all astro_objects together into single wavefront, per wavelength
         # dprint(f"sampling in focal plane at wavelength={iw} is {sampling} m")
         datacube.append(wframes)  # puts each wavlength's wavefront into an array
                                   # (number_wavelengths x tp.grid_size x tp.grid_size)
 
     datacube = np.array(datacube)
-    datacube = np.roll(np.roll(datacube, tp.pix_shift[0], 1), tp.pix_shift[1],
-                       2)  # cirshift array for off-axis observing
-    datacube = np.abs(datacube)  # get intensity from datacube
+    # Conex Mirror-- cirshift array for off-axis observing
+    if tp.pix_shift is not [0,0]:
+        datacube = np.roll(np.roll(datacube, tp.pix_shift[0], 1), tp.pix_shift[1], 2)
 
     # Interpolating spectral cube from ap.nwsamp discreet wavelengths to ap.w_bins
     if ap.interp_wvl and 1 < ap.nwsamp < ap.w_bins:

@@ -1,6 +1,6 @@
 """Quick plotting tools go here
 
-NOte: older code from Rupert used pylab, which is now discouraged. KD changed to pyplot on 7-10-19 but has
+Note: older code from Rupert used pylab, which is now discouraged. KD changed to pyplot on 7-10-19 but has
 not tested all older aspects of the code to ensure proper switch from pylab (though should be the same)
 """
 

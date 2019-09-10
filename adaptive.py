@@ -15,15 +15,16 @@ import pickle as pickle
 from scipy import ndimage
 import proper
 
+from mm_params import tp, ap, cdip
 from proper_mod import prop_dm
-from mm_params import tp, ap, iop
+import CDI as cdi
 from mm_utils import dprint
 
 
 ################################################################################
 # Quick AO
 ################################################################################
-def quick_ao(wfo, WFS_maps):
+def quick_ao(wfo, WFS_maps, tstep):
     """
     calculate the DM phase from the WFS map and apply it with proper.prop_dm
 
@@ -33,11 +34,10 @@ def quick_ao(wfo, WFS_maps):
     sampling sto create white light images), so the cropped value must also be scaled by wavelength.
 
     Then, we interpolate the cropped beam onto a grid of (n_actuators,n_actuators), such that the DM can apply a
-    actuator height to each represented actuator, not a sub-sampled form. In the case that the DM sampling is lower
-    than the simulation sampling, you could use prop_magnify to magnify the cropped beam to match the actuator
-    spacing. (There is a discrepancy between the sampling of the wavefront at this location (the size you cropped) vs
-    the size of the DM. Presumably prop_dm handles this, so just plug in the reduced sized DM map with specified
-    parameters, and assume that prop_dm handles the resampling correctly)
+    actuator height to each represented actuator, not a over or sub-sampled form. There is a discrepancy between
+    the sampling of the wavefront at this location (the size you cropped) vs the size of the DM. Presumably prop_dm
+    handles this, so just plug in the n_actuator sized DM map with specified parameters, and assume that prop_dm
+    handles the resampling correctly via the spacing or n_act_across_pupil flag.
 
     The scale factor becomes an distance term, so actuator heights are scaled by wavelength
      you can think of it as the phase term of dm_map is the phase delay in units of cycles, so you need
@@ -87,8 +87,6 @@ def quick_ao(wfo, WFS_maps):
                      tp.grid_size//2 - np.int_(beam_ratios[iw]*tp.grid_size//2):
                      tp.grid_size//2 + np.int_(beam_ratios[iw]*tp.grid_size//2)+1]
             samp = proper.prop_get_sampling(wfo.wf_array[iw, io])
-            dprint('******************************************')
-            dprint(f"DM map shape at beam ratio {beam_ratios[iw]} is {dm_map.shape}")
 
             ########################################################
             # Interpolating the WFS map onto the actuator spacing
@@ -97,7 +95,6 @@ def quick_ao(wfo, WFS_maps):
             f = interpolate.interp2d(range(dm_map.shape[0]), range(dm_map.shape[0]), dm_map)
             dm_map = f(np.linspace(0,dm_map.shape[0],nact), np.linspace(0,dm_map.shape[0], nact))
             # dm_map = proper.prop_magnify(CPA_map, map_spacing / act_spacing, nact)
-            dprint(f"dm_map size after interp is {dm_map.shape}")
 
             #########################
             # Applying Piston Error
@@ -113,7 +110,20 @@ def quick_ao(wfo, WFS_maps):
             # Apply the inverse of the WFS image to the DM, so use -dm_map (dm_map is in phase units)
             surf_height = proper.prop_get_wavelength(wfo.wf_array[iw, io]) / (4 * np.pi)
             dm_map = -dm_map * surf_height
-            dprint(f"Scaling factor applied to DM is {surf_height * 1e6:.4f} um")
+
+            #######
+            # CDI
+            ######
+            if cdip.use_cdi == True:
+                dprint(f"Using CDI")
+                theta = np.pi  # change this to loop later
+                if tstep == 0 and iw == 1:
+                    probe = cdi.CDIprobe(theta, plot=True)
+                else:
+                    probe = cdi.CDIprobe(theta, plot=False)
+
+                # Add Probe to DM map
+                dm_map = dm_map + probe
 
             #########################
             # proper.prop_dm
@@ -125,14 +135,14 @@ def quick_ao(wfo, WFS_maps):
     # kludge is basically a low-pass filter?
     # TODO address the kludge. Is it still necessary
     # there is a similar type kludge in the proper.prop_dm code, lines ~249-252
-    for iw in range(shape[0]):
-        phase_map = proper.prop_get_phase(wfo.wf_array[iw,0])
-        amp_map = proper.prop_get_amplitude(wfo.wf_array[iw,0])
-
-        lowpass = ndimage.gaussian_filter(phase_map, 1, mode='nearest')
-        smoothed = phase_map - lowpass
-
-        wfo.wf_array[iw,0].wfarr = proper.prop_shift_center(amp_map*np.cos(smoothed)+1j*amp_map*np.sin(smoothed))
+    # for iw in range(shape[0]):
+    #     phase_map = proper.prop_get_phase(wfo.wf_array[iw,0])
+    #     amp_map = proper.prop_get_amplitude(wfo.wf_array[iw,0])
+    #
+    #     lowpass = ndimage.gaussian_filter(phase_map, 1, mode='nearest')
+    #     smoothed = phase_map - lowpass
+    #
+    #     wfo.wf_array[iw,0].wfarr = proper.prop_shift_center(amp_map*np.cos(smoothed)+1j*amp_map*np.sin(smoothed))
 
     return
 

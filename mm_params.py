@@ -13,6 +13,66 @@ import numpy as np
 import os
 import proper
 
+class IO_params:
+    """
+    Define file tree/structure to import and save data
+
+    telescope.gridsize and telescope.beam_ratio affect the sampling of the simulation, so are included in filenames
+    of files genereated based on the sampling parameters, and simulation_params.numframes affects how many files need
+    to be generated, so are also included in filenames
+    """
+
+    def __init__(self, testname='Subaru-test1'):  # testname should be the name of the particular example you are running,
+                                              # for example 'BetaPic' or 'simple_telescope'
+        self.rootdir = '/home/captainkay/mazinlab/MKIDSim/miniMEDIS/'
+        self.datadir = '/home/captainkay/mazinlab/MKIDSim/CDIsim_data/'
+
+        # Unprocessed Science Data
+        self.sciroot = 'mini_medis'
+        self.scidir = os.path.join(self.datadir, self.sciroot)  # self.savedata
+        self.testname = testname  # set this up in the definition line, but can update it with iop.update('newname')
+        self.testdir = os.path.join(self.scidir,
+                                  self.testname)  # Save results in new sub-directory
+        self.obs_seq = os.path.join(self.testdir,
+                                  'ObsSeq.h5')  # a x/y/t/w cube of data
+        self.fields = os.path.join(self.testdir, 'fields.h5')
+        self.obs_table = os.path.join(self.testdir,
+                                    'ObsTable.h5')  # a photon table with 4 columns
+
+        # Aberration Metadata
+        self.aberroot = 'aberrations'
+        self.aberdata = f"gridsz{tp.grid_size}_bmratio{tp.beam_ratio}_tsteps{sp.numframes}"
+        self.aberdir = os.path.join(self.testdir, self.aberroot, self.aberdata)
+        self.NCPA_meas = os.path.join(self.aberdir, 'NCPA_meas.pkl')  #
+        self.CPA_meas = os.path.join(self.aberdir, 'CPA_meas.pkl')
+
+        # Atmosphere Metadata
+        self.atmosroot = f"atmos/gridsz{tp.grid_size}_bmratio{tp.beam_ratio}_tsteps{sp.numframes}"
+        self.atmosdir = os.path.join(self.testdir, self.atmosroot)  # full path to FITS files
+
+    def update(self, new_name='example1'):
+        self.__init__(testname=new_name)
+
+    def makedir(self):
+        #print(self.datadir, self.testdir,  self.scidir)
+        if not os.path.isdir(self.datadir):
+            os.makedirs(self.datadir, exist_ok=True)
+        if not os.path.isdir(self.testdir):
+            os.makedirs(self.testdir, exist_ok=True)
+        if not os.path.isdir(self.scidir):
+            os.makedirs(self.scidir, exist_ok=True)
+        if not os.path.isdir(self.aberdir):
+            os.makedirs(self.aberdir, exist_ok=True)
+        if not os.path.isdir(self.atmosdir):
+            os.makedirs(self.atmosdir, exist_ok=True)
+
+    def __iter__(self):
+        for attr, value in self.__dict__.items():
+            yield attr, value
+
+    def __name__(self):
+        return self.__str__().split(' ')[0].split('.')[-1]
+
 
 class Simulation_params:
     """
@@ -99,7 +159,7 @@ class Telescope_params:
                                # set to grid_size if undesired
 
         # AO System Settings
-        self.ao_act = 14  # number of actuators on the DM on one axis (proper only models nxn square DMs)
+        self.ao_act = 144  # number of actuators on the DM on one axis (proper only models nxn square DMs)
         self.piston_error = False  # flag for allowing error on DM surface shape
         self.fit_dm = True  # flag to use DM surface fitting (see proper manual pg 52, the FIT switch)
 
@@ -192,71 +252,10 @@ tp = Telescope_params()
 sp = Simulation_params()
 atmp = Atmos_params()
 cdip = CDI_params()
+iop = IO_params()  # Must call this last since IO_params uses ap and tp
 
 # Turning off messages from Proper
 proper.print_it = False
 # proper.prop_init_savestate()
 
-class IO_params:
-    """
-    Define file tree/structure to import and save data
-
-    telescope.gridsize and telescope.beam_ratio affect the sampling of the simulation, so are included in filenames
-    of files genereated based on the sampling parameters, and simulation_params.numframes affects how many files need
-    to be generated, so are also included in filenames
-    """
-
-    def __init__(self, testname='Subaru-test1'):  # testname should be the name of the particular example you are running,
-                                              # for example 'BetaPic' or 'simple_telescope'
-        self.rootdir = '/home/captainkay/mazinlab/MKIDSim/miniMEDIS/'
-        self.datadir = '/home/captainkay/mazinlab/MKIDSim/CDIsim_data/'
-
-        # Unprocessed Science Data
-        self.sciroot = 'mini_medis'
-        self.scidir = os.path.join(self.datadir, self.sciroot)  # self.savedata
-        self.testname = testname  # set this up in the definition line, but can update it with iop.update('newname')
-        self.testdir = os.path.join(self.scidir,
-                                  self.testname)  # Save results in new sub-directory
-        self.obs_seq = os.path.join(self.testdir,
-                                  'ObsSeq.h5')  # a x/y/t/w cube of data
-        self.fields = os.path.join(self.testdir, 'fields.h5')
-        self.obs_table = os.path.join(self.testdir,
-                                    'ObsTable.h5')  # a photon table with 4 columns
-
-        # Aberration Metadata
-        self.aberroot = 'aberrations'
-        self.aberdata = f"gridsz{tp.grid_size}_bmratio{tp.beam_ratio}_tsteps{sp.numframes}"
-        self.aberdir = os.path.join(self.testdir, self.aberroot, self.aberdata)
-        self.NCPA_meas = os.path.join(self.aberdir, 'NCPA_meas.pkl')  #
-        self.CPA_meas = os.path.join(self.aberdir, 'CPA_meas.pkl')
-
-        # Atmosphere Metadata
-        self.atmosroot = f"atmos/gridsz{tp.grid_size}_bmratio{tp.beam_ratio}_tsteps{sp.numframes}"
-        self.atmosdir = os.path.join(self.testdir, self.atmosroot)  # full path to FITS files
-
-    def update(self, new_name='example1'):
-        self.__init__(testname=new_name)
-
-    def makedir(self):
-        #print(self.datadir, self.testdir,  self.scidir)
-        if not os.path.isdir(self.datadir):
-            os.makedirs(self.datadir, exist_ok=True)
-        if not os.path.isdir(self.testdir):
-            os.makedirs(self.testdir, exist_ok=True)
-        if not os.path.isdir(self.scidir):
-            os.makedirs(self.scidir, exist_ok=True)
-        if not os.path.isdir(self.aberdir):
-            os.makedirs(self.aberdir, exist_ok=True)
-        if not os.path.isdir(self.atmosdir):
-            os.makedirs(self.atmosdir, exist_ok=True)
-
-    def __iter__(self):
-        for attr, value in self.__dict__.items():
-            yield attr, value
-
-    def __name__(self):
-        return self.__str__().split(' ')[0].split('.')[-1]
-
-
-iop = IO_params()
 
