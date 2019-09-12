@@ -24,7 +24,7 @@ from mm_utils import dprint
 ################################################################################
 # Quick AO
 ################################################################################
-def quick_ao(wfo, WFS_maps, tstep):
+def quick_ao(wfo, WFS_maps, theta):
     """
     calculate the DM phase from the WFS map and apply it with proper.prop_dm
 
@@ -110,18 +110,14 @@ def quick_ao(wfo, WFS_maps, tstep):
             # Apply the inverse of the WFS image to the DM, so use -dm_map (dm_map is in phase units)
             surf_height = proper.prop_get_wavelength(wfo.wf_array[iw, io]) / (4 * np.pi)
             dm_map = -dm_map * surf_height
+            dprint(f"Probe before CDI: Min={np.min(dm_map)}, Max={np.max(dm_map)}")
 
             #######
             # CDI
             ######
-            if cdip.use_cdi == True:
-                dprint(f"Using CDI")
-                theta = np.pi  # change this to loop later
-                if tstep == 0 and iw == 1:
-                    probe = cdi.CDIprobe(theta, plot=True)
-                else:
-                    probe = cdi.CDIprobe(theta, plot=False)
-
+            if not np.isnan(theta):
+                dprint(f"Applying CDI probe, iw = {iw}")
+                probe = cdi.CDIprobe(theta, iw)
                 # Add Probe to DM map
                 dm_map = dm_map + probe
 

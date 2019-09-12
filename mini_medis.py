@@ -18,9 +18,10 @@ import traceback
 import proper_mod as pm
 import glob
 
-from mm_params import iop, ap, tp, sp
+from mm_params import iop, ap, tp, sp, cdip
 from plot_tools import view_datacube, quick2D
 import atmosphere as atmos
+import CDI as cdi
 import mm_utils as mmu
 
 ################################################################################################################
@@ -67,14 +68,14 @@ def run_mmedis():
     if glob.glob(iop.atmosdir + '/*.fits') == []:
         atmos.gen_atmos(plot=True)
 
+    # =======================================================================================================
+    # Multiprocessing with gen_timeseries
+    # =======================================================================================================
     try:
         multiprocessing.set_start_method('spawn')
     except RuntimeError:
         pass
 
-    # =======================================================================================================
-    # Multiprocessing with gen_timeseries
-    # =======================================================================================================
     # Multiprocessing Settings
     inqueue = multiprocessing.Queue()
     spectral_queue = multiprocessing.Queue()
@@ -123,7 +124,6 @@ def run_mmedis():
     print('**************************************')
     finish = time.time()
     print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
-
     print(f"Number of timesteps = {np.shape(obs_sequence)[0]}")
     print(f"Number of wavelength bins = {np.shape(obs_sequence)[1]}")
 
@@ -154,9 +154,15 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
     try:
         start = time.time()
 
+        # Initialize CDI probes
+        if cdip.use_cdi is True:
+            theta_series = cdi.gen_CDI_phase_stream()
+        else:
+            theta_series = np.zeros(sp.numframes) * np.nan
+
         for it, t in enumerate(iter(inqueue.get, sentinel)):
 
-            kwargs = {'iter': t, 'params': [ap, tp, iop, sp]}
+            kwargs = {'iter': t, 'params': [ap, tp, iop, sp], 'theta': theta_series[t]}
             spectralcube, sampling = pm.prop_run(tp.prescription, 1, tp.grid_size, PASSVALUE=kwargs,
                                                    VERBOSE=False)
 
@@ -165,8 +171,7 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
             #     cube = np.abs(save_E_fields[-1, :, cx]) ** 2
 
             # Returning variables to run_mmedis
-            if sp.save_cube or sp.show_cube:
-                spectral_queue.put((t, spectralcube, sampling))
+            spectral_queue.put((t, spectralcube, sampling))
 
         now = time.time()
         elapsed = float(now - start) / 60.
@@ -181,7 +186,7 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
         # Plotting
         if sp.show_wframe:
             # vlim = (np.min(spectralcube) * 10, np.max(spectralcube))  # setting z-axis limits
-            quick2D(image, title=f"White light image at timestep {it} \n"
+            quick2D(image, samp=sampling, title=f"White light image at timestep {it} \n"
                                  f"Grid Size = {tp.grid_size}, Beam Ratio = {tp.beam_ratio}, "
                                  f"sampling = {sampling*1e6:.4f} (um/gridpt)", logAmp=True)
         # loop_frames(obs_sequence[:, 0])

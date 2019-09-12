@@ -21,13 +21,13 @@ import numpy as np
 import proper
 from scipy.interpolate import interp1d
 
-from mm_params import iop, ap, tp, sp
+from mm_params import iop, ap, tp, sp, cdip
 from mm_utils import dprint
 import optics as opx
 import aberrations as aber
 import adaptive as ao
 import atmosphere as atmos
-import CDI as cdi
+
 
 #################################################################################################
 #################################################################################################
@@ -96,6 +96,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
 
     """
     # print("Propagating Broadband Wavefront Through Subaru")
+    print(f"timestep = {PASSVALUE['iter']}")
 
     # Getting Parameters-import statements weren't working--RD
     passpara = PASSVALUE['params']
@@ -129,26 +130,26 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
 
     # Effective Primary
     # CPA from Effective Primary
-    aber.add_aber(wfo.wf_array, tp.enterance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='effective-primary')
+    # aber.add_aber(wfo.wf_array, tp.enterance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='effective-primary')
     # Zernike Aberrations- Low Order
-    wfo.loop_func(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
+    # wfo.loop_func(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
     wfo.loop_func(opx.prop_mid_optics, tp.flen_nsmyth, tp.dist_nsmyth_ao1)
 
     ########################################
     # AO188 Propagation
     #######################################
     # AO188-OAP1
-    aber.add_aber(wfo.wf_array, tp.d_ao1, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP1')
+    # aber.add_aber(wfo.wf_array, tp.d_ao1, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP1')
     wfo.loop_func(opx.prop_mid_optics, tp.fl_ao1, tp.dist_ao1_dm)
     #
     # # AO System
     WFS_maps = ao.quick_wfs(wfo.wf_array[:, 0])
-    ao.quick_ao(wfo, WFS_maps, PASSVALUE['iter'])
+    ao.quick_ao(wfo, WFS_maps, PASSVALUE['theta'])
     # ------------------------------------------------
     wfo.loop_func(proper.prop_propagate, tp.dist_dm_ao2)
 
     # AO188-OAP2
-    aber.add_aber(wfo.wf_array, tp.d_ao2, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP2')
+    # aber.add_aber(wfo.wf_array, tp.d_ao2, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP2')
     # wfo.loop_func(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
     wfo.loop_func(opx.prop_mid_optics, tp.fl_ao2, tp.dist_oap2_focus)
 

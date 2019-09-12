@@ -234,12 +234,15 @@ def prop_dm(wf, dm_z0, dm_xc, dm_yc, spacing = 0., **kwargs):
     xdm = (xs + dm_xc * dx_dm) / dx_inf + xoff_grid
     ydm = (ys + dm_yc * dx_dm) / dx_inf + yoff_grid
 
+    # Here is where the resampling onto the wavefront coords happens
+    # has two different modes, check these for correct method of resampling (also consider speed here)
     if proper.use_cubic_conv:
         grid = proper.prop_cubic_conv(dm_grid.T, xdm, ydm, GRID = False)
         grid = grid.reshape([xdm.shape[1], xdm.shape[0]])
     else:
         grid = map_coordinates(dm_grid.T, [xdm, ydm], order = 3, mode = "nearest", prefilter = True)
 
+    # Clipping oversampled map from influence function
     dmap = np.zeros([n,n], dtype = np.float64)
     nx_grid, ny_grid = grid.shape
     xmin, xmax = int(n/2 - xdim/2), int(n/2 - xdim/2 + nx_grid)

@@ -19,12 +19,11 @@ plt.register_cmap(name='plasma', cmap=cmaps.plasma)
 plt.register_cmap(name='inferno', cmap=cmaps.plasma)
 plt.register_cmap(name='magma', cmap=cmaps.plasma)
 
-
 # MEDIUM_SIZE = 17
 # plt.rc('font', size=MEDIUM_SIZE)  # controls default text sizes
 
 from matplotlib import rcParams
-rcParams['text.usetex'] = False
+# rcParams['text.usetex'] = False
 rcParams['font.family'] = 'DejaVu Sans'
 # rcParams['mathtext.fontset'] = 'custom'
 # rcParams['mathtext.fontset'] = 'stix'
@@ -32,7 +31,7 @@ rcParams['font.family'] = 'DejaVu Sans'
 # rcParams['mathtext.bf'] = 'Bitstream Vera Sans:bold'
 
 
-def quick2D(image, title=None, logAmp=False, vlim=(None,None), colormap=None):
+def quick2D(image, samp=None, title=None, logAmp=False, vlim=(None,None), colormap=None):
     """
     Looks at a 2D array, has bunch of handles for plot.imshow
 
@@ -50,6 +49,17 @@ def quick2D(image, title=None, logAmp=False, vlim=(None,None), colormap=None):
     while title is None:
         print("Plots without titles: Don't Do It!")
         title = input("Please Enter Title: ")
+
+    # X,Y lables
+    if samp is not None:
+        tic_spacing = np.linspace(0, tp.maskd_size, tp.maskd_size/50)
+        scale = np.round(np.linspace(-samp * tp.maskd_size/2, samp * tp.maskd_size/2, (tp.maskd_size+1)/50)*1e6)
+        tic_spacing[0] = tic_spacing[0] + 1
+        tic_spacing[-1] = tic_spacing[-1] -1
+        dprint(f"xscale = {scale[0]},{scale[-1]}")
+        plt.xticks(tic_spacing, scale)
+        plt.yticks(tic_spacing, scale)
+        plt.xlabel('[um]')
 
     # Setting Colorbar limits
     vmin = vlim[0]
@@ -122,7 +132,6 @@ def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, 
     #     vmin = trough
 
     for w in range(n_colors):
-        # ax = fig.add_subplot(n_rows, subplt_cols, w + 1)
         ax = fig.add_subplot(gs[w])
         if logAmp:
             if vmin is not None and vmin <= 0:

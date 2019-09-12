@@ -84,12 +84,12 @@ class Simulation_params:
         self.num_processes = 1  # multiprocessing.cpu_count()
 
         # Timing Params
-        self.sample_time = 0.01  # s seconds per timestep/frame. used in atmosphere evolution, etc
+        self.sample_time = 0.01  # [s] seconds per timestep/frame. used in atmosphere evolution, etc
         self.startframe = 0  # useful for things like RDI
-        self.numframes = 1  # number of timesteps in the simulation
+        self.numframes = 10  # number of timesteps in the simulation
 
         # Plotting Params
-        self.show_cube = True  # Plot datacube
+        self.show_cube = False  # Plot datacube
         self.show_wframe = True  # Plot image frame
         self.cbar = None
         self.fig = None
@@ -97,7 +97,7 @@ class Simulation_params:
 
         # Reading/Saving Params
         self.save_obs = False
-        self.save_cube = True  #
+        self.save_cube = False  #
         self.get_ints = False
         self.save_locs = None
 
@@ -128,7 +128,7 @@ class Astro_params:
         # there are ap.w_bins over the range in ap.band.
         self.nwsamp = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
         self.w_bins = 9  # final number of wavelength bins in spectral cube after interpolation
-        self.wvl_range = np.array([810, 1500]) / 1e9  # wavelength range in m (formerly ap.band)
+        self.wvl_range = np.array([810, 1500]) / 1e9  # wavelength range in [m] (formerly ap.band)
             # eg. DARKNESS band is [800, 1500], J band =  [1100,1400])
         self.interp_wvl = True  # Set to interpolate wavelengths from ap.nwsamp to ap.w_bins
 
@@ -147,10 +147,10 @@ class Telescope_params:
     def __init__(self):
         # Optics + Detector
         self.prescription = 'Subaru_frontend'
-        self.enterance_d = 7.9716  # 7.971  # telescope enterence pupil diameter in meters
+        self.enterance_d = 7.9716  # 7.971  # [m] telescope enterence pupil diameter in meters
         self.fnum_primary = 13.612  # f-number of primary
-        self.flen_primary = 108.5124  # m
-        self.beam_ratio = 0.20  # parameter dealing with the sampling of the beam in the pupil/focal
+        self.flen_primary = 108.5124  # [m] focal length of primary
+        self.beam_ratio = 0.2  # parameter dealing with the sampling of the beam in the pupil/focal
                                 # plane vs grid size. See Proper manual pgs 36-37 and 71-74 for discussion
         self.grid_size = 512  # creates a nxn array of samples of the wavefront
                               # must be bigger than the beam size to avoid FT effects at edges; must be factor of 2
@@ -159,7 +159,7 @@ class Telescope_params:
                                # set to grid_size if undesired
 
         # AO System Settings
-        self.ao_act = 144  # number of actuators on the DM on one axis (proper only models nxn square DMs)
+        self.ao_act = 14  # number of actuators on the DM on one axis (proper only models nxn square DMs)
         self.piston_error = False  # flag for allowing error on DM surface shape
         self.fit_dm = True  # flag to use DM surface fitting (see proper manual pg 52, the FIT switch)
 
@@ -199,18 +199,21 @@ class Telescope_params:
 
 class CDI_params():
     def __init__(self):
-        self.use_cdi = False
+        self.use_cdi = True
+        self.show_probe = False  # False flag to plot phase probe or not
 
         self.phs_intervals = np.pi/3  # [rad] phase interval over [0, 2pi]
-        self.phase_range = np.arange(0, 2 * np.pi, self.phs_intervals)
-        self.n_probes = len(self.phase_range)
+        self.phase_list = np.arange(0, 2 * np.pi, self.phs_intervals)
+        self.n_probes = len(self.phase_list)  # number of phase probes
+        self.phase_integration_time = 0.01  # [s]
+        self.null_time = 0.1  # [s]
         self.probe_type = "pairwise"
 
         # Probe Dimensions (extent in pupil plane coordinates)
         self.probe_w = 2  # [?] width of the probe
         self.probe_h = 6  # [?] height of the probe
         self.probe_center = 4  # [?] center position of the probe
-        self.probe_amp = 1e-3  # [db?] probe amplitude
+        self.probe_amp = 2e-7  # [m] probe amplitude    2e-8 baseline Good
 
     def __iter__(self):
         for attr, value in self.__dict__.items():

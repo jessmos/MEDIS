@@ -6,6 +6,7 @@ Kristina Davis
 This module is used to set the CDI parameters for mini-medis.
 """
 import numpy as np
+import warnings
 import proper
 
 from mm_params import tp, ap, sp, cdip
@@ -13,7 +14,7 @@ from mm_utils import dprint
 from plot_tools import quick2D
 
 
-def CDIprobe(theta, plot=False):
+def CDIprobe(theta,iw):
     """
     apply a probe shape to DM to achieve CDI
 
@@ -30,34 +31,68 @@ def CDIprobe(theta, plot=False):
     :param plot: flag to plot phase probe
     :return: height of phase probes to add to the DM map in adaptive.py
     """
-    x = np.linspace(-tp.ao_act/2, tp.ao_act/2, tp.ao_act)
+    x = np.linspace(-1/2, 1/2, tp.ao_act)
     y = x
     X,Y = np.meshgrid(x, y)
 
     probe = cdip.probe_amp * np.sinc(cdip.probe_w * X) \
                            * np.sinc(cdip.probe_h * Y) \
                            * np.sin(2*np.pi*cdip.probe_center*X + theta)
-    # dprint(f"Min={np.min(probe)*1e5:.4f}e-5, Max={np.max(probe)*1e5:.3f}e-5")
+    dprint(f"CDI Probe: Min={np.min(probe)}, Max={np.max(probe)}")
 
-    if plot:
-        quick2D(probe, title=f"Phase Probe at theta={theta:.4f} rad", vlim=(-1e-5, 1e-5),
+    if cdip.show_probe and iw == 0:
+        quick2D(probe, title=f"Phase Probe at theta={theta:.4f} rad", vlim=(-10e-9, 10e-9),
             colormap="YlGnBu_r")  # logAmp=True)
 
     # Testing FF propagation
     probe_ft = np.fft.fftshift(np.fft.fft2(probe))
-    if plot:
-        quick2D(np.abs(probe_ft), title=f"Real FFT of phase probe", vlim=(-1e-5, 1e-5),
+    if cdip.show_probe and iw == 0:
+        quick2D(np.abs(np.real(probe_ft)), title=f"Real FFT of phase probe", vlim=(-10e-8, 10e-8),
             colormap="YlGnBu_r")
-        quick2D(np.angle(probe_ft), title=f"Imaginary FFT of phase probe", vlim=(-1e-5, 1e-5),
+        quick2D(np.abs(np.imag(probe_ft)), title=f"Imag FFT of phase probe", vlim=(-10e-8, 10e-8),
                 colormap="YlGnBu_r")
 
     return probe
 
+def gen_CDI_phase_stream():
+    """
+    generate an array of phases per timestep for the CDI algorithm
 
+    currently, I assume the timestream is not that long. Should only use this for short timestreams, and use a more
+    efficient code for long simulations (scale of minutes or more)
 
+    :return: phase_list  array of phases to use in CDI probes
+    """
+    phase_series = np.zeros(sp.numframes) * np.nan
 
+    # Repeating Probe Phases for Integration time
+    if cdip.phase_integration_time > sp.sample_time:
+        phase_hold = cdip.phase_integration_time / sp.sample_time
+        phase_1cycle = np.repeat(cdip.phase_list, phase_hold)
+    elif cdip.phase_integration_time == sp.sample_time:
+        phase_1cycle = cdip.phase_list
+    else:
+        raise ValueError(f"Cannot have CDI phase probe integration time less than sp.sample_time")
 
+    # Repeating Cycle of Phase Probes for Simulation Duration
+    full_simulation_time = sp.numframes * sp.sample_time
+    time_for_one_cycle = len(phase_1cycle) * cdip.phase_integration_time + cdip.null_time
+    n_phase_cycles = full_simulation_time / time_for_one_cycle
+    dprint(f"number of phase cycles = {n_phase_cycles}")
+    if n_phase_cycles < 0.5:
+        if cdip.n_probes > sp.numframes:
+            warnings.warn(f"Number of timesteps in sp.numframes is less than number of CDI phases \n"
+                          f"not all phases will be used")
+            phase_series = phase_1cycle[0:sp.numframes]
+        else:
+            warnings.warn(f"Total length of CDI integration time for all phase probes exceeds full simulation time \n"
+                          f"Not all phase probes will be used")
+            phase_series = phase_1cycle[0:sp.numframes]
+    elif 0.5 < n_phase_cycles < 1:
+        phase_series[0:len(phase_1cycle)] = phase_1cycle
+        dprint(f"phase_seris  = {phase_series}")
+    else:
+        raise NotImplementedError(f"Whoa, not implemented yet. Hang in there")
+        # TODO implement
 
-
-
-
+    return phase_series
