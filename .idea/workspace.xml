@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="4c18236a-dfc5-4249-b13b-a88d6fd6e999" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CDI.py" beforeDir="false" afterPath="$PROJECT_DIR$/CDI.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Subaru_frontend.py" beforeDir="false" afterPath="$PROJECT_DIR$/Subaru_frontend.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/adaptive.py" beforeDir="false" afterPath="$PROJECT_DIR$/adaptive.py" afterDir="false" />
@@ -10,7 +9,6 @@
       <change beforePath="$PROJECT_DIR$/mini_medis.py" beforeDir="false" afterPath="$PROJECT_DIR$/mini_medis.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mm_params.py" beforeDir="false" afterPath="$PROJECT_DIR$/mm_params.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/optics.py" beforeDir="false" afterPath="$PROJECT_DIR$/optics.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/plot_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/plot_tools.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -225,7 +223,7 @@
       <workItem from="1567277006430" duration="794000" />
       <workItem from="1567628110290" duration="50536000" />
       <workItem from="1568230968279" duration="25734000" />
-      <workItem from="1568669752173" duration="27161000" />
+      <workItem from="1568669752173" duration="27421000" />
     </task>
     <task id="LOCAL-00001" summary="changed rootdir in iop">
       <created>1565385158240</created>
@@ -367,7 +365,14 @@
       <option name="project" value="LOCAL" />
       <updated>1568329639606</updated>
     </task>
-    <option name="localTasksCounter" value="21" />
+    <task id="LOCAL-00021" summary="added view_timeseries to view white light images as function of time (range of obs_seq)">
+      <created>1568853002828</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1568853002828</updated>
+    </task>
+    <option name="localTasksCounter" value="22" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -407,7 +412,8 @@
     <MESSAGE value="more iop cleanup" />
     <MESSAGE value="OK results by turning off kludge in AO loop. still seeing weird effects at the longest wavelengths in absence of aberrations or atmosphere" />
     <MESSAGE value="init timesequence of CDI phase probes. Timeseries seems to be working, not sure if probe shape is correct" />
-    <option name="LAST_COMMIT_MESSAGE" value="init timesequence of CDI phase probes. Timeseries seems to be working, not sure if probe shape is correct" />
+    <MESSAGE value="added view_timeseries to view white light images as function of time (range of obs_seq)" />
+    <option name="LAST_COMMIT_MESSAGE" value="added view_timeseries to view white light images as function of time (range of obs_seq)" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

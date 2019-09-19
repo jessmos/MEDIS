@@ -19,7 +19,7 @@ import proper_mod as pm
 import glob
 
 from mm_params import iop, ap, tp, sp, cdip
-from plot_tools import view_datacube, quick2D
+from plot_tools import view_datacube, view_timeseries, quick2D
 import atmosphere as atmos
 import CDI as cdi
 import mm_utils as mmu
@@ -27,7 +27,6 @@ import mm_utils as mmu
 ################################################################################################################
 ################################################################################################################
 ################################################################################################################
-
 sentinel = None
 
 
@@ -112,13 +111,17 @@ def run_mmedis():
     obs_sequence = np.array(obs_sequence)  # obs sequence is returned by gen_timeseries (called above)
                                            # (n_timesteps , n_wavelength_bins , x_grid , y_grid)
 
-    # Plotting Datacube
+    # Plotting Spectra at second-to-last tstep
     if sp.show_cube:
         tstep = sp.numframes-1
         view_datacube(obs_sequence[tstep], logAmp=True,
                       title=f"Intensity per Spectral Bin at Timestep {tstep} \n"
                             f"Beam Ratio = {tp.beam_ratio:.4f}, sampling = {sampling*1e6:.4f} [um/gridpt]",
                       subplt_cols=sp.subplt_cols, vlim=(1e-8, 1e-3))
+
+    if sp.show_tseries:
+        view_timeseries(obs_sequence, title=f"White Light Timeseries", subplt_cols=5,
+                        logAmp=True, vlim=(1e-8, 1e-3))
 
     print('mini-MEDIS Data Run Completed')
     print('**************************************')
@@ -161,7 +164,6 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
             theta_series = np.zeros(sp.numframes) * np.nan
 
         for it, t in enumerate(iter(inqueue.get, sentinel)):
-
             kwargs = {'iter': t, 'params': [ap, tp, iop, sp], 'theta': theta_series[t]}
             spectralcube, sampling = pm.prop_run(tp.prescription, 1, tp.grid_size, PASSVALUE=kwargs,
                                                    VERBOSE=False)
