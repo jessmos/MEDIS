@@ -59,7 +59,7 @@ def gen_atmos(plot=False):
             hdu.header['PIXSIZE'] = tp.enterance_d/tp.grid_size
             hdu.writeto(filename, overwrite=True)
 
-            if plot:
+            if plot and iw == 0:
                 import matplotlib.pyplot as plt
                 from twilight_colormaps import sunlight
                 plt.figure()
