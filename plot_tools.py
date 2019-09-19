@@ -165,6 +165,75 @@ def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, 
     if show is True:
         plt.show(block=True)
 
+def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True, vlim =(None,None), subplt_cols=3):
+    """
+    view white light images in the timeseries
+
+    :param obs_seq:
+    :param title:
+    :param show:
+    :param logAmp:
+    :param use_axis:
+    :param vlim:
+    :param subplt_cols:
+    :return:
+    """
+    img_tseries = np.sum(obs_seq, axis=1)
+
+    plt.close('all')
+
+     # Number of subplots size
+    fig = plt.figure()
+    n_tsteps = len(img_tseries)
+    n_rows = int(np.ceil(n_tsteps / float(subplt_cols))+1)
+    plt.axis('off')
+    gs = gridspec.GridSpec(n_rows, subplt_cols, wspace=0.08, top=0.9, bottom=0.2)
+
+    # Title
+    if title is None:
+        raise NameError("Plots without titles: Don't Do It!")
+        title = input("Please Enter Title: ")
+        pass
+    fig.suptitle(title, fontweight='bold', fontsize=16)
+
+    # Checking Colorbar axis limits
+    vmin = vlim[0]
+    vmax = vlim[1]
+
+    for t in range(n_tsteps):
+        ax = fig.add_subplot(gs[t])
+        if logAmp:
+            if vmin is not None and vmin <= 0:
+                ax.set_title(f"t={t*sp.sample_time}")
+                im = ax.imshow(img_tseries[t], interpolation='none', origin='lower', vmin=vmin, vmax=vmax,
+                               norm=SymLogNorm(linthresh=1e-5),
+                               cmap="YlGnBu_r")
+                clabel = "Log Normalized Intensity"
+            else:
+                ax.set_title(f"t={t*sp.sample_time}")
+                im = ax.imshow(img_tseries[t], interpolation='none', origin='lower', vmin=vmin, vmax=vmax, norm=LogNorm(),
+                               cmap="YlGnBu_r")
+                clabel = "Log Normalized Intensity"
+        else:
+            ax.set_title(f"t={t*sp.sample_time}")
+            im = ax.imshow(img_tseries[t], interpolation='none', origin='lower', vmin=vmin, vmax=vmax, cmap="YlGnBu_r")
+            clabel = "Normalized Intensity"
+
+        if use_axis == 'anno':
+            annotate_axis(im, ax, img_tseries.shape[1])
+        if use_axis is None:
+            plt.axis('off')
+
+    if use_axis:
+        gs.tight_layout(fig, pad=0.08, rect=(0, 0, 1, 0.9))  # rect = (left, bottom, right, top)
+        # fig.tight_layout(pad=50)
+        cbar_ax = fig.add_axes([0.55, 0.05, 0.2, 0.05])  # Add axes for colorbar @ position [left,bottom,width,height]
+        cb = fig.colorbar(im, cax=cbar_ax, orientation='horizontal')  #
+        cb.set_label(clabel)
+
+    if show is True:
+        plt.show(block=True)
+
 
 # def fmt(x, pos):
 #     a, b = '{:.0e}'.format(x).split('e')
