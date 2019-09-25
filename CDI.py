@@ -14,7 +14,7 @@ from mm_utils import dprint
 from plot_tools import quick2D
 
 
-def CDIprobe(theta,iw):
+def CDIprobe(theta, iw):
     """
     apply a probe shape to DM to achieve CDI
 
@@ -38,18 +38,18 @@ def CDIprobe(theta,iw):
     probe = cdip.probe_amp * np.sinc(cdip.probe_w * X) \
                            * np.sinc(cdip.probe_h * Y) \
                            * np.sin(2*np.pi*cdip.probe_center*X + theta)
-    dprint(f"CDI Probe: Min={np.min(probe)}, Max={np.max(probe)}")
+    dprint(f"CDI Probe: Min={np.min(probe)*1e9:.2f} nm, Max={np.max(probe)*1e9:.2f} nm")
 
-    if cdip.show_probe and iw == 0:
-        quick2D(probe, title=f"Phase Probe at theta={theta:.4f} rad", vlim=(-10e-9, 10e-9),
+    if cdip.show_probe and iw == 0 and theta == cdip.phase_list[0]:
+        quick2D(probe, title=f"Phase Probe at theta={theta:.4f} rad", vlim=(-1e-8, 1e-8),
             colormap="YlGnBu_r")  # logAmp=True)
 
     # Testing FF propagation
-    probe_ft = np.fft.fftshift(np.fft.fft2(probe))
-    if cdip.show_probe and iw == 0:
-        quick2D(np.abs(np.real(probe_ft)), title=f"Real FFT of phase probe", vlim=(-10e-8, 10e-8),
+    probe_ft = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(probe)))
+    if cdip.show_probe and iw == 0 and theta == cdip.phase_list[0]:
+        quick2D(probe_ft.real, title=f"Real FFT of phase probe, theta={theta:.4f} rad", vlim=(-1e-7, 1e-7),
             colormap="YlGnBu_r")
-        quick2D(np.abs(np.imag(probe_ft)), title=f"Imag FFT of phase probe", vlim=(-10e-8, 10e-8),
+        quick2D(probe_ft.imag, title=f"Imag FFT of phase probe, theta={theta:.4f} rad", vlim=(-1e-7, 1e-7),
                 colormap="YlGnBu_r")
 
     return probe
@@ -92,6 +92,7 @@ def gen_CDI_phase_stream():
         phase_series[0:len(phase_1cycle)] = phase_1cycle
         dprint(f"phase_seris  = {phase_series}")
     else:
+        n_full = np.floor(n_phase_cycles)
         raise NotImplementedError(f"Whoa, not implemented yet. Hang in there")
         # TODO implement
 

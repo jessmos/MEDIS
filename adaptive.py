@@ -11,7 +11,6 @@ import numpy as np
 from scipy import interpolate
 import scipy.ndimage
 from skimage.restoration import unwrap_phase
-import pickle as pickle
 from scipy import ndimage
 import proper
 
@@ -107,16 +106,16 @@ def quick_ao(wfo, WFS_maps, theta):
             ################################################
             # Converting phase delay to DM actuator height
             ################################################
-            # Apply the inverse of the WFS image to the DM, so use -dm_map (dm_map is in phase units)
-            surf_height = proper.prop_get_wavelength(wfo.wf_array[iw, io]) / (4 * np.pi)
-            dm_map = -dm_map * surf_height
-            dprint(f"Probe before CDI: Min={np.min(dm_map)}, Max={np.max(dm_map)}")
+            # Apply the inverse of the WFS image to the DM, so use -dm_map (dm_map is in phase units, divide by k=2pi/lambda)
+            surf_height = proper.prop_get_wavelength(wfo.wf_array[iw, io]) / (4 * np.pi)  # [m/rad]
+            dm_map = -dm_map * surf_height  # Converts DM map to units of [m] of actuator heights
+            # dprint(f"surface height is {surf_height*1e9:4f} nm/rad")
 
             #######
             # CDI
             ######
             if not np.isnan(theta):
-                dprint(f"Applying CDI probe, iw = {iw}")
+                dprint(f"Applying CDI probe, lambda = {wfo.wsamples[iw]*1e9:.2f} nm")
                 probe = cdi.CDIprobe(theta, iw)
                 # Add Probe to DM map
                 dm_map = dm_map + probe

@@ -209,14 +209,14 @@ def prop_dm(wf, dm_z0, dm_xc, dm_yc, spacing = 0., **kwargs):
 
     if XYZ:
         m = np.array([ 	[cos(b)*cos(g), -cos(b)*sin(g), sin(b), 0],
-      	 	[cos(a)*sin(g) + sin(a)*sin(b)*cos(g), cos(a)*cos(g)-sin(a)*sin(b)*sin(g), -sin(a)*cos(b), 0],
-      		[sin(a)*sin(g)-cos(a)*sin(b)*cos(g), sin(a)*cos(g)+cos(a)*sin(b)*sin(g), cos(a)*cos(b), 0],
-      		[0, 0, 0, 1] ])
+        [cos(a)*sin(g) + sin(a)*sin(b)*cos(g), cos(a)*cos(g)-sin(a)*sin(b)*sin(g), -sin(a)*cos(b), 0],
+        [sin(a)*sin(g)-cos(a)*sin(b)*cos(g), sin(a)*cos(g)+cos(a)*sin(b)*sin(g), cos(a)*cos(b), 0],
+        [0, 0, 0, 1] ])
     else:
         m = np.array([	[cos(b)*cos(g), cos(g)*sin(a)*sin(b)-cos(a)*sin(g), cos(a)*cos(g)*sin(b)+sin(a)*sin(g), 0],
-		[cos(b)*sin(g), cos(a)*cos(g)+sin(a)*sin(b)*sin(g), -cos(g)*sin(a)+cos(a)*sin(b)*sin(g), 0],
-		[-sin(b), cos(b)*sin(a), cos(a)*cos(b), 0],
-		[0, 0, 0, 1] ])
+        [cos(b)*sin(g), cos(a)*cos(g)+sin(a)*sin(b)*sin(g), -cos(g)*sin(a)+cos(a)*sin(b)*sin(g), 0],
+        [-sin(b), cos(b)*sin(a), cos(a)*cos(b), 0],
+        [0, 0, 0, 1] ])
 
     # Forward project a square
     edge = np.array([[-1.0,-1.0,0.0,0.0], [1.0,-1.0,0.0,0.0], [1.0,1.0,0.0,0.0], [-1.0,1.0,0.0,0.0]])
@@ -237,9 +237,11 @@ def prop_dm(wf, dm_z0, dm_xc, dm_yc, spacing = 0., **kwargs):
     # Here is where the resampling onto the wavefront coords happens
     # has two different modes, check these for correct method of resampling (also consider speed here)
     if proper.use_cubic_conv:
+        print(f"Proper 3.1.1-DM using cubic conv")
         grid = proper.prop_cubic_conv(dm_grid.T, xdm, ydm, GRID = False)
         grid = grid.reshape([xdm.shape[1], xdm.shape[0]])
     else:
+        print(f"Proper 3.1.1-DM using map_coordinates")
         grid = map_coordinates(dm_grid.T, [xdm, ydm], order = 3, mode = "nearest", prefilter = True)
 
     # Clipping oversampled map from influence function

@@ -86,12 +86,12 @@ class Simulation_params:
         # Timing Params
         self.sample_time = 0.01  # [s] seconds per timestep/frame. used in atmosphere evolution, etc
         self.startframe = 0  # useful for things like RDI
-        self.numframes = 10  # number of timesteps in the simulation
+        self.numframes = 1  # number of timesteps in the simulation
 
         # Plotting Params
-        self.show_cube = False  # Plot datacube
-        self.show_wframe = True  # Plot image frame
-        self.show_tseries = True
+        self.show_cube = True  # Plot datacube
+        self.show_wframe = False  # Plot image frame
+        self.show_tseries = False
         self.spectra_cols = 3  # number of subplots per row in view_datacube
         self.tseries_cols = 5
 
@@ -150,16 +150,17 @@ class Telescope_params:
         self.enterance_d = 7.9716  # 7.971  # [m] telescope enterence pupil diameter in meters
         self.fnum_primary = 13.612  # f-number of primary
         self.flen_primary = 108.5124  # [m] focal length of primary
-        self.beam_ratio = 0.2  # parameter dealing with the sampling of the beam in the pupil/focal
+        self.beam_ratio = 0.3  # parameter dealing with the sampling of the beam in the pupil/focal
                                 # plane vs grid size. See Proper manual pgs 36-37 and 71-74 for discussion
         self.grid_size = 512  # creates a nxn array of samples of the wavefront
                               # must be bigger than the beam size to avoid FT effects at edges; must be factor of 2
                               # NOT the size of your detector/# of pixels
-        self.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts)
+        self.maskd_size = 512  # will truncate grid_size to this range (avoids FFT artifacts)
                                # set to grid_size if undesired
 
         # AO System Settings
-        self.ao_act = 60  # number of actuators on the DM on one axis (proper only models nxn square DMs)
+        self.use_ao = False
+        self.ao_act = 40  # number of actuators on the DM on one axis (proper only models nxn square DMs)
         self.piston_error = False  # flag for allowing error on DM surface shape
         self.fit_dm = True  # flag to use DM surface fitting (see proper manual pg 52, the FIT switch)
 
@@ -199,7 +200,7 @@ class Telescope_params:
 
 class CDI_params():
     def __init__(self):
-        self.use_cdi = True
+        self.use_cdi = False
         self.show_probe = True  # False flag to plot phase probe or not
 
         self.phs_intervals = np.pi/2  # [rad] phase interval over [0, 2pi]
@@ -259,6 +260,8 @@ iop = IO_params()  # Must call this last since IO_params uses ap and tp
 
 # Turning off messages from Proper
 proper.print_it = False
+proper.use_cubic_conv = True
+# print(proper.__version__)
 # proper.prop_init_savestate()
 
 

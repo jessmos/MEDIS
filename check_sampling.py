@@ -22,9 +22,9 @@ from mm_params import tp
 # Definitions from inside mini-medis
 #######################################
 # Basics-not imported
-# tp.enterance_d = 8.2  # [m]
-# tp.beam_ratio = .18  # [unitless]
-# tp.grid_size = 512  # [pix]
+tp.enterance_d = 0.1  # [m]
+tp.beam_ratio = .3  # [unitless]
+tp.grid_size = 512  # [pix]
 
 # From Params Buried in mini-medis
 legs_frac = 0.05  # [m]

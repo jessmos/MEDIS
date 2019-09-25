@@ -74,7 +74,6 @@ tp.dist_oap2_focus = 1.261
 # sp.subplt_cols = 3
 
 tp.obscure = True
-tp.use_ao = False
 tp.use_atmos = True
 
 #################################################################################################
@@ -96,14 +95,6 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
 
     """
     # print("Propagating Broadband Wavefront Through Subaru")
-    print(f"timestep = {PASSVALUE['iter']}")
-
-    # Getting Parameters-import statements weren't working--RD
-    passpara = PASSVALUE['params']
-    ap.__dict__ = passpara[0].__dict__
-    tp.__dict__ = passpara[1].__dict__
-    iop.__dict__ = passpara[2].__dict__
-    sp.__dict__ = passpara[3].__dict__
 
     datacube = []
 
@@ -142,9 +133,10 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # aber.add_aber(wfo.wf_array, tp.d_ao1, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP1')
     wfo.loop_func(opx.prop_mid_optics, tp.fl_ao1, tp.dist_ao1_dm)
     #
-    # # AO System
-    WFS_maps = ao.quick_wfs(wfo.wf_array[:, 0])
-    ao.quick_ao(wfo, WFS_maps, PASSVALUE['theta'])
+    # AO System
+    if tp.use_ao:
+        WFS_maps = ao.quick_wfs(wfo.wf_array[:, 0])
+        ao.quick_ao(wfo, WFS_maps, PASSVALUE['theta'])
     # ------------------------------------------------
     wfo.loop_func(proper.prop_propagate, tp.dist_dm_ao2)
 
@@ -160,18 +152,20 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     #  wavefront array is now (number_wavelengths x number_astro_objects x tp.grid_size x tp.grid_size)
     #  prop_end moves center of the wavefront from lower left corner (Fourier space) back to the center
     #    ^      also takes square modulus of complex values, so gives units as intensity not field
+    sampling = np.zeros(ap.nwsamp)
     shape = wfo.wf_array.shape
     for iw in range(shape[0]):
         for io in range(shape[1]):
             # EXTRACT flag removes only middle portion of the array. Used to remove FFT wrap-around effects
             if tp.maskd_size != tp.grid_size:
                 wframes = np.zeros((tp.maskd_size, tp.maskd_size))
-                (wframe, sampling) = proper.prop_end(wfo.wf_array[iw, io], EXTRACT=np.int(tp.maskd_size))
+                (wframe, w_sampling) = proper.prop_end(wfo.wf_array[iw, io], EXTRACT=np.int(tp.maskd_size))
             else:
                 wframes = np.zeros((tp.grid_size, tp.grid_size))
-                (wframe, sampling) = proper.prop_end(wfo.wf_array[iw, io])  # Sampling returned by proper is in [m]
+                (wframe, w_sampling) = proper.prop_end(wfo.wf_array[iw, io])  # Sampling returned by proper is in [m]
             wframes += wframe  # adds 2D wavefront from all astro_objects together into single wavefront, per wavelength
-        # dprint(f"sampling in focal plane at wavelength={iw} is {sampling} m")
+        sampling[iw] = w_sampling
+        dprint(f"sampling in focal plane at wavelength={wfo.wsamples[iw]} is {w_sampling} m")
         datacube.append(wframes)  # puts each wavlength's wavefront into an array
                                   # (number_wavelengths x tp.grid_size x tp.grid_size)
 
@@ -186,8 +180,9 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
         f_out = interp1d(wave_samps, datacube, axis=0)
         new_heights = np.linspace(0, 1, ap.w_bins)
         datacube = f_out(new_heights)
+        sampling = np.linspace(sampling[0], sampling[-1], ap.w_bins)
 
-    print('Finished datacube at single timestep')
+    print(f"Finished datacube at timestep = {PASSVALUE['iter']}")
 
     return datacube, sampling
 

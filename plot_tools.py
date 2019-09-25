@@ -54,8 +54,8 @@ def quick2D(image, samp=None, title=None, logAmp=False, vlim=(None,None), colorm
     if samp is not None:
         tic_spacing = np.linspace(0, tp.maskd_size, tp.maskd_size/50)
         scale = np.round(np.linspace(-samp * tp.maskd_size/2, samp * tp.maskd_size/2, (tp.maskd_size+1)/50)*1e6)
-        tic_spacing[0] = tic_spacing[0] + 1
-        tic_spacing[-1] = tic_spacing[-1] -1
+        tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
+        tic_spacing[-1] = tic_spacing[-1] -1  # hack for edge effects
         dprint(f"xscale = {scale[0]},{scale[-1]}")
         plt.xticks(tic_spacing, scale)
         plt.yticks(tic_spacing, scale)
@@ -87,7 +87,8 @@ def quick2D(image, samp=None, title=None, logAmp=False, vlim=(None,None), colorm
     plt.show()
 
 
-def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, vlim =(None,None), subplt_cols=3):
+def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, vlim=(None,None), subplt_cols=3,
+                  sampl=None):
     """
     view plot of each wavelength bin intensity at a single timestep
 
@@ -99,6 +100,7 @@ def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, 
     :param vlim: tuple of colorbar axis limits (min,max)
     :param xylims: range of x-y axis to plot (inner portion of grid)
     :param subplt_cols: number of subplots per row
+    :param sampl: sampling of the image
     :return:
     """
     plt.close('all')
@@ -131,8 +133,24 @@ def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, 
     # else:
     #     vmin = trough
 
+    if sampl is not None:
+        sampl = sampl * 1e6  # [convert to um]
+
     for w in range(n_colors):
         ax = fig.add_subplot(gs[w])
+        # X,Y lables
+        if sampl is not None:
+            # dprint(f"sampling = {sampl[w]}")
+            tic_spacing = np.linspace(0, tp.maskd_size, 5)  # 5 is just set by hand, arbitrarily chosen
+            tic_lables = np.round(
+                np.linspace(-sampl[w] * tp.maskd_size / 2, sampl[w] * tp.maskd_size / 2, 5)).astype(int)  # nsteps must be same as tic_spacing
+            tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
+            tic_spacing[-1] = tic_spacing[-1] - 1  # hack for edge effects
+            plt.xticks(tic_spacing, tic_lables, fontsize=6)
+            plt.yticks(tic_spacing, tic_lables, fontsize=6)
+            # plt.xlabel('[um]', fontsize=8)
+            # plt.ylabel('[um]', fontsize=8)
+        # Z-axis scale
         if logAmp:
             if vmin is not None and vmin <= 0:
                 ax.set_title(r'$\lambda$ = '+f"{w_string[w]} nm")
@@ -156,9 +174,9 @@ def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, 
             plt.axis('off')
 
     if use_axis:
-        gs.tight_layout(fig, pad=0.08, rect=(0, 0, 1, 0.9))  # rect = (left, bottom, right, top)
+        gs.tight_layout(fig, pad=0.08, rect=(0, 0, 1, 0.85))  # rect = (left, bottom, right, top)
         # fig.tight_layout(pad=50)
-        cbar_ax = fig.add_axes([0.55, 0.05, 0.2, 0.05])  # Add axes for colorbar @ position [left,bottom,width,height]
+        cbar_ax = fig.add_axes([0.55, 0.1, 0.2, 0.05])  # Add axes for colorbar @ position [left,bottom,width,height]
         cb = fig.colorbar(im, cax=cbar_ax, orientation='horizontal')  #
         cb.set_label(clabel)
 

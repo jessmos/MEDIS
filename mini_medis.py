@@ -116,12 +116,17 @@ def run_mmedis():
         tstep = sp.numframes-1
         view_datacube(obs_sequence[tstep], logAmp=True,
                       title=f"Intensity per Spectral Bin at Timestep {tstep} \n"
-                            f"Beam Ratio = {tp.beam_ratio:.4f}, sampling = {sampling*1e6:.4f} [um/gridpt]",
-                      subplt_cols=sp.subplt_cols, vlim=(1e-8, 1e-3))
+                            f" AO={tp.use_ao}, CDI={cdip.use_cdi}\n"
+                            f"Beam Ratio = {tp.beam_ratio:.4f}",#  sampling = {sampling*1e6:.4f} [um/gridpt]",
+                      subplt_cols=sp.spectra_cols,
+                      vlim=(1e-8, 1e-3),
+                      sampl=sampling)
 
+    # Plotting Timeseries
     if sp.show_tseries:
-        view_timeseries(obs_sequence, title=f"White Light Timeseries", subplt_cols=5,
-                        logAmp=True, vlim=(1e-8, 1e-3))
+        view_timeseries(obs_sequence, title=f"White Light Timeseries\n"
+                                            f"AO={tp.use_ao}. CDI={cdip.use_cdi}", subplt_cols=5,
+                        logAmp=True )  # vlim=(1e-8, 1e-3)
 
     print('mini-MEDIS Data Run Completed')
     print('**************************************')
@@ -162,6 +167,7 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
             theta_series = cdi.gen_CDI_phase_stream()
         else:
             theta_series = np.zeros(sp.numframes) * np.nan
+        # mmu.dprint(f"Theta={theta_series}")
 
         for it, t in enumerate(iter(inqueue.get, sentinel)):
             kwargs = {'iter': t, 'params': [ap, tp, iop, sp], 'theta': theta_series[t]}
@@ -188,9 +194,11 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
         # Plotting
         if sp.show_wframe:
             # vlim = (np.min(spectralcube) * 10, np.max(spectralcube))  # setting z-axis limits
-            quick2D(image, samp=sampling, title=f"White light image at timestep {it} \n"
-                                 f"Grid Size = {tp.grid_size}, Beam Ratio = {tp.beam_ratio}, "
-                                 f"sampling = {sampling*1e6:.4f} (um/gridpt)", logAmp=True)
+            quick2D(image, samp=sampling, title=f"White light image at timestep {it}, \n"
+                                                f"AO={tp.use_ao}, CDI={cdip.use_cdi} \n",
+                                 # f"Grid Size = {tp.grid_size}, Beam Ratio = {tp.beam_ratio}, "
+                                 # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
+                    logAmp=True)
         # loop_frames(obs_sequence[:, 0])
         # loop_frames(obs_sequence[0])
 
