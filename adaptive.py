@@ -86,6 +86,7 @@ def quick_ao(wfo, WFS_maps, theta):
                      tp.grid_size//2 - np.int_(beam_ratios[iw]*tp.grid_size//2):
                      tp.grid_size//2 + np.int_(beam_ratios[iw]*tp.grid_size//2)+1]
             samp = proper.prop_get_sampling(wfo.wf_array[iw, io])
+            dprint(f"Sampling in AO at lambda=wavelength={wfo.wsamples[iw]} m is {samp} m")
 
             ########################################################
             # Interpolating the WFS map onto the actuator spacing

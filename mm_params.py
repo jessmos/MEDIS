@@ -90,7 +90,7 @@ class Simulation_params:
 
         # Plotting Params
         self.show_cube = True  # Plot datacube
-        self.show_wframe = False  # Plot image frame
+        self.show_wframe = True  # Plot image frame
         self.show_tseries = False
         self.spectra_cols = 3  # number of subplots per row in view_datacube
         self.tseries_cols = 5
@@ -120,7 +120,7 @@ class Astro_params:
         self.companion = False
         self.contrast = [0.05]
         self.C_spec = 1.5  # the gradient of the increase in contrast towards shorter wavelengths
-        self.companion_locations = [[-1.0, 1.0]]  # initial location (no rotation)
+        self.companion_locations = [[-1.0e-6, 1.0e-6]]  # [m] initial location (no rotation)
 
         # Wavelength and Wavefront Array Settings
         # In optics_propagate(), proper initially takes N  discreet wavelengths evenly spaced in wvl_range, where N is
@@ -150,7 +150,7 @@ class Telescope_params:
         self.enterance_d = 7.9716  # 7.971  # [m] telescope enterence pupil diameter in meters
         self.fnum_primary = 13.612  # f-number of primary
         self.flen_primary = 108.5124  # [m] focal length of primary
-        self.beam_ratio = 0.3  # parameter dealing with the sampling of the beam in the pupil/focal
+        self.beam_ratio = 0.15  # parameter dealing with the sampling of the beam in the pupil/focal
                                 # plane vs grid size. See Proper manual pgs 36-37 and 71-74 for discussion
         self.grid_size = 512  # creates a nxn array of samples of the wavefront
                               # must be bigger than the beam size to avoid FT effects at edges; must be factor of 2
@@ -159,7 +159,7 @@ class Telescope_params:
                                # set to grid_size if undesired
 
         # AO System Settings
-        self.use_ao = False
+        self.use_ao = True
         self.ao_act = 40  # number of actuators on the DM on one axis (proper only models nxn square DMs)
         self.piston_error = False  # flag for allowing error on DM surface shape
         self.fit_dm = True  # flag to use DM surface fitting (see proper manual pg 52, the FIT switch)

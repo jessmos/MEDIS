@@ -116,8 +116,8 @@ def run_mmedis():
         tstep = sp.numframes-1
         view_datacube(obs_sequence[tstep], logAmp=True,
                       title=f"Intensity per Spectral Bin at Timestep {tstep} \n"
-                            f" AO={tp.use_ao}, CDI={cdip.use_cdi}\n"
-                            f"Beam Ratio = {tp.beam_ratio:.4f}",#  sampling = {sampling*1e6:.4f} [um/gridpt]",
+                            f" AO={tp.use_ao}, CDI={cdip.use_cdi}",
+                            # f"Beam Ratio = {tp.beam_ratio:.4f}",#  sampling = {sampling*1e6:.4f} [um/gridpt]",
                       subplt_cols=sp.spectra_cols,
                       vlim=(1e-8, 1e-3),
                       sampl=sampling)
@@ -172,7 +172,7 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
         for it, t in enumerate(iter(inqueue.get, sentinel)):
             kwargs = {'iter': t, 'params': [ap, tp, iop, sp], 'theta': theta_series[t]}
             spectralcube, sampling = pm.prop_run(tp.prescription, 1, tp.grid_size, PASSVALUE=kwargs,
-                                                   VERBOSE=False)
+                                                   VERBOSE=False, TABLE=True)
 
             # for cx in range(len(ap.contrast) + 1):
             #     mmu.dprint(f"E-field shape is {save_E_fields.shape}")
@@ -194,8 +194,8 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
         # Plotting
         if sp.show_wframe:
             # vlim = (np.min(spectralcube) * 10, np.max(spectralcube))  # setting z-axis limits
-            quick2D(image, samp=sampling, title=f"White light image at timestep {it}, \n"
-                                                f"AO={tp.use_ao}, CDI={cdip.use_cdi} \n",
+            quick2D(image, title=f"White light image at timestep {it}, \n"
+                                                f"AO={tp.use_ao}, CDI={cdip.use_cdi}",
                                  # f"Grid Size = {tp.grid_size}, Beam Ratio = {tp.beam_ratio}, "
                                  # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
                     logAmp=True)

@@ -50,9 +50,9 @@ class Wavefronts():
     def initialize_proper(self):
         # Initialize the Wavefront in Proper
         for iw, w in enumerate(self.wsamples):
-            # Scale beam ratio by wavelength to achieve consistent sampling across wavelengths
+            # Scale beam ratio by wavelength .....?
             # see Proper manual pg 37
-            self.beam_ratios[iw] = tp.beam_ratio * ap.wvl_range[0] / w
+            self.beam_ratios[iw] = tp.beam_ratio #* ap.wvl_range[0] / w
             # Initialize the wavefront at entrance pupil
             wfp = proper.prop_begin(tp.enterance_d, w, tp.grid_size, self.beam_ratios[iw])
 
@@ -154,7 +154,25 @@ def abs_zeros(wf_array):
 
     return wf_array
 
+def offset_companion(wfo):
+    """
+    offsets the companion wavefront using the 2nd and 3rd order Zernike Polynomials (X,Y tilt)
+    companion contrast and location set in mm_params
 
+    :param wfo: wavefront object, shape=(n_wavelengths, n_astro_objects, grid_sz, grid_sz)
+    :return:
+    """
+    cont_scaling = np.linspace(1. / ap.C_spec, 1, ap.nwsamp)
 
+    shape = wfo.wf_array.shape
+    for iw in range(shape[0]):
+        for io in range(shape[1]):
+            if io > 0:
+                # Shifting the Array
+                xloc = ap.companion_locations[io][0]
+                yloc = ap.companion_locations[io][1]
+                proper.prop_zernikes(wfo.wf_array[iw, io], [2, 3], np.array([xloc, yloc]))
 
+                # Wavelength Scaling the Companion
+                wfo.wf_array[iw, io].wfarr = wfo.wf_array[iw, io].wfarr * np.sqrt(ap.contrast[io] * cont_scaling[iw])
 

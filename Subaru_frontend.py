@@ -23,6 +23,7 @@ from scipy.interpolate import interp1d
 
 from mm_params import iop, ap, tp, sp, cdip
 from mm_utils import dprint
+import plot_tools as pt
 import optics as opx
 import aberrations as aber
 import adaptive as ao
@@ -105,6 +106,9 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # Atmosphere
     # atmos.add_atmos(wfo, PASSVALUE['iter'])
 
+    if ap.companion:
+        opx.offset_companion(wfo)
+
     ########################################
     # Subaru Propagation
     #######################################
@@ -115,9 +119,11 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     wfo.loop_func(proper.prop_define_entrance)  # normalizes the intensity
 
     # Test Sampling
-    # if PASSVALUE['iter'] == 1:
-    #     initial_sampling = proper.prop_get_sampling(wfo.wf_array[0,0])
-    #     dprint(f"initial sampling is {initial_sampling:.4f}")
+    if PASSVALUE['iter'] == 0:
+        temp=[]
+        for w in range(ap.nwsamp):
+            initial_sampling = proper.prop_get_sampling(wfo.wf_array[w,0])
+            dprint(f"initial sampling at wavelength={wfo.wsamples[w]} is {initial_sampling:.4f} m")
 
     # Effective Primary
     # CPA from Effective Primary
