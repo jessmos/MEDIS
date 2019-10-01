@@ -56,9 +56,9 @@ def run_mmedis():
 
     # Initialize Obs Sequence
     if tp.maskd_size != tp.grid_size:
-        obs_sequence = np.zeros((sp.numframes, ap.w_bins, tp.maskd_size, tp.maskd_size))
+        obs_sequence = np.zeros((sp.numframes, ap.n_wvl_final, tp.maskd_size, tp.maskd_size))
     else:
-        obs_sequence = np.zeros((sp.numframes, ap.w_bins, tp.grid_size, tp.grid_size))
+        obs_sequence = np.zeros((sp.numframes, ap.n_wvl_final, tp.grid_size, tp.grid_size))
     if ap.companion is False:
         ap.contrast = []
 

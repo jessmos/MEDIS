@@ -124,13 +124,13 @@ class Astro_params:
 
         # Wavelength and Wavefront Array Settings
         # In optics_propagate(), proper initially takes N  discreet wavelengths evenly spaced in wvl_range, where N is
-        # given by ap.nwsamp. Later, in gen_timeseries(), the 3rd axis of the spectral cube is interpolated so that
-        # there are ap.w_bins over the range in ap.band.
-        self.nwsamp = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
-        self.w_bins = 9  # final number of wavelength bins in spectral cube after interpolation
+        # given by ap.n_wvl_init. Later, in gen_timeseries(), the 3rd axis of the spectral cube is interpolated so that
+        # there are ap.n_wvl_final over the range in ap.wvl_range.
+        self.n_wvl_init = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
+        self.n_wvl_final = 9  # final number of wavelength bins in spectral cube after interpolation
+        self.interp_wvl = True  # Set to interpolate wavelengths from ap.n_wvl_init to ap.n_wvl_final
         self.wvl_range = np.array([810, 1500]) / 1e9  # wavelength range in [m] (formerly ap.band)
             # eg. DARKNESS band is [800, 1500], J band =  [1100,1400])
-        self.interp_wvl = True  # Set to interpolate wavelengths from ap.nwsamp to ap.w_bins
 
     def __iter__(self):
         for attr, value in self.__dict__.items():
@@ -159,7 +159,7 @@ class Telescope_params:
                                # set to grid_size if undesired
 
         # AO System Settings
-        self.use_ao = True
+        self.use_ao = False
         self.ao_act = 40  # number of actuators on the DM on one axis (proper only models nxn square DMs)
         self.piston_error = False  # flag for allowing error on DM surface shape
         self.fit_dm = True  # flag to use DM surface fitting (see proper manual pg 52, the FIT switch)

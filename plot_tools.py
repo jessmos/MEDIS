@@ -105,7 +105,7 @@ def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, 
     """
     plt.close('all')
 
-    w_string = np.array(np.linspace(ap.wvl_range[0]*1e9, ap.wvl_range[1]*1e9, ap.w_bins, dtype=int), dtype=str)
+    w_string = np.array(np.linspace(ap.wvl_range[0]*1e9, ap.wvl_range[1]*1e9, ap.n_wvl_final, dtype=int), dtype=str)
 
     # Number of subplots size
     fig = plt.figure()

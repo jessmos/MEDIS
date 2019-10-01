@@ -43,7 +43,7 @@ def gen_atmos(plot=False):
 
     atmos = hcipy.MultiLayerAtmosphere(layers, scintilation=False)
 
-    wsamples = np.linspace(ap.wvl_range[0], ap.wvl_range[1], ap.nwsamp)
+    wsamples = np.linspace(ap.wvl_range[0], ap.wvl_range[1], ap.n_wvl_init)
     wavefronts = []
 
     for wavelength in wsamples:

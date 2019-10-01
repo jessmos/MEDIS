@@ -37,8 +37,8 @@ tp.dist_second_focus = 6.3919974  # m distance secondary to M1 of AO188
 # --------------------------------
 # Wavelength
 ap.wvl_range = np.array([450, 580]) / 1e9
-ap.nwsamp = 3
-ap.w_bins = 6
+ap.n_wvl_init = 3
+ap.n_wvl_final = 6
 sp.subplt_cols = 3
 
 tp.obscure = True
@@ -134,11 +134,11 @@ def Hubble_frontend(empty_lamda, grid_size, PASSVALUE):
                        2)  # cirshift array for off-axis observing
     datacube = np.abs(datacube)  # get intensity from datacube
 
-    # Interpolating spectral cube from ap.nwsamp discreet wavelengths to ap.w_bins
-    if ap.interp_wvl and ap.nwsamp > 1 and ap.nwsamp < ap.w_bins:
-        wave_samps = np.linspace(0, 1, ap.nwsamp)
+    # Interpolating spectral cube from ap.n_wvl_init discreet wavelengths to ap.n_wvl_final
+    if ap.interp_wvl and ap.n_wvl_init > 1 and ap.n_wvl_init < ap.n_wvl_final:
+        wave_samps = np.linspace(0, 1, ap.n_wvl_init)
         f_out = interp1d(wave_samps, datacube, axis=0)
-        new_heights = np.linspace(0, 1, ap.w_bins)
+        new_heights = np.linspace(0, 1, ap.n_wvl_final)
         datacube = f_out(new_heights)
 
     print('Finished datacube at single timestep')

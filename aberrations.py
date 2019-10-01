@@ -190,7 +190,7 @@ def initialize_CPA_meas():
     required_servo = int(tp.servo_error[0])
     required_band = int(tp.servo_error[1])
     required_nframes = required_servo + required_band + 1
-    CPA_maps = np.zeros((required_nframes, ap.nwsamp, tp.grid_size, tp.grid_size))
+    CPA_maps = np.zeros((required_nframes, ap.n_wvl_init, tp.grid_size, tp.grid_size))
 
     with open(iop.CPA_meas, 'wb') as handle:
         pickle.dump((CPA_maps, np.arange(0, -required_nframes, -1)), handle, protocol=pickle.HIGHEST_PROTOCOL)

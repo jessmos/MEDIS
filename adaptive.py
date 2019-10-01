@@ -17,6 +17,7 @@ import proper
 from mm_params import tp, ap, cdip
 from proper_mod import prop_dm
 import CDI as cdi
+from optics import check_sampling
 from mm_utils import dprint
 
 
@@ -85,8 +86,6 @@ def quick_ao(wfo, WFS_maps, theta):
                      tp.grid_size//2 + np.int_(beam_ratios[iw]*tp.grid_size//2)+1,
                      tp.grid_size//2 - np.int_(beam_ratios[iw]*tp.grid_size//2):
                      tp.grid_size//2 + np.int_(beam_ratios[iw]*tp.grid_size//2)+1]
-            samp = proper.prop_get_sampling(wfo.wf_array[iw, io])
-            dprint(f"Sampling in AO at lambda=wavelength={wfo.wsamples[iw]} m is {samp} m")
 
             ########################################################
             # Interpolating the WFS map onto the actuator spacing
@@ -125,6 +124,7 @@ def quick_ao(wfo, WFS_maps, theta):
             # proper.prop_dm
             #########################
             proper.prop_dm(wfo.wf_array[iw,io], dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
+            check_sampling(0, wfo, "post-DM in quickAO")  # check sampling in optics.py
             # proper.prop_dm(wfo, dm_map, dm_xc, dm_yc, N_ACT_ACROSS_PUPIL=nact, FIT=True)  #
 
     # kludge to help Rupert with weird phase discontinuities he was seeing
