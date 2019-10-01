@@ -55,10 +55,10 @@ def run_mmedis():
         return obs_sequence
 
     # Initialize Obs Sequence
-    if tp.maskd_size != tp.grid_size:
-        obs_sequence = np.zeros((sp.numframes, ap.n_wvl_final, tp.maskd_size, tp.maskd_size))
+    if sp.maskd_size != sp.grid_size:
+        obs_sequence = np.zeros((sp.numframes, ap.n_wvl_final, sp.maskd_size, sp.maskd_size))
     else:
-        obs_sequence = np.zeros((sp.numframes, ap.n_wvl_final, tp.grid_size, tp.grid_size))
+        obs_sequence = np.zeros((sp.numframes, ap.n_wvl_final, sp.grid_size, sp.grid_size))
     if ap.companion is False:
         ap.contrast = []
 
@@ -117,7 +117,7 @@ def run_mmedis():
         view_datacube(obs_sequence[tstep], logAmp=True,
                       title=f"Intensity per Spectral Bin at Timestep {tstep} \n"
                             f" AO={tp.use_ao}, CDI={cdip.use_cdi}",
-                            # f"Beam Ratio = {tp.beam_ratio:.4f}",#  sampling = {sampling*1e6:.4f} [um/gridpt]",
+                            # f"Beam Ratio = {sp.beam_ratio:.4f}",#  sampling = {sampling*1e6:.4f} [um/gridpt]",
                       subplt_cols=sp.spectra_cols,
                       vlim=(1e-8, 1e-3),
                       sampl=sampling)
@@ -171,7 +171,7 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
 
         for it, t in enumerate(iter(inqueue.get, sentinel)):
             kwargs = {'iter': t, 'params': [ap, tp, iop, sp], 'theta': theta_series[t]}
-            spectralcube, sampling = pm.prop_run(tp.prescription, 1, tp.grid_size, PASSVALUE=kwargs,
+            spectralcube, sampling = pm.prop_run(tp.prescription, 1, sp.grid_size, PASSVALUE=kwargs,
                                                    VERBOSE=False, TABLE=True)
 
             # for cx in range(len(ap.contrast) + 1):
@@ -196,7 +196,7 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
             # vlim = (np.min(spectralcube) * 10, np.max(spectralcube))  # setting z-axis limits
             quick2D(image, title=f"White light image at timestep {it}, \n"
                                                 f"AO={tp.use_ao}, CDI={cdip.use_cdi}",
-                                 # f"Grid Size = {tp.grid_size}, Beam Ratio = {tp.beam_ratio}, "
+                                 # f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio}, "
                                  # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
                     logAmp=True)
         # loop_frames(obs_sequence[:, 0])

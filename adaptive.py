@@ -14,7 +14,7 @@ from skimage.restoration import unwrap_phase
 from scipy import ndimage
 import proper
 
-from mm_params import tp, ap, cdip
+from mm_params import sp, tp, ap, cdip
 from proper_mod import prop_dm
 import CDI as cdi
 from optics import check_sampling
@@ -30,7 +30,7 @@ def quick_ao(wfo, WFS_maps, theta):
 
     The main idea is to apply the DM only to the region of the wavefront that contains the beam. The phase map from
     the wfs saved the whole wavefront, so that must be cropped. During the wavefront initialization in
-    wavefront.initialize_proper, the beam ratio set in tp.beam_ratio is scaled per wavelength (to achieve constant
+    wavefront.initialize_proper, the beam ratio set in sp.beam_ratio is scaled per wavelength (to achieve constant
     sampling sto create white light images), so the cropped value must also be scaled by wavelength.
 
     Then, we interpolate the cropped beam onto a grid of (n_actuators,n_actuators), such that the DM can apply a
@@ -82,10 +82,10 @@ def quick_ao(wfo, WFS_maps, theta):
             # cropping here by beam_ratio rather than d_beam is valid since the beam size was initialized
             #  using the scaled beam_ratios when the wfo was created
             dm_map = WFS_maps[iw,
-                     tp.grid_size//2 - np.int_(beam_ratios[iw]*tp.grid_size//2):
-                     tp.grid_size//2 + np.int_(beam_ratios[iw]*tp.grid_size//2)+1,
-                     tp.grid_size//2 - np.int_(beam_ratios[iw]*tp.grid_size//2):
-                     tp.grid_size//2 + np.int_(beam_ratios[iw]*tp.grid_size//2)+1]
+                     sp.grid_size//2 - np.int_(beam_ratios[iw]*sp.grid_size//2):
+                     sp.grid_size//2 + np.int_(beam_ratios[iw]*sp.grid_size//2)+1,
+                     sp.grid_size//2 - np.int_(beam_ratios[iw]*sp.grid_size//2):
+                     sp.grid_size//2 + np.int_(beam_ratios[iw]*sp.grid_size//2)+1]
 
             ########################################################
             # Interpolating the WFS map onto the actuator spacing
@@ -154,7 +154,7 @@ def quick_wfs(wf_vec):
     """
 
     sigma = [2, 2]
-    WFS_maps = np.zeros((len(wf_vec), tp.grid_size, tp.grid_size))
+    WFS_maps = np.zeros((len(wf_vec), sp.grid_size, sp.grid_size))
 
     for iw in range(len(wf_vec)):
         WFS_maps[iw] = scipy.ndimage.filters.gaussian_filter(unwrap_phase(proper.prop_get_phase(wf_vec[iw])), sigma,

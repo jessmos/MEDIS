@@ -60,11 +60,11 @@ tp.d_secondary = 1.265  # m diameter secondary, used for central obscuration
 # Paramaters taken from "Design of the Subaru laser guide star adaptive optics module"
 #  Makoto Watanabe et. al. SPIE doi: 10.1117/12.551032
 tp.d_ao1 = 0.20  # m  diamater of AO1
-tp.fl_ao1 = 1.201  # m  focal length AO1
-tp.dist_ao1_dm = 1.345  # m distance AO1 to DM
+tp.fl_ao1 = 1.201  # m  focal length OAP1
+tp.dist_ao1_dm = 1.345  # m distance OAP1 to DM
 # ----------------------------
 # AO188 OAP2
-tp.dist_dm_ao2 = 2.511-tp.dist_ao1_dm  # m distance DM to AO2 (again, guess here)
+tp.dist_dm_ao2 = 2.511-tp.dist_ao1_dm  # m distance DM to OAP2
 tp.d_ao2 = 0.2  # m  diamater of AO2
 tp.fl_ao2 = 1.201  # m  focal length AO2
 tp.dist_oap2_focus = 1.261
@@ -104,29 +104,29 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # atmos.add_atmos(wfo, PASSVALUE['iter'])
 
     if ap.companion:
+        # offset comanion here after running prop_define_enterance (to normalize intensity)
+        #  if you did it in wfo.initialise()
         opx.offset_companion(wfo)
 
     ########################################
     # Subaru Propagation
     #######################################
     # Defines aperture (baffle-before primary)
-    wfo.loop_over_function(proper.prop_circular_aperture, **{'radius': tp.enterance_d / 2})  # clear inside, dark outside
+    wfo.loop_over_function(proper.prop_circular_aperture, **{'radius': tp.enterance_d/2})  # clear inside, dark outside
     # Obscurations
-    # wfo.loop_func(opx.add_obscurations, d_primary=tp.d_nsmyth, d_secondary=tp.d_secondary, legs_frac=0.01)
+    # wfo.loop_over_function(opx.add_obscurations, d_primary=tp.d_nsmyth, d_secondary=tp.d_secondary, legs_frac=0.01)
     wfo.loop_over_function(proper.prop_define_entrance)  # normalizes the intensity
 
     # Test Sampling
-    opx.check_sampling(PASSVALUE['iter'], wfo, "initial ")
+    opx.check_sampling(PASSVALUE['iter'], wfo, "initial", units='mm')
 
     # Effective Primary
     # CPA from Effective Primary
     # aber.add_aber(wfo.wf_array, tp.enterance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='effective-primary')
     # Zernike Aberrations- Low Order
-    # wfo.loop_func(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
+    # wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
     wfo.loop_over_function(opx.prop_mid_optics, tp.flen_nsmyth, tp.dist_nsmyth_ao1)
-
-    opx.check_sampling(PASSVALUE['iter'], wfo, "after primary ", units='mm')
-
+    # wfo.loop_over_function(opx.prop_mid_optics, tp.flen_nsmyth, tp.flen_nsmyth)
 
     ########################################
     # AO188 Propagation
@@ -135,8 +135,6 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # aber.add_aber(wfo.wf_array, tp.d_ao1, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP1')
     wfo.loop_over_function(opx.prop_mid_optics, tp.fl_ao1, tp.dist_ao1_dm)
 
-    opx.check_sampling(PASSVALUE['iter'], wfo, "after OAP1", units='um')
-
     # AO System
     if tp.use_ao:
         WFS_maps = ao.quick_wfs(wfo.wf_array[:, 0])
@@ -144,11 +142,9 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # ------------------------------------------------
     wfo.loop_over_function(proper.prop_propagate, tp.dist_dm_ao2)
 
-    opx.check_sampling(PASSVALUE['iter'], wfo, "after AO", units='um')
-
     # AO188-OAP2
     # aber.add_aber(wfo.wf_array, tp.d_ao2, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP2')
-    # wfo.loop_func(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
+    # wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
     wfo.loop_over_function(opx.prop_mid_optics, tp.fl_ao2, tp.dist_oap2_focus)
 
     ########################################

@@ -2,13 +2,14 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="4c18236a-dfc5-4249-b13b-a88d6fd6e999" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.name" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.name" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Hubble_frontend.py" beforeDir="false" afterPath="$PROJECT_DIR$/Hubble_frontend.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/LEKIDs.py" beforeDir="false" afterPath="$PROJECT_DIR$/LEKIDs.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Subaru_frontend.py" beforeDir="false" afterPath="$PROJECT_DIR$/Subaru_frontend.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/aberrations.py" beforeDir="false" afterPath="$PROJECT_DIR$/aberrations.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/adaptive.py" beforeDir="false" afterPath="$PROJECT_DIR$/adaptive.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/atmosphere.py" beforeDir="false" afterPath="$PROJECT_DIR$/atmosphere.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/check_sampling.py" beforeDir="false" afterPath="$PROJECT_DIR$/check_sampling.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mini_medis.py" beforeDir="false" afterPath="$PROJECT_DIR$/mini_medis.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mm_params.py" beforeDir="false" afterPath="$PROJECT_DIR$/mm_params.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/optics.py" beforeDir="false" afterPath="$PROJECT_DIR$/optics.py" afterDir="false" />
@@ -49,7 +50,7 @@
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="com.intellij.ide.scratch.LRUPopupBuilder$1/New Scratch File" value="Python" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/adaptive.py" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/plot_tools.py" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="settings.editor.selected.configurable" value="PyScientificConfigurable" />
@@ -233,7 +234,7 @@
       <workItem from="1569432853906" duration="14565000" />
       <workItem from="1569535044447" duration="10747000" />
       <workItem from="1569957254420" duration="32000" />
-      <workItem from="1569959181018" duration="5727000" />
+      <workItem from="1569959181018" duration="9738000" />
     </task>
     <task id="LOCAL-00001" summary="changed rootdir in iop">
       <created>1565385158240</created>
@@ -410,7 +411,14 @@
       <option name="project" value="LOCAL" />
       <updated>1569537522018</updated>
     </task>
-    <option name="localTasksCounter" value="26" />
+    <task id="LOCAL-00026" summary="change ap.nwsamp and ap.w_bins to ap.n_wvl_init and ap.n_wvl_final; move focal plane functions to the Wavefront class and update in Subaru_frontend; added optics.check sampling to return the sampling at each wavelength">
+      <created>1569965207939</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1569965207939</updated>
+    </task>
+    <option name="localTasksCounter" value="27" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -430,7 +438,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="changed rootdir in iop" />
     <MESSAGE value="minor cleanup" />
     <MESSAGE value="added mask_obs_sequence to help with FFT artifacts. Now recommend to have grid_size be large, and mask it to smaller size with mask_obs_sequence in mm_utils." />
     <MESSAGE value="cleanup involving smapling/plotting" />
@@ -455,7 +462,8 @@
     <MESSAGE value="only plot shortest wavelength when plotting new atmosphere model" />
     <MESSAGE value="add toggle to turn AO on/off; also add differential sampling by wavelength to view_datacube" />
     <MESSAGE value="add optics.offset_companion to both scale and offset the companion wavefront" />
-    <option name="LAST_COMMIT_MESSAGE" value="add optics.offset_companion to both scale and offset the companion wavefront" />
+    <MESSAGE value="change ap.nwsamp and ap.w_bins to ap.n_wvl_init and ap.n_wvl_final; move focal plane functions to the Wavefront class and update in Subaru_frontend; added optics.check sampling to return the sampling at each wavelength" />
+    <option name="LAST_COMMIT_MESSAGE" value="change ap.nwsamp and ap.w_bins to ap.n_wvl_init and ap.n_wvl_final; move focal plane functions to the Wavefront class and update in Subaru_frontend; added optics.check sampling to return the sampling at each wavelength" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -470,7 +478,7 @@
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/Hubble_frontend_py$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1569885294741" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/Subaru_mini_medis_py$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1569964624606" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Subaru_mini_medis_py$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1569971066577" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/miniMEDIS$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1566340550553" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/CDI_devel$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1565285433606" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Hubble_frontend_py$mm_params.coverage" NAME="mm_params Coverage Results" MODIFIED="1568243255215" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

@@ -112,22 +112,22 @@ def Hubble_frontend(empty_lamda, grid_size, PASSVALUE):
     # Focal Plane
     # #######################################
     # Converting Array of Arrays (wfo) into 3D array
-    #  wavefront array is now (number_wavelengths x number_astro_objects x tp.grid_size x tp.grid_size)
+    #  wavefront array is now (number_wavelengths x number_astro_objects x sp.grid_size x sp.grid_size)
     #  prop_end moves center of the wavefront from lower left corner (Fourier space) back to the center
     #    ^      also takes square modulus of complex values, so gives units as intensity not field
     shape = wfo.wf_array.shape
     for iw in range(shape[0]):
         for io in range(shape[1]):
-            if tp.maskd_size != tp.grid_size:
-                wframes = np.zeros((tp.maskd_size, tp.maskd_size))
-                (wframe, sampling) = proper.prop_end(wfo.wf_array[iw, io], EXTRACT=np.int(tp.maskd_size))
+            if sp.maskd_size != sp.grid_size:
+                wframes = np.zeros((sp.maskd_size, sp.maskd_size))
+                (wframe, sampling) = proper.prop_end(wfo.wf_array[iw, io], EXTRACT=np.int(sp.maskd_size))
             else:
-                wframes = np.zeros((tp.grid_size, tp.grid_size))
+                wframes = np.zeros((sp.grid_size, sp.grid_size))
                 (wframe, sampling) = proper.prop_end(wfo.wf_array[iw, io])  # Sampling returned by proper is in m
             wframes += wframe  # adds 2D wavefront from all astro_objects together into single wavefront, per wavelength
         # dprint(f"sampling in focal plane at wavelength={iw} is {sampling} m")
         datacube.append(wframes)  # puts each wavlength's wavefront into an array
-                                  # (number_wavelengths x tp.grid_size x tp.grid_size)
+                                  # (number_wavelengths x sp.grid_size x sp.grid_size)
 
     datacube = np.array(datacube)
     datacube = np.roll(np.roll(datacube, tp.pix_shift[0], 1), tp.pix_shift[1],

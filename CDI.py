@@ -54,6 +54,7 @@ def CDIprobe(theta, iw):
 
     return probe
 
+
 def gen_CDI_phase_stream():
     """
     generate an array of phases per timestep for the CDI algorithm

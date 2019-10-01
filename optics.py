@@ -9,7 +9,7 @@ import numpy as np
 import proper
 from scipy.interpolate import interp1d
 
-from mm_params import ap, tp
+from mm_params import ap, tp, sp
 from mm_utils import dprint
 
 
@@ -18,7 +18,7 @@ from mm_utils import dprint
 ############################
 class Wavefronts():
     """
-    An object containing all of the complex E fields (for each sample wavelength and astronomical object) for this timestep
+    An object containing all of the complex E fields for each sampled wavelength and astronomical object at this timestep
 
     :params
 
@@ -33,7 +33,7 @@ class Wavefronts():
 
         # wf_array is an array of arrays; the wf_array is (number_wavelengths x number_astro_objects)
         # each 2D field in the wf_array is the 2D array of complex E-field values at that wavelength, per object
-        # the E-field size is given by (tp.grid_size x tp.grid_size)
+        # the E-field size is given by (sp.grid_size x sp.grid_size)
         if ap.companion:
             self.wf_array = np.empty((len(self.wsamples), 1 + len(ap.contrast)), dtype=object)
         else:
@@ -45,18 +45,27 @@ class Wavefronts():
         # Init Locations of saved E-field
         # self.save_E_fields = np.empty((0, np.shape(self.wf_array)[0],
         #                                np.shape(self.wf_array)[1],
-        #                                tp.grid_size,
-        #                                tp.grid_size), dtype=np.complex64)
+        #                                sp.grid_size,
+        #                                sp.grid_size), dtype=np.complex64)
 
     def initialize_proper(self):
         # Initialize the Wavefront in Proper
         for iw, w in enumerate(self.wsamples):
-            # Scale beam ratio by wavelength .....?
+            # Scale beam ratio by wavelength for polychromatic imaging
             # see Proper manual pg 37
-            self.beam_ratios[iw] = tp.beam_ratio * ap.wvl_range[0] / w
-            # dprint(f"iw={iw}, w={w}, beam ratio is {self.beam_ratios[iw]}")
+            # Sampling is devised such that you get a Nyquist sampled image in the focal plane. If you optical system
+            #  goes directly from pupil plane to focal plane, then you need to scale the beam ratio such that sampling
+            #  in the focal plane is constant. You can check this with check_sampling, which returns the value from
+            #  prop_get_sampling. If the optical system does not go directly from pupil-to-object plane at each optical
+            #  plane, the beam ratio does not need to be scaled by wavelength, this is done by some optics wizardry that
+            #  I don't fully understand
+            if sp.OOPP:
+                self.beam_ratios[iw] = sp.beam_ratio # * ap.wvl_range[0] / w
+            else:
+                self.beam_ratios[iw] = sp.beam_ratio * ap.wvl_range[0] / w
+                # dprint(f"iw={iw}, w={w}, beam ratio is {self.beam_ratios[iw]}")
             # Initialize the wavefront at entrance pupil
-            wfp = proper.prop_begin(tp.enterance_d, w, tp.grid_size, self.beam_ratios[iw])
+            wfp = proper.prop_begin(tp.enterance_d, w, sp.grid_size, self.beam_ratios[iw])
 
             wfs = [wfp]
             names = ['star']
@@ -64,7 +73,7 @@ class Wavefronts():
             # Initiate wavefronts for companion(s)
             if ap.companion:
                 for ix in range(len(ap.contrast)):
-                    wfc = proper.prop_begin(tp.enterance_d, w, tp.grid_size, self.beam_ratios[iw])
+                    wfc = proper.prop_begin(tp.enterance_d, w, sp.grid_size, self.beam_ratios[iw])
                     wfs.append(wfc)
                     names.append('companion_%i' % ix)
 
@@ -91,8 +100,8 @@ class Wavefronts():
     #     if self.save_locs is not None and funcname in self.save_locs:
             # optic_E_fields = np.zeros((1, np.shape(self.wf_array)[0],
             #                            np.shape(self.wf_array)[1],
-            #                            tp.grid_size,
-            #                            tp.grid_size), dtype=np.complex64)
+            #                            sp.grid_size,
+            #                            sp.grid_size), dtype=np.complex64)
             # Saving E-field
 #             wf = proper.prop_shift_center(self.wf_array[iw, iwf].wfarr)
 #             optic_E_fields[0, iw, iwf] = copy.copy(wf)
@@ -117,17 +126,17 @@ class Wavefronts():
         for iw in range(shape[0]):
             for io in range(shape[1]):
                 # EXTRACT flag removes only middle portion of the array. Used to remove FFT wrap-around effects
-                if tp.maskd_size != tp.grid_size:
-                    wframes = np.zeros((tp.maskd_size, tp.maskd_size))
-                    (wframe, w_sampling) = proper.prop_end(self.wf_array[iw, io], EXTRACT=np.int(tp.maskd_size))
+                if sp.maskd_size != sp.grid_size:
+                    wframes = np.zeros((sp.maskd_size, sp.maskd_size))
+                    (wframe, w_sampling) = proper.prop_end(self.wf_array[iw, io], EXTRACT=np.int(sp.maskd_size))
                 else:
-                    wframes = np.zeros((tp.grid_size, tp.grid_size))
+                    wframes = np.zeros((sp.grid_size, sp.grid_size))
                     (wframe, w_sampling) = proper.prop_end(
                         self.wf_array[iw, io])  # Sampling returned by proper is in [m]
                 wframes += wframe  # adds 2D wavefront from all astro_objects together into single wavefront, per wavelength
             sampling[iw] = w_sampling
             datacube.append(wframes)  # puts each wavlength's wavefront into an array
-            # (number_wavelengths x tp.grid_size x tp.grid_size)
+            # (number_wavelengths x sp.grid_size x sp.grid_size)
 
         datacube = np.array(datacube)
         # Conex Mirror-- cirshift array for off-axis observing
@@ -231,25 +240,24 @@ def check_sampling(tstep, wfo, location, units=None):
     :param tstep: timestep, will only check for first timestep, so when tstep==0
     :param wfo: wavefront object
     :param location: string that identifies where call is being made
-    :param units: desired units of returned print statement
+    :param units: desired units of returned print statement; options are 'mm,'um','nm','arcsec','rad'
     :return:
     """
     if tstep == 0:
+        print(f"{location}")
         for w in range(wfo.wf_array.shape[0]):
             check_sampling = proper.prop_get_sampling(wfo.wf_array[w,0])
             if units == 'mm':
-                print(f"{location} sampling at wavelength={wfo.wsamples[w]*1e9:.0f}nm is {check_sampling:.4f} m")
+                print(f"sampling at wavelength={wfo.wsamples[w]*1e9:.0f}nm is {check_sampling:.4f} m")
             elif units == 'um':
-                print(f"{location} sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling*1e6:.1f} um")
+                print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling*1e6:.1f} um")
             elif units == 'nm':
-                print(f"{location} sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling*1e9:.1f} nm")
+                print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling*1e9:.1f} nm")
             elif units == 'arcsec':
                 check_sampling = proper.prop_get_sampling_arcsec(wfo.wf_array[w, 0])
-                print(
-                    f"{location} sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling:.3f} arcsec")
+                print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling*1e3:.2f} mas")
             elif units == 'rad':
                 check_sampling = proper.prop_get_sampling_radians(wfo.wf_array[w, 0])
-                print(
-                    f"{location} sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling:.3f} rad")
+                print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling:.3f} rad")
             else:
-                print(f"{location} sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling} m")
+                print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling} m")

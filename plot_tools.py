@@ -52,8 +52,8 @@ def quick2D(image, samp=None, title=None, logAmp=False, vlim=(None,None), colorm
 
     # X,Y lables
     if samp is not None:
-        tic_spacing = np.linspace(0, tp.maskd_size, tp.maskd_size/50)
-        scale = np.round(np.linspace(-samp * tp.maskd_size/2, samp * tp.maskd_size/2, (tp.maskd_size+1)/50)*1e6)
+        tic_spacing = np.linspace(0, sp.maskd_size, sp.maskd_size/50)
+        scale = np.round(np.linspace(-samp * sp.maskd_size/2, samp * sp.maskd_size/2, (sp.maskd_size+1)/50)*1e6)
         tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
         tic_spacing[-1] = tic_spacing[-1] -1  # hack for edge effects
         dprint(f"xscale = {scale[0]},{scale[-1]}")
@@ -141,9 +141,9 @@ def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, 
         # X,Y lables
         if sampl is not None:
             # dprint(f"sampling = {sampl[w]}")
-            tic_spacing = np.linspace(0, tp.maskd_size, 5)  # 5 is just set by hand, arbitrarily chosen
+            tic_spacing = np.linspace(0, sp.maskd_size, 5)  # 5 is just set by hand, arbitrarily chosen
             tic_lables = np.round(
-                np.linspace(-sampl[w] * tp.maskd_size / 2, sampl[w] * tp.maskd_size / 2, 5)).astype(int)  # nsteps must be same as tic_spacing
+                np.linspace(-sampl[w] * sp.maskd_size / 2, sampl[w] * sp.maskd_size / 2, 5)).astype(int)  # nsteps must be same as tic_spacing
             tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
             tic_spacing[-1] = tic_spacing[-1] - 1  # hack for edge effects
             plt.xticks(tic_spacing, tic_lables, fontsize=6)
@@ -530,13 +530,13 @@ def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True,
 #             ax1.imshow(after_dm, origin='lower', cmap="YlGnBu_r")
 #         ax2.imshow(phase_afterdm, origin='lower', cmap="YlGnBu_r")  # , vmin=-0.5, vmax=0.5)
 #
-#         ax3.plot(after_dm[int(tp.grid_size / 2)])
-#         ax3.plot(np.sum(np.eye(tp.grid_size) * after_dm, axis=1))
+#         ax3.plot(after_dm[int(sp.grid_size / 2)])
+#         ax3.plot(np.sum(np.eye(sp.grid_size) * after_dm, axis=1))
 #
 #         # plt.plot(np.sum(after_dm,axis=1)/after_dm[128,128])
 #
-#         ax4.plot(phase_afterdm[int(tp.grid_size / 2)])
-#         # ax4.plot(np.sum(np.eye(tp.grid_size)*phase_afterdm,axis=1))
+#         ax4.plot(phase_afterdm[int(sp.grid_size / 2)])
+#         # ax4.plot(np.sum(np.eye(sp.grid_size)*phase_afterdm,axis=1))
 #         plt.xlim([0, proper.prop_get_gridsize(wfo)])
 #         fig.set_tight_layout(True)
 #
@@ -546,7 +546,7 @@ def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True,
 #         ws = sp.get_ints['w']
 #         cs = sp.get_ints['c']
 #
-#         int_maps = np.empty((0, tp.grid_size, tp.grid_size))
+#         int_maps = np.empty((0, sp.grid_size, sp.grid_size))
 #         for iw in ws:
 #             for iwf in cs:
 #                 # int_maps.append(proper.prop_shift_center(np.abs(wf_array[iw, iwf].wfarr) ** 2))
@@ -602,7 +602,7 @@ def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True,
 #     fig = plt.figure()
 #     if pupil:
 #         import medis.Analysis.phot
-#         image = image * Analysis.phot.aperture(tp.grid_size / 2, tp.grid_size / 2, tp.grid_size / 2)
+#         image = image * Analysis.phot.aperture(sp.grid_size / 2, sp.grid_size / 2, sp.grid_size / 2)
 #
 #     if title is None:
 #         title = r'  $I / I^{*}$'
@@ -732,13 +732,13 @@ def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True,
 #         ax1.imshow(after_dm, origin='lower', cmap="YlGnBu_r")
 #     ax2.imshow(phase_afterdm, origin='lower', cmap="YlGnBu_r")  # , vmin=-0.5, vmax=0.5)
 #
-#     ax3.plot(after_dm[int(tp.grid_size / 2)])
-#     ax3.plot(np.sum(np.eye(tp.grid_size) * after_dm, axis=1))
+#     ax3.plot(after_dm[int(sp.grid_size / 2)])
+#     ax3.plot(np.sum(np.eye(sp.grid_size) * after_dm, axis=1))
 #
 #     # plt.plot(np.sum(after_dm,axis=1)/after_dm[128,128])
 #
-#     ax4.plot(phase_afterdm[int(tp.grid_size / 2)])
-#     # ax4.plot(np.sum(np.eye(tp.grid_size)*phase_afterdm,axis=1))
+#     ax4.plot(phase_afterdm[int(sp.grid_size / 2)])
+#     # ax4.plot(np.sum(np.eye(sp.grid_size)*phase_afterdm,axis=1))
 #     plt.xlim([0, proper.prop_get_gridsize(wfo)])
 #     fig.set_tight_layout(True)
 #
@@ -765,13 +765,13 @@ def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True,
 #         ax1.imshow(I, origin='lower', cmap="YlGnBu_r")
 #     ax2.imshow(Q, origin='lower', cmap="YlGnBu_r")  # , vmin=-0.5, vmax=0.5)
 #
-#     ax3.plot(I[int(tp.grid_size / 2)])
-#     ax3.plot(np.sum(np.eye(tp.grid_size) * I, axis=1))
+#     ax3.plot(I[int(sp.grid_size / 2)])
+#     ax3.plot(np.sum(np.eye(sp.grid_size) * I, axis=1))
 #
 #     # plt.plot(np.sum(after_dm,axis=1)/after_dm[128,128])
 #
-#     ax4.plot(Q[int(tp.grid_size / 2)])
-#     # ax4.plot(np.sum(np.eye(tp.grid_size)*phase_afterdm,axis=1))
+#     ax4.plot(Q[int(sp.grid_size / 2)])
+#     # ax4.plot(np.sum(np.eye(sp.grid_size)*phase_afterdm,axis=1))
 #     plt.xlim([0, proper.prop_get_gridsize(wfo)])
 #     fig.set_tight_layout(True)
 #     if show == True:

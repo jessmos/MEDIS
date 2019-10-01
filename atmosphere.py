@@ -31,7 +31,7 @@ def gen_atmos(plot=False):
     """
     dprint("Making New Atmosphere Model")
 
-    pupil_grid = hcipy.make_pupil_grid(tp.grid_size, tp.enterance_d)
+    pupil_grid = hcipy.make_pupil_grid(sp.grid_size, tp.enterance_d)
 
     if atmp.model == 'single':
         layers = [hcipy.InfiniteAtmosphericLayer(pupil_grid, atmp.cn_sq, atmp.L0, atmp.vel, atmp.h, 2)]
@@ -55,8 +55,8 @@ def gen_atmos(plot=False):
             wf2 = atmos.forward(wf)
 
             filename = get_filename(it, wsamples[iw])
-            hdu = fits.ImageHDU(wf2.phase.reshape(tp.grid_size, tp.grid_size))
-            hdu.header['PIXSIZE'] = tp.enterance_d/tp.grid_size
+            hdu = fits.ImageHDU(wf2.phase.reshape(sp.grid_size, sp.grid_size))
+            hdu.header['PIXSIZE'] = tp.enterance_d/sp.grid_size
             hdu.writeto(filename, overwrite=True)
 
             if plot and iw == 0:
@@ -86,7 +86,7 @@ def add_atmos(wfo, it):
         if not os.path.exists(atmos_map):
             raise NameError('Failed to initialize atmosphere in mini_medis.run_medis() \n'
                             'check new atmosphere is generated for specific mm_params \n'
-                            'Check: tp.grid_size, ap.numframes, etc')
+                            'Check: sp.grid_size, ap.numframes, etc')
 
         for io in range(shape[1]):
             obj_map = fits.open(atmos_map)[1].data
