@@ -31,11 +31,12 @@ rcParams['font.family'] = 'DejaVu Sans'
 # rcParams['mathtext.bf'] = 'Bitstream Vera Sans:bold'
 
 
-def quick2D(image, samp=None, title=None, logAmp=False, vlim=(None,None), colormap=None):
+def quick2D(image, dx=None, title=None, logAmp=False, vlim=(None,None), colormap=None):
     """
     Looks at a 2D array, has bunch of handles for plot.imshow
 
     :param image: 2D array to plot (data)
+    :param dx: sampling of the image in m. Hardcoded to convert to um on axis
     :param title: string--must be set or will error!
     :param logAmp: flag to set logscale plotting in amplitude maps.
     :param vlim: tuple of limits on the colorbar axis, otherwise default matplotlib (pass in logscale limits if LogAmp=True)
@@ -51,12 +52,12 @@ def quick2D(image, samp=None, title=None, logAmp=False, vlim=(None,None), colorm
         title = input("Please Enter Title: ")
 
     # X,Y lables
-    if samp is not None:
+    if dx is not None:
+        scale = np.round(
+            np.linspace(-dx * sp.maskd_size / 2, dx * sp.maskd_size / 2, (sp.maskd_size + 1) / 50) * 1e6)
         tic_spacing = np.linspace(0, sp.maskd_size, sp.maskd_size/50)
-        scale = np.round(np.linspace(-samp * sp.maskd_size/2, samp * sp.maskd_size/2, (sp.maskd_size+1)/50)*1e6)
         tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
         tic_spacing[-1] = tic_spacing[-1] -1  # hack for edge effects
-        dprint(f"xscale = {scale[0]},{scale[-1]}")
         plt.xticks(tic_spacing, scale)
         plt.yticks(tic_spacing, scale)
         plt.xlabel('[um]')
@@ -88,9 +89,9 @@ def quick2D(image, samp=None, title=None, logAmp=False, vlim=(None,None), colorm
 
 
 def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, vlim=(None,None), subplt_cols=3,
-                  sampl=None):
+                  dx=None):
     """
-    view plot of each wavelength bin intensity at a single timestep
+    view plot of intensity in each wavelength bin at a single (last) timestep
 
     :param datacube: 3D spectral cube at single timestep
     :param title: string, must be set or will error!
@@ -98,9 +99,8 @@ def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, 
     :param logAmp: turn logscale plotting on or off
     :param use_axis: turn on/off using axis ticks, colorbar, etc
     :param vlim: tuple of colorbar axis limits (min,max)
-    :param xylims: range of x-y axis to plot (inner portion of grid)
     :param subplt_cols: number of subplots per row
-    :param sampl: sampling of the image
+    :param dx: sampling of the image in m. Hardcoded to convert to um
     :return:
     """
     plt.close('all')
@@ -133,17 +133,17 @@ def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, 
     # else:
     #     vmin = trough
 
-    if sampl is not None:
-        sampl = sampl * 1e6  # [convert to um]
+    if dx is not None:
+        dx = sampl * 1e6  # [convert to um]
 
     for w in range(n_colors):
         ax = fig.add_subplot(gs[w])
         # X,Y lables
-        if sampl is not None:
+        if dx is not None:
             # dprint(f"sampling = {sampl[w]}")
             tic_spacing = np.linspace(0, sp.maskd_size, 5)  # 5 is just set by hand, arbitrarily chosen
             tic_lables = np.round(
-                np.linspace(-sampl[w] * sp.maskd_size / 2, sampl[w] * sp.maskd_size / 2, 5)).astype(int)  # nsteps must be same as tic_spacing
+                np.linspace(-dx[w] * sp.maskd_size / 2, dx[w] * sp.maskd_size / 2, 5)).astype(int)  # nsteps must be same as tic_spacing
             tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
             tic_spacing[-1] = tic_spacing[-1] - 1  # hack for edge effects
             plt.xticks(tic_spacing, tic_lables, fontsize=6)
@@ -183,17 +183,19 @@ def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, 
     if show is True:
         plt.show(block=True)
 
-def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True, vlim =(None,None), subplt_cols=3):
+def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True, vlim =(None,None),
+                    dx=None, subplt_cols=3):
     """
     view white light images in the timeseries
 
-    :param obs_seq:
-    :param title:
-    :param show:
-    :param logAmp:
-    :param use_axis:
-    :param vlim:
-    :param subplt_cols:
+    :param datacube: 3D spectral cube at single timestep
+    :param title: string, must be set or will error!
+    :param show: flag possibly useful for plotting loops of things?
+    :param logAmp: turn logscale plotting on or off
+    :param use_axis: turn on/off using axis ticks, colorbar, etc
+    :param vlim: tuple of colorbar axis limits (min,max)
+    :param subplt_cols: number of subplots per row
+    :param dx: sampling of the image in m. Hardcoded to convert to um
     :return:
     """
     img_tseries = np.sum(obs_seq, axis=1)
@@ -217,6 +219,17 @@ def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True,
     # Checking Colorbar axis limits
     vmin = vlim[0]
     vmax = vlim[1]
+
+    # X,Y lables
+    if dx is not None:
+        scale = np.round(
+            np.linspace(-dx * sp.maskd_size / 2, dx * sp.maskd_size / 2, (sp.maskd_size + 1) / 50) * 1e6)
+        tic_spacing = np.linspace(0, sp.maskd_size, sp.maskd_size / 50)
+        tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
+        tic_spacing[-1] = tic_spacing[-1] - 1  # hack for edge effects
+        plt.xticks(tic_spacing, scale)
+        plt.yticks(tic_spacing, scale)
+        # plt.xlabel('[um]')
 
     for t in range(n_tsteps):
         ax = fig.add_subplot(gs[t])
@@ -243,9 +256,9 @@ def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True,
             plt.axis('off')
 
     if use_axis:
-        gs.tight_layout(fig, pad=0.08, rect=(0, 0, 1, 0.9))  # rect = (left, bottom, right, top)
+        gs.tight_layout(fig, pad=0.08, rect=(0, 0, 1, 0.85))  # rect = (left, bottom, right, top)
         # fig.tight_layout(pad=50)
-        cbar_ax = fig.add_axes([0.55, 0.05, 0.2, 0.05])  # Add axes for colorbar @ position [left,bottom,width,height]
+        cbar_ax = fig.add_axes([0.55, 0.1, 0.2, 0.05])  # Add axes for colorbar @ position [left,bottom,width,height]
         cb = fig.colorbar(im, cax=cbar_ax, orientation='horizontal')  #
         cb.set_label(clabel)
 

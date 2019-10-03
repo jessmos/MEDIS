@@ -114,19 +114,23 @@ def run_mmedis():
     # Plotting Spectra at second-to-last tstep
     if sp.show_cube:
         tstep = sp.numframes-1
-        view_datacube(obs_sequence[tstep], logAmp=True,
+        view_datacube(obs_sequence[tstep],
                       title=f"Intensity per Spectral Bin at Timestep {tstep} \n"
                             f" AO={tp.use_ao}, CDI={cdip.use_cdi}",
                             # f"Beam Ratio = {sp.beam_ratio:.4f}",#  sampling = {sampling*1e6:.4f} [um/gridpt]",
+                      logAmp=True,
                       subplt_cols=sp.spectra_cols,
                       vlim=(1e-8, 1e-3),
-                      sampl=sampling)
+                      dx=sampling)
 
     # Plotting Timeseries
     if sp.show_tseries:
         view_timeseries(obs_sequence, title=f"White Light Timeseries\n"
-                                            f"AO={tp.use_ao}. CDI={cdip.use_cdi}", subplt_cols=5,
-                        logAmp=True )  # vlim=(1e-8, 1e-3)
+                                            f"AO={tp.use_ao}. CDI={cdip.use_cdi}",
+                        subplt_cols=sp.tseries_cols,
+                        logAmp=True,
+                        vlim=(1e-6, 1e-3))
+                        # dx=sampling
 
     print('mini-MEDIS Data Run Completed')
     print('**************************************')
@@ -172,7 +176,7 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
         for it, t in enumerate(iter(inqueue.get, sentinel)):
             kwargs = {'iter': t, 'params': [ap, tp, iop, sp], 'theta': theta_series[t]}
             spectralcube, sampling = pm.prop_run(tp.prescription, 1, sp.grid_size, PASSVALUE=kwargs,
-                                                   VERBOSE=False, TABLE=True)
+                                                 VERBOSE=False, TABLE=True)
 
             # for cx in range(len(ap.contrast) + 1):
             #     mmu.dprint(f"E-field shape is {save_E_fields.shape}")
@@ -195,10 +199,13 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
         if sp.show_wframe:
             # vlim = (np.min(spectralcube) * 10, np.max(spectralcube))  # setting z-axis limits
             quick2D(image, title=f"White light image at timestep {it}, \n"
-                                                f"AO={tp.use_ao}, CDI={cdip.use_cdi}",
+                                 f"Through Subaru with aberrations+atmosphere\n"
+                                 f"AO={tp.use_ao}, CDI={cdip.use_cdi}",
                                  # f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio}, "
                                  # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
-                    logAmp=True)
+                    logAmp=True,
+                    dx=sampling[0],
+                    vlim=(1e-6, 1e-3))
         # loop_frames(obs_sequence[:, 0])
         # loop_frames(obs_sequence[0])
 

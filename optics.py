@@ -53,14 +53,14 @@ class Wavefronts():
         for iw, w in enumerate(self.wsamples):
             # Scale beam ratio by wavelength for polychromatic imaging
             # see Proper manual pg 37
-            # Sampling is devised such that you get a Nyquist sampled image in the focal plane. If you optical system
+            # Proper is devised such that you get a Nyquist sampled image in the focal plane. If you optical system
             #  goes directly from pupil plane to focal plane, then you need to scale the beam ratio such that sampling
             #  in the focal plane is constant. You can check this with check_sampling, which returns the value from
             #  prop_get_sampling. If the optical system does not go directly from pupil-to-object plane at each optical
-            #  plane, the beam ratio does not need to be scaled by wavelength, this is done by some optics wizardry that
+            #  plane, the beam ratio does not need to be scaled by wavelength, because of some optics wizardry that
             #  I don't fully understand
             if sp.OOPP:
-                self.beam_ratios[iw] = sp.beam_ratio # * ap.wvl_range[0] / w
+                self.beam_ratios[iw] = sp.beam_ratio
             else:
                 self.beam_ratios[iw] = sp.beam_ratio * ap.wvl_range[0] / w
                 # dprint(f"iw={iw}, w={w}, beam ratio is {self.beam_ratios[iw]}")

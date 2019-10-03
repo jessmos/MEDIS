@@ -84,7 +84,7 @@ class Simulation_params:
         self.num_processes = 1  # multiprocessing.cpu_count()
 
         # Grid Sizing/Sampling Params
-        self.beam_ratio = 0.12  # parameter dealing with the sampling of the beam in the pupil/focal
+        self.beam_ratio = 0.15  # parameter dealing with the sampling of the beam in the pupil/focal
                                 # plane vs grid size. See Proper manual pgs 36-37 and 71-74 for discussion
         self.grid_size = 512  # creates a nxn array of samples of the wavefront
                               # must be bigger than the beam size to avoid FT effects at edges; must be factor of 2
@@ -100,8 +100,8 @@ class Simulation_params:
         self.numframes = 1  # number of timesteps in the simulation
 
         # Plotting Params
-        self.show_cube = True  # Plot datacube
-        self.show_wframe = False  # Plot image frame
+        self.show_cube = False  # Plot datacube
+        self.show_wframe = True  # Plot image frame
         self.show_tseries = False
         self.spectra_cols = 3  # number of subplots per row in view_datacube
         self.tseries_cols = 5  # number of subplots per row in view_timeseries
@@ -186,7 +186,7 @@ class Telescope_params:
                             # Coefficients used to calcuate PSD errormap in Proper (see pg 56 in manual)
                             # only change these if making new aberration maps
         self.aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4)
-                           'b': [0.8, 0.2],  # correlation length
+                           'b': [0.8, 0.2],  # correlation length (b/2pi defines knee)
                            'c': [3.1, 0.5],  #
                            'a_amp': [0.05, 0.01]}
         # Zernike Settings- see pg 192 for details
