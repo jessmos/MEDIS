@@ -64,8 +64,8 @@ def run_mmedis():
 
     # Initialize Atmosphere
     # mmu.dprint("Atmosdir = %s " % iop.atmosdir)
-    if glob.glob(iop.atmosdir + '/*.fits') == []:
-        atmos.gen_atmos(plot=True)
+    # if glob.glob(iop.atmosdir + '/*.fits') == []:
+    #     atmos.gen_atmos(plot=True)
 
     # =======================================================================================================
     # Multiprocessing with gen_timeseries
@@ -199,9 +199,9 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
         if sp.show_wframe:
             # vlim = (np.min(spectralcube) * 10, np.max(spectralcube))  # setting z-axis limits
             quick2D(image, title=f"White light image at timestep {it}, \n"
-                                 f"Through Subaru with aberrations+atmosphere\n"
-                                 f"AO={tp.use_ao}, CDI={cdip.use_cdi}",
-                                 # f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio}, "
+                                 # f"Through Subaru with aberrations+atmosphere\n"
+                                 # f"AO={tp.use_ao}, CDI={cdip.use_cdi}"
+                                 f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio}",
                                  # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
                     logAmp=True,
                     dx=sampling[0],

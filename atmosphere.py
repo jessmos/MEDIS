@@ -79,14 +79,13 @@ def add_atmos(wfo, it):
     :return:
     """
     shape = wfo.wf_array.shape
-
     for iw in range(shape[0]):
-        wavelength = wfo.wf_array[iw, 0].lamda  # the .lamda comes from proper, not from Wavefronts class
+        # Check for Existing File
         atmos_map = get_filename(it, wavelength)
         if not os.path.exists(atmos_map):
-            raise NameError('Failed to initialize atmosphere in mini_medis.run_medis() \n'
-                            'check new atmosphere is generated for specific mm_params \n'
-                            'Check: sp.grid_size, ap.numframes, etc')
+            gen_atmos(plot=True)
+
+        wavelength = wfo.wf_array[iw, 0].lamda  # the .lamda comes from proper, not from Wavefronts class
 
         for io in range(shape[1]):
             obj_map = fits.open(atmos_map)[1].data
