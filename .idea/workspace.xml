@@ -3,13 +3,11 @@
   <component name="ChangeListManager">
     <list default="true" id="4c18236a-dfc5-4249-b13b-a88d6fd6e999" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CDI.py" beforeDir="false" afterPath="$PROJECT_DIR$/CDI.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Subaru_frontend.py" beforeDir="false" afterPath="$PROJECT_DIR$/Subaru_frontend.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/adaptive.py" beforeDir="false" afterPath="$PROJECT_DIR$/adaptive.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/atmosphere.py" beforeDir="false" afterPath="$PROJECT_DIR$/atmosphere.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mini_medis.py" beforeDir="false" afterPath="$PROJECT_DIR$/mini_medis.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/check_sampling.py" beforeDir="false" afterPath="$PROJECT_DIR$/check_sampling.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mm_params.py" beforeDir="false" afterPath="$PROJECT_DIR$/mm_params.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/plot_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/plot_tools.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proper_mod/prop_dm.py" beforeDir="false" afterPath="$PROJECT_DIR$/proper_mod/prop_dm.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -46,7 +44,7 @@
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="com.intellij.ide.scratch.LRUPopupBuilder$1/New Scratch File" value="Python" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/proper_mod/prop_dm.py" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/optics.py" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="settings.editor.selected.configurable" value="PyScientificConfigurable" />
@@ -117,9 +115,6 @@
       <module name="CDI-devel" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
       <option name="SDK_HOME" value="$USER_HOME$/Programs/anaconda3/envs/mmedis/bin/python3.7" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="false" />
@@ -187,8 +182,8 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.mm_params" />
         <item itemvalue="Python.check_sampling" />
+        <item itemvalue="Python.mm_params" />
       </list>
     </recent_temporary>
   </component>
@@ -231,7 +226,7 @@
       <workItem from="1569535044447" duration="10747000" />
       <workItem from="1569957254420" duration="32000" />
       <workItem from="1569959181018" duration="11046000" />
-      <workItem from="1570051746626" duration="29026000" />
+      <workItem from="1570051746626" duration="43688000" />
     </task>
     <task id="LOCAL-00001" summary="changed rootdir in iop">
       <created>1565385158240</created>
@@ -436,7 +431,14 @@
       <option name="project" value="LOCAL" />
       <updated>1570147248695</updated>
     </task>
-    <option name="localTasksCounter" value="30" />
+    <task id="LOCAL-00030" summary="fixed aliasing problem in quick_ao">
+      <created>1570498453811</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1570498453811</updated>
+    </task>
+    <option name="localTasksCounter" value="31" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -456,7 +458,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="added check_sampling. not part of mini-medis, but a supplemental file helpful to checking sampling of the initial params" />
     <MESSAGE value="moved zernike aberrations from optics.py to aberrations.py; added orders/values as params settings" />
     <MESSAGE value="updates to check_sampling" />
     <MESSAGE value="depricated mask_obs_sequence by using the EXTRACT keyword in prop_end. Required using np.int in indices of prop_end.py in Proper source code &#10;eg &#10; wf.wfarr = wf.wfarr[np.int(ny/2-EXTRACT/2):np.int(ny/2+EXTRACT/2),np.int(nx/2-EXTRACT/2):np.int(nx/2+EXTRACT/2)]" />
@@ -481,11 +482,12 @@
     <MESSAGE value="move beam_ratios, grid_size, maskd_size, and OOPP to sp rather than tp" />
     <MESSAGE value="cleanup and testing. Good baseline" />
     <MESSAGE value="removed atmosphere initialization from run_mmedis and initiate it in add_atmos" />
-    <option name="LAST_COMMIT_MESSAGE" value="removed atmosphere initialization from run_mmedis and initiate it in add_atmos" />
+    <MESSAGE value="fixed aliasing problem in quick_ao" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixed aliasing problem in quick_ao" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/Hubble_frontend_py$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1569885294741" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/Subaru_mini_medis_py$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1570498352727" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Subaru_mini_medis_py$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1570577899826" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/miniMEDIS$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1566340550553" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/CDI_devel$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1565285433606" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Hubble_frontend_py$mm_params.coverage" NAME="mm_params Coverage Results" MODIFIED="1568243255215" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
