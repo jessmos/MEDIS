@@ -124,7 +124,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # CPA from Effective Primary
     aber.add_aber(wfo.wf_array, tp.enterance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='effective-primary')
     # Zernike Aberrations- Low Order
-    # wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
+    wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
     wfo.loop_over_function(opx.prop_mid_optics, tp.flen_nsmyth, tp.dist_nsmyth_ao1)
     # wfo.loop_over_function(opx.prop_mid_optics, tp.flen_nsmyth, tp.flen_nsmyth)  # test only going to prime focus
 
@@ -143,8 +143,8 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     wfo.loop_over_function(proper.prop_propagate, tp.dist_dm_ao2)
 
     # AO188-OAP2
-    aber.add_aber(wfo.wf_array, tp.d_ao2, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP2')
-    wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)
+    # aber.add_aber(wfo.wf_array, tp.d_ao2, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP2')
+    # wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)
     wfo.loop_over_function(opx.prop_mid_optics, tp.fl_ao2, tp.dist_oap2_focus)
 
     ########################################

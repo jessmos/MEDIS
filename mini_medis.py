@@ -62,11 +62,6 @@ def run_mmedis():
     if ap.companion is False:
         ap.contrast = []
 
-    # Initialize Atmosphere
-    # mmu.dprint("Atmosdir = %s " % iop.atmosdir)
-    # if glob.glob(iop.atmosdir + '/*.fits') == []:
-    #     atmos.gen_atmos(plot=True)
-
     # =======================================================================================================
     # Multiprocessing with gen_timeseries
     # =======================================================================================================
@@ -116,8 +111,8 @@ def run_mmedis():
         tstep = sp.numframes-1
         view_datacube(obs_sequence[tstep],
                       title=f"Intensity per Spectral Bin at Timestep {tstep} \n"
-                            f" AO={tp.use_ao}, CDI={cdip.use_cdi}",
-                            # f"Beam Ratio = {sp.beam_ratio:.4f}",#  sampling = {sampling*1e6:.4f} [um/gridpt]",
+                            f" AO={tp.use_ao}, CDI={cdip.use_cdi}"
+                            f"Beam Ratio = {sp.beam_ratio:.4f}",#  sampling = {sampling*1e6:.4f} [um/gridpt]",
                       logAmp=True,
                       subplt_cols=sp.spectra_cols,
                       vlim=(1e-8, 1e-3),
@@ -200,7 +195,7 @@ def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
             # vlim = (np.min(spectralcube) * 10, np.max(spectralcube))  # setting z-axis limits
             quick2D(image, title=f"White light image at timestep {it}, \n"
                                  # f"Through Subaru with aberrations+atmosphere\n"
-                                 # f"AO={tp.use_ao}, CDI={cdip.use_cdi}"
+                                 f"AO={tp.use_ao}, CDI={cdip.use_cdi}"
                                  f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio}",
                                  # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
                     logAmp=True,

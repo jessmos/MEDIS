@@ -8,10 +8,9 @@ Code is broken into quick_AO and full_AO sections
 """
 
 import numpy as np
-from scipy import interpolate
 import scipy.ndimage
 from skimage.restoration import unwrap_phase
-from scipy import ndimage
+from scipy import interpolate, ndimage
 import proper
 
 from mm_params import sp, tp, ap, cdip
@@ -45,7 +44,8 @@ def quick_ao(wfo, WFS_maps, theta):
      you need the 4pi because you are treating it as a reflection, so it travels that distance twice
 
     In the call to proper.prop_dm, we apply the flag tp.fit_dm, which switches between two 'modes' of proper's DM
-    surface fitting. If FALSE, the DM is driven to the heights specified by dm_map, and the influence function will
+    surface fitting. If FALSE, the DM is driven to the heightsfrom scipy import interpolate
+ specified by dm_map, and the influence function will
     act on these heights to define the final surface shape applied to the DM, which may differ substantially from
     the initial heights specified by dm_map. If TRUE, proper will iterate applying the influence function to the
     input heights, and adjust the heights until the difference between the influenced-map and input map meets some
@@ -76,6 +76,8 @@ def quick_ao(wfo, WFS_maps, theta):
         for io in range(shape[1]):
             d_beam = 2 * proper.prop_get_beamradius(wfo.wf_array[iw,io])  # beam diameter
             act_spacing = d_beam / nact_across_pupil  # actuator spacing [m]
+            # map_spacing = proper.prop_get_sampling(wfo.wf_array[iw,0])
+
             ###################################
             # Cropping the Beam from WFS map
             ###################################
@@ -91,9 +93,16 @@ def quick_ao(wfo, WFS_maps, theta):
             # Interpolating the WFS map onto the actuator spacing
             # (tp.nact,tp.nact)
             ########################################################
-            f = interpolate.interp2d(range(dm_map.shape[0]), range(dm_map.shape[0]), dm_map)
+            # Lowpass Filter- prevents aliasing
+            dm_amp = proper.prop_get_amplitude(wfo.wf_array[iw, io])
+            dm_phs = proper.prop_get_phase(wfo.wf_array[iw,io])
+            lowpass = ndimage.gaussian_filter(dm_phs, 1, mode='nearest')
+            smoothed = dm_phs - lowpass
+            dm_map = proper.prop_shift_center(dm_phs*np.cos(smoothed)+1j*dm_amp*np.sin(smoothed))
+
+            f = interpolate.interp2d(range(dm_map.shape[0]), range(dm_map.shape[0]), dm_map, kind='cubic')
             dm_map = f(np.linspace(0,dm_map.shape[0],nact), np.linspace(0,dm_map.shape[0], nact))
-            # dm_map = proper.prop_magnify(CPA_map, map_spacing / act_spacing, nact)
+            # dm_map = proper.prop_magnify(dm_map, map_spacing / act_spacing, nact)
 
             #########################
             # Applying Piston Error
@@ -109,7 +118,6 @@ def quick_ao(wfo, WFS_maps, theta):
             # Apply the inverse of the WFS image to the DM, so use -dm_map (dm_map is in phase units, divide by k=2pi/lambda)
             surf_height = proper.prop_get_wavelength(wfo.wf_array[iw, io]) / (4 * np.pi)  # [m/rad]
             dm_map = -dm_map * surf_height  # Converts DM map to units of [m] of actuator heights
-            # dprint(f"surface height is {surf_height*1e9:4f} nm/rad")
 
             #######
             # CDI
@@ -123,22 +131,9 @@ def quick_ao(wfo, WFS_maps, theta):
             #########################
             # proper.prop_dm
             #########################
-            proper.prop_dm(wfo.wf_array[iw,io], dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
+            prop_dm(wfo.wf_array[iw,io], dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
             # proper.prop_dm(wfo, dm_map, dm_xc, dm_yc, N_ACT_ACROSS_PUPIL=nact, FIT=True)  #
             # check_sampling(0, wfo, "post-DM in quickAO")  # check sampling in optics.py
-
-    # kludge to help Rupert with weird phase discontinuities he was seeing
-    # kludge is basically a low-pass filter?
-    # TODO address the kludge. Is it still necessary
-    # there is a similar type kludge in the proper.prop_dm code, lines ~249-252
-    # for iw in range(shape[0]):
-    #     phase_map = proper.prop_get_phase(wfo.wf_array[iw,0])
-    #     amp_map = proper.prop_get_amplitude(wfo.wf_array[iw,0])
-    #
-    #     lowpass = ndimage.gaussian_filter(phase_map, 1, mode='nearest')
-    #     smoothed = phase_map - lowpass
-    #
-    #     wfo.wf_array[iw,0].wfarr = proper.prop_shift_center(amp_map*np.cos(smoothed)+1j*amp_map*np.sin(smoothed))
 
     return
 

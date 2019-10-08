@@ -54,7 +54,7 @@ def quick2D(image, dx=None, title=None, logAmp=False, vlim=(None,None), colormap
     # X,Y lables
     if dx is not None:
         scale = np.round(
-            np.linspace(-dx * sp.maskd_size / 2, dx * sp.maskd_size / 2, (sp.maskd_size + 1) / 50) * 1e6)
+            np.linspace(-dx * sp.maskd_size / 2, dx * sp.maskd_size / 2, (sp.maskd_size + 1) / 50) * 1e6).astype(int)
         tic_spacing = np.linspace(0, sp.maskd_size, sp.maskd_size/50)
         tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
         tic_spacing[-1] = tic_spacing[-1] -1  # hack for edge effects
@@ -134,7 +134,7 @@ def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, 
     #     vmin = trough
 
     if dx is not None:
-        dx = sampl * 1e6  # [convert to um]
+        dx = dx * 1e6  # [convert to um]
 
     for w in range(n_colors):
         ax = fig.add_subplot(gs[w])
@@ -221,6 +221,9 @@ def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True,
     vmax = vlim[1]
 
     # X,Y lables
+    if dx is not None:
+        dx = dx * 1e6  # [convert to um]
+
     if dx is not None:
         scale = np.round(
             np.linspace(-dx * sp.maskd_size / 2, dx * sp.maskd_size / 2, (sp.maskd_size + 1) / 50) * 1e6)

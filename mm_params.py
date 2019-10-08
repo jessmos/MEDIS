@@ -84,7 +84,7 @@ class Simulation_params:
         self.num_processes = 1  # multiprocessing.cpu_count()
 
         # Grid Sizing/Sampling Params
-        self.beam_ratio = 0.15  # parameter dealing with the sampling of the beam in the pupil/focal
+        self.beam_ratio = 0.11  # parameter dealing with the sampling of the beam in the pupil/focal
                                 # plane vs grid size. See Proper manual pgs 36-37 and 71-74 for discussion
         self.grid_size = 512  # creates a nxn array of samples of the wavefront
                               # must be bigger than the beam size to avoid FT effects at edges; must be factor of 2
@@ -100,7 +100,7 @@ class Simulation_params:
         self.numframes = 1  # number of timesteps in the simulation
 
         # Plotting Params
-        self.show_cube = False  # Plot datacube
+        self.show_cube = True  # Plot datacube
         self.show_wframe = True  # Plot image frame
         self.show_tseries = False
         self.spectra_cols = 3  # number of subplots per row in view_datacube
@@ -164,7 +164,7 @@ class Telescope_params:
 
         # AO System Settings
         self.use_ao = True
-        self.ao_act = 40  # number of actuators on the DM on one axis (proper only models nxn square DMs)
+        self.ao_act = 14  # number of actuators on the DM on one axis (proper only models nxn square DMs)
         self.piston_error = False  # flag for allowing error on DM surface shape
         self.fit_dm = True  # flag to use DM surface fitting (see proper manual pg 52, the FIT switch)
 

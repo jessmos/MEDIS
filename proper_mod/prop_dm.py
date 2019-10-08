@@ -140,8 +140,10 @@ def prop_dm(wf, dm_z0, dm_xc, dm_yc, spacing = 0., **kwargs):
     s = inf.shape
     nx_inf = s[1]
     ny_inf = s[0]
-    xc_inf = int(nx_inf/2)
-    yc_inf = int(ny_inf/2)
+    # xc_inf = int(nx_inf/2)
+    # yc_inf = int(ny_inf/2)
+    xc_inf = nx_inf // 2
+    yc_inf = ny_inf // 2
     dx_inf = 0.1e-3            # influence function spacing in meters
     dx_dm_inf = 1.e-3          # spacing between DM actuators in meters assumed by influence function
     inf_mag = 10
@@ -149,10 +151,8 @@ def prop_dm(wf, dm_z0, dm_xc, dm_yc, spacing = 0., **kwargs):
     if spacing != 0 and "N_ACT_ACROSS_PUPIL" in kwargs:
         raise ValueError("PROP_DM: User cannot specify both actuator spacing and N_ACT_ACROSS_PUPIL. Stopping.")
 
-
     if spacing == 0 and not "N_ACT_ACROSS_PUPIL" in kwargs:
         raise ValueError("PROP_DM: User must specify either actuator spacing or N_ACT_ACROSS_PUPIL. Stopping.")
-
 
     if "N_ACT_ACROSS_PUPIL" in kwargs:
         dx_dm = 2. * beamradius / int(kwargs["N_ACT_ACROSS_PUPIL"])
@@ -169,7 +169,7 @@ def prop_dm(wf, dm_z0, dm_xc, dm_yc, spacing = 0., **kwargs):
             inf_kernel = proper.prop_cubic_conv(inf.T, x/dx_inf+xc_inf, x/dx_inf+yc_inf, GRID=True)
         else:
             xygrid = np.meshgrid(x/dx_inf+xc_inf, x/dx_inf+yc_inf)
-            inf_kernel = map_coordinates(inf.T, xygrid, order = 3, mode = "nearest")
+            inf_kernel = map_coordinates(inf.T, xygrid, order=3, mode="nearest")
 
         (dm_z_commanded, dms) = proper.prop_fit_dm(dm_z, inf_kernel)
     else:
@@ -185,12 +185,12 @@ def prop_dm(wf, dm_z0, dm_xc, dm_yc, spacing = 0., **kwargs):
     ny_grid = ny_dm * inf_mag + 2 * margin
     xoff_grid = margin + inf_mag/2           # pixel location of 1st actuator center in subsampled grid
     yoff_grid = xoff_grid
-    dm_grid = np.zeros([ny_grid, nx_grid], dtype = np.float64)
+    dm_grid = np.zeros([ny_grid, nx_grid], dtype=np.float64)
 
-    x = np.arange(nx_dm, dtype = np.int16) * int(inf_mag) + int(xoff_grid)
-    y = np.arange(ny_dm, dtype = np.int16) * int(inf_mag) + int(yoff_grid)
+    x = np.arange(nx_dm, dtype=np.int16) * int(inf_mag) + int(xoff_grid)
+    y = np.arange(ny_dm, dtype=np.int16) * int(inf_mag) + int(yoff_grid)
     dm_grid[np.tile(np.vstack(y), (nx_dm,)), np.tile(x, (ny_dm,1))] = dm_z_commanded
-    dm_grid = ss.fftconvolve(dm_grid, inf, mode = 'same')
+    dm_grid = ss.fftconvolve(dm_grid, inf, mode='same')
 
     # 3D rotate DM grid and project orthogonally onto wavefront
     xdim = int(np.round(np.sqrt(2) * nx_grid * dx_inf / dx_surf)) # grid dimensions (pix) projected onto wavefront
@@ -200,8 +200,8 @@ def prop_dm(wf, dm_z0, dm_xc, dm_yc, spacing = 0., **kwargs):
 
     if ydim > n: ydim = n
 
-    x = np.ones((ydim,1), dtype = np.int) * ((np.arange(xdim) - int(xdim/2)) * dx_surf)
-    y = (np.ones((xdim,1), dtype = np.int) * ((np.arange(ydim) - int(ydim/2)) * dx_surf)).T
+    x = np.ones((ydim,1), dtype=np.int) * ((np.arange(xdim) - int(xdim/2)) * dx_surf)
+    y = (np.ones((xdim,1), dtype=np.int) * ((np.arange(ydim) - int(ydim/2)) * dx_surf)).T
 
     a = xtilt * np.pi / 180
     b = ytilt * np.pi / 180
@@ -228,8 +228,8 @@ def prop_dm(wf, dm_z0, dm_xc, dm_yc, spacing = 0., **kwargs):
     dy_dxs = (new_xyz[0,1] - new_xyz[1,1]) / (edge[0,0] - edge[1,0])
     dy_dys = (new_xyz[1,1] - new_xyz[2,1]) / (edge[1,1] - edge[2,1])
 
-    xs = ( x/dx_dxs - y*dx_dys/(dx_dxs*dy_dys) ) / ( 1 - dy_dxs*dx_dys/(dx_dxs*dy_dys) )
-    ys = ( y/dy_dys - x*dy_dxs/(dx_dxs*dy_dys) ) / ( 1 - dx_dys*dy_dxs/(dx_dxs*dy_dys) )
+    xs = (x/dx_dxs - y*dx_dys/(dx_dxs*dy_dys)) / (1 - dy_dxs*dx_dys/(dx_dxs*dy_dys))
+    ys = (y/dy_dys - x*dy_dxs/(dx_dxs*dy_dys)) / (1 - dx_dys*dy_dxs/(dx_dxs*dy_dys))
 
     xdm = (xs + dm_xc * dx_dm) / dx_inf + xoff_grid
     ydm = (ys + dm_yc * dx_dm) / dx_inf + yoff_grid
@@ -237,24 +237,19 @@ def prop_dm(wf, dm_z0, dm_xc, dm_yc, spacing = 0., **kwargs):
     # Here is where the resampling onto the wavefront coords happens
     # has two different modes, check these for correct method of resampling (also consider speed here)
     if proper.use_cubic_conv:
-        print(f"Proper 3.1.1-DM using cubic conv")
-        grid = proper.prop_cubic_conv(dm_grid.T, xdm, ydm, GRID = False)
+        # print(f"proper_mod Proper 3.1.1-DM using cubic conv")
+        grid = proper.prop_cubic_conv(dm_grid.T, xdm, ydm, GRID=False)
         grid = grid.reshape([xdm.shape[1], xdm.shape[0]])
     else:
-        print(f"Proper 3.1.1-DM using map_coordinates")
-        grid = map_coordinates(dm_grid.T, [xdm, ydm], order = 3, mode = "nearest", prefilter = True)
+        # print(f"proper_mod Proper 3.1.1-DM using map_coordinates")
+        grid = map_coordinates(dm_grid.T, [xdm, ydm], order=3, mode="nearest", prefilter=True)
 
     # Clipping oversampled map from influence function
-    dmap = np.zeros([n,n], dtype = np.float64)
+    dmap = np.zeros([n,n], dtype=np.float64)
     nx_grid, ny_grid = grid.shape
     xmin, xmax = int(n/2 - xdim/2), int(n/2 - xdim/2 + nx_grid)
-    ymin, ymax =  int(n/2 - ydim/2), int(n/2 - ydim/2 + ny_grid)
+    ymin, ymax = int(n/2 - ydim/2), int(n/2 - ydim/2 + ny_grid)
     dmap[ymin:ymax, xmin:xmax] = grid
-
-    # Random dots sometimes appear in the phase map. This is a little temporary hack to deal with that bug!
-    import scipy.ndimage
-    sigma = [1, 1]
-    dmap = scipy.ndimage.filters.gaussian_filter(dmap, sigma, mode='constant')
 
     if not "NO_APPLY" in kwargs:
         proper.prop_add_phase(wf, 2 * dmap)            # x2 to convert surface to wavefront error
