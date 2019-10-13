@@ -7,7 +7,6 @@ mostly code copied from the original MEDIS from Rupert
 """
 
 import numpy as np
-import scipy.ndimage
 from skimage.restoration import unwrap_phase
 from scipy import interpolate, ndimage
 import proper
@@ -111,11 +110,11 @@ def quick_ao(wfo, WFS_map):
 
     Then, we interpolate the cropped beam onto a grid of (n_actuators,n_actuators), such that the DM can apply a
     actuator height to each represented actuator, not a over or sub-sampled form. If the number of actuators is low
-    compared to the beam size, you must anti-alias the WFS map via a lowpass filter before interpolating.
-    There is a discrepancy between the sampling of the wavefront at this location (the size you cropped) vs the size
-    of the DM. proper.prop_dm handles this, so just plug in the n_actuator sized DM map with specified parameters,
-    and assume that prop_dm handles the resampling correctly via the spacing or n_act_across_pupil flag. FYI the
-    resampling is done via a c library you installed/compiled when installing proper.
+    compared to the number of samples on the bea,, you should anti-alias the WFS map via a lowpass filter before
+    interpolating. There is a discrepancy between the sampling of the wavefront at this location (the size you cropped)
+    vs the size of the DM. proper.prop_dm handles this, so just plug in the n_actuator sized DM map with specified
+    parameters, and assume that prop_dm handles the resampling correctly via the spacing or n_act_across_pupil flag.
+    FYI the resampling is done via a c library you installed/compiled when installing proper.
 
     The WFS map is a map of real values in units of phase delay in radians. However, the AO map that gets passed to
     proper.prop_dm wants input in nm height of each actuator. Therefore, you need to convert the phase delay to
@@ -186,13 +185,10 @@ def ideal_wfs(wf_vec):
     :param wf_vec: array containing wavefront array for each wavelength in the simulation shape=[n_wavelengths]
     :return: array containing only the unwrapped phase delay of the wavefront; shape=[n_wavelengths], units=radians
     """
-
-    sigma = [2, 2]
     WFS_map = np.zeros((len(wf_vec), sp.grid_size, sp.grid_size))
 
     for iw in range(len(wf_vec)):
-        WFS_map[iw] = scipy.ndimage.filters.gaussian_filter(unwrap_phase(proper.prop_get_phase(wf_vec[iw])), sigma,
-                                                             mode='constant')
+        WFS_map[iw] = unwrap_phase(proper.prop_get_phase(wf_vec[iw]))
     return WFS_map
 
 ################################################################################
