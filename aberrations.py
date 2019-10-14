@@ -47,8 +47,9 @@ def generate_maps(lens_diam, lens_name='lens'):
     dprint('Generating optic aberration maps using Proper')
     dprint(f"Abberation directory = {iop.aberdir}")
 
+    # create blank lens wavefront for proper to add phase to
     wfo = proper.prop_begin(lens_diam, 1., sp.grid_size, sp.beam_ratio)
-    aber_cube = np.zeros((sp.numframes, sp.grid_size, sp.grid_size))
+    aber_cube = np.zeros((sp.numframes, sp.grid_size, sp.grid_size   ))
 
     # Randomly select a value from the range of values for each constant
     rms_error = np.random.normal(tp.aber_vals['a'][0], tp.aber_vals['a'][1])
@@ -60,6 +61,11 @@ def generate_maps(lens_diam, lens_name='lens'):
 
     phase = 2 * np.pi * np.random.uniform(size=(sp.grid_size, sp.grid_size)) - np.pi
     aber_cube[0] = proper.prop_psd_errormap(wfo, rms_error, c_freq, high_power, TPF=True, PHASE_HISTORY=phase)
+        # PHASE_HISTORY stuff is a kwarg Rupert added to a proper.prop_pds_errormap in proper_mod that helps
+        #  ennable the small perturbations to the phase aberrations over time (quasi-static aberration evolution)
+        #  however, this may not be implemented here, and the functionality may not be robust. It has yet to be
+        #  verified in a robust manner. However, I am not sure it is being used....? KD 10-15-10
+    # TODO verify this and add qusi-static functionality
 
     filename = f"{iop.aberdir}/t{0}_{lens_name}.fits"
     #dprint(f"filename = {filename}")
@@ -186,20 +192,24 @@ def randomize_zern_values(zern_orders):
     return zern_vals
 
 
-def initialize_CPA_meas():
-    required_servo = int(tp.servo_error[0])
-    required_band = int(tp.servo_error[1])
-    required_nframes = required_servo + required_band + 1
-    CPA_maps = np.zeros((required_nframes, ap.n_wvl_init, sp.grid_size, sp.grid_size))
 
-    with open(iop.CPA_meas, 'wb') as handle:
-        pickle.dump((CPA_maps, np.arange(0, -required_nframes, -1)), handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-
-def initialize_NCPA_meas():
-    Imaps = np.zeros((4, sp.grid_size, sp.grid_size))
-    phase_map = np.zeros((tp.ao_act, tp.ao_act))  # np.zeros((sp.grid_size,sp.grid_size))
-    with open(iop.NCPA_meas, 'wb') as handle:
-        pickle.dump((Imaps, phase_map, 0), handle, protocol=pickle.HIGHEST_PROTOCOL)
+###############################################################################################
+# Depricated--but potenetially useful for quasi-static aberration implementation later
+###############################################################################################
+# def initialize_CPA_meas():
+#     required_servo = int(tp.servo_error[0])
+#     required_band = int(tp.servo_error[1])
+#     required_nframes = required_servo + required_band + 1
+#     CPA_maps = np.zeros((required_nframes, ap.n_wvl_init, sp.grid_size, sp.grid_size))
+#
+#     with open(iop.CPA_meas, 'wb') as handle:
+#         pickle.dump((CPA_maps, np.arange(0, -required_nframes, -1)), handle, protocol=pickle.HIGHEST_PROTOCOL)
+#
+#
+# def initialize_NCPA_meas():
+#     Imaps = np.zeros((4, sp.grid_size, sp.grid_size))
+#     phase_map = np.zeros((tp.ao_act, tp.ao_act))  # np.zeros((sp.grid_size,sp.grid_size))
+#     with open(iop.NCPA_meas, 'wb') as handle:
+#         pickle.dump((Imaps, phase_map, 0), handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
