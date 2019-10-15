@@ -10,7 +10,7 @@ from matplotlib.colors import LogNorm, SymLogNorm
 import matplotlib.ticker as ticker
 import matplotlib.gridspec as gridspec
 
-from mm_params import tp, sp, iop, ap
+from mm_params import tp, sp, iop, ap, cdip
 from mm_utils import dprint
 import colormaps as cmaps
 
@@ -199,6 +199,9 @@ def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True,
     :return:
     """
     img_tseries = np.sum(obs_seq, axis=1)
+    if cdip.use_cdi:
+        from CDI import gen_CDI_phase_stream
+        phases = gen_CDI_phase_stream()
 
     plt.close('all')
 
@@ -238,18 +241,27 @@ def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True,
         ax = fig.add_subplot(gs[t])
         if logAmp:
             if vmin is not None and vmin <= 0:
-                ax.set_title(f"t={t*sp.sample_time}")
+                if cdip.use_cdi and not np.isnan(phases[t]):
+                    ax.set_title(f"t={t * sp.sample_time}, CDI" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
+                else:
+                    ax.set_title(f"t={t*sp.sample_time}")
                 im = ax.imshow(img_tseries[t], interpolation='none', origin='lower', vmin=vmin, vmax=vmax,
                                norm=SymLogNorm(linthresh=1e-5),
                                cmap="YlGnBu_r")
                 clabel = "Log Normalized Intensity"
             else:
-                ax.set_title(f"t={t*sp.sample_time}")
+                if cdip.use_cdi and not np.isnan(phases[t]):
+                    ax.set_title(f"t={t * sp.sample_time}, CDI" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
+                else:
+                    ax.set_title(f"t={t * sp.sample_time}")
                 im = ax.imshow(img_tseries[t], interpolation='none', origin='lower', vmin=vmin, vmax=vmax, norm=LogNorm(),
                                cmap="YlGnBu_r")
                 clabel = "Log Normalized Intensity"
         else:
-            ax.set_title(f"t={t*sp.sample_time}")
+            if cdip.use_cdi and not np.isnan(phases[t]):
+                ax.set_title(f"t={t * sp.sample_time}, CDI" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
+            else:
+                ax.set_title(f"t={t * sp.sample_time}")
             im = ax.imshow(img_tseries[t], interpolation='none', origin='lower', vmin=vmin, vmax=vmax, cmap="YlGnBu_r")
             clabel = "Normalized Intensity"
 
