@@ -214,7 +214,7 @@ def abs_zeros(wf_array):
 def offset_companion(wfo):
     """
     offsets the companion wavefront using the 2nd and 3rd order Zernike Polynomials (X,Y tilt)
-    companion contrast and location set in mm_params
+    companion(s) contrast and location(s) set in mm_params
 
     :param wfo: wavefront object, shape=(n_wavelengths, n_astro_objects, grid_sz, grid_sz)
     :return:

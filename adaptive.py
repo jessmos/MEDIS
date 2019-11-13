@@ -4,6 +4,10 @@ adaptive.py
 functions relating to simulating an AO system with Proper
 mostly code copied from the original MEDIS from Rupert
 
+Generally, the optical perscription will call the deformable_mirror function, which will compile all information and
+run seuentially all functions related to creating the adaptive optic correction (main AO functionality, relating to
+atmospheric and common-path aberrations) as well as using or not CDI probes, DM corrections or errors, etc
+
 """
 
 import numpy as np
@@ -180,15 +184,20 @@ def ideal_wfs(wf_vec):
     """
     saves the unwrapped phase [arctan2(imag/real)] of the wfo.wf_array at each wavelength
 
-    so it is an idealized image (exact copy) of the wavefront phase per wavelength
+    so it is an idealized image (exact copy) of the wavefront phase per wavelength. We then Gaussian filter it to
+    help avoid aliasing
 
     :param wf_vec: array containing wavefront array for each wavelength in the simulation shape=[n_wavelengths]
     :return: array containing only the unwrapped phase delay of the wavefront; shape=[n_wavelengths], units=radians
     """
+    sigma = [2,2]
     WFS_map = np.zeros((len(wf_vec), sp.grid_size, sp.grid_size))
 
     for iw in range(len(wf_vec)):
-        WFS_map[iw] = unwrap_phase(proper.prop_get_phase(wf_vec[iw]))
+        unwrapped = unwrap_phase(proper.prop_get_phase(wf_vec[iw]))
+        # Gaussian Filter (lowpass filter)
+        WFS_map[iw] = ndimage.gaussian_filter(unwrapped, sigma=sigma, mode='nearest')
+        # WFS_map[iw] = unwrapped
     return WFS_map
 
 ################################################################################

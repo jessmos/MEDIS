@@ -92,19 +92,21 @@ class Simulation_params:
         self.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts)
                                # set to grid_size if undesired
         self.OOPP = True  # Optics Out of Pupil Plane; use this to turn scaling of beam ratio by wavelength on/off
-                        # turn on/off as necessary to ensure optics in focal plane have same sampling at each wavelength
+                        # turn on/off as necessary to ensure optics in focal plane have same sampling at each
+                        # wavelength. Can check focal plane sampling in the proper perscription with opx.check_sampling
+                        # see Proper manual pg 36 for more info
 
         # Timing Params
         self.sample_time = 0.01  # [s] seconds per timestep/frame. used in atmosphere evolution, etc
         self.startframe = 0  # useful for things like RDI
-        self.numframes = 1  # number of timesteps in the simulation
+        self.numframes = 10  # number of timesteps in the simulation
 
         # Plotting Params
-        self.show_cube = True  # Plot datacube
+        self.show_cube = False  # Plot datacube
         self.show_wframe = True  # Plot image frame
-        self.show_tseries = False
+        self.show_tseries = True
         self.spectra_cols = 3  # number of subplots per row in view_datacube
-        self.tseries_cols = 5  # number of subplots per row in view_timeseries
+        self.tseries_cols = 4  # number of subplots per row in view_timeseries
 
         # Reading/Saving Params
         self.save_obs = False
@@ -164,7 +166,7 @@ class Telescope_params:
 
         # AO System Settings
         self.use_ao = True
-        self.ao_act = 14  # number of actuators on the DM on one axis (proper only models nxn square DMs)
+        self.ao_act = 60  # number of actuators on the DM on one axis (proper only models nxn square DMs)
         self.piston_error = False  # flag for allowing error on DM surface shape
         self.fit_dm = True  # flag to use DM surface fitting (see proper manual pg 52, the FIT switch)
 
@@ -204,21 +206,21 @@ class Telescope_params:
 
 class CDI_params():
     def __init__(self):
-        self.use_cdi = False
+        self.use_cdi = True
         self.show_probe = True  # False flag to plot phase probe or not
 
-        self.phs_intervals = np.pi/2  # [rad] phase interval over [0, 2pi]
-        self.phase_list = np.arange(np.pi/4, 2 * np.pi, self.phs_intervals)  # FYI not inclusive of 2pi endpoint
+        self.phs_intervals = np.pi/4  # [rad] phase interval over [0, 2pi]
+        self.phase_list = np.arange(0, 2 * np.pi, self.phs_intervals)  # FYI not inclusive of 2pi endpoint
         self.n_probes = len(self.phase_list)  # number of phase probes
         self.phase_integration_time = 0.01  # [s]
         self.null_time = 0.1  # [s]
         self.probe_type = "pairwise"
 
         # Probe Dimensions (extent in pupil plane coordinates)
-        self.probe_w = 10  # [aactuator coordinates] width of the probe
-        self.probe_h = 40  # [actuator coordinates] height of the probe
+        self.probe_w = 20  # [actuator coordinates] width of the probe
+        self.probe_h = 20  # [actuator coordinates] height of the probe
         self.probe_center = 15  # [actuator coordinates] center position of the probe
-        self.probe_amp = 2e-8  # [m] probe amplitude    2e-8 baseline (20 nm) Good
+        self.probe_amp = 2e-5  # [m] probe amplitude, scale should be in units of actuator height limits
 
     def __iter__(self):
         for attr, value in self.__dict__.items():

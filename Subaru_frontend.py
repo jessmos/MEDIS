@@ -20,9 +20,8 @@ This script is meant to override any Subaru/SCExAO-specific parameters specified
 import numpy as np
 import proper
 
-from mm_params import iop, ap, tp, sp, cdip
+from mm_params import ap, tp, sp
 from mm_utils import dprint
-import plot_tools as pt
 import optics as opx
 import aberrations as aber
 import adaptive as ao
@@ -82,7 +81,7 @@ tp.use_atmos = True
 
 def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     """
-    propagates instantaneous complex E-field tSubaru from the primary through the AO188
+    propagates instantaneous complex E-field thru Subaru from the primary through the AO188
         AO system in loop over wavelength range
 
     this function is called a 'prescription' by proper
@@ -101,7 +100,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     wfo.initialize_proper()
 
     # Atmosphere
-    atmos.add_atmos(wfo, PASSVALUE['iter'])
+    atmos.add_atmos(wfo, PASSVALUE['iter'])  # atmos has only effect on phase delay, not intensity
 
     if ap.companion:
         # offset companion here after running prop_define_enterance (to normalize intensity)
@@ -119,16 +118,15 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
 
     # Test Sampling
     # opx.check_sampling(PASSVALUE['iter'], wfo, "initial", units='mm')
+    # Testing Primary Focus (instead of propagating to focal plane)
+    # wfo.loop_over_function(opx.prop_mid_optics, tp.flen_nsmyth, tp.flen_nsmyth)  # test only going to prime focus
 
     # Effective Primary
     # CPA from Effective Primary
     aber.add_aber(wfo.wf_array, tp.enterance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='effective-primary')
     # Zernike Aberrations- Low Order
-    # wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
+    wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
     wfo.loop_over_function(opx.prop_mid_optics, tp.flen_nsmyth, tp.dist_nsmyth_ao1)
-
-    # Testing Primary Focus (instead of propagating to focal plane)
-    # wfo.loop_over_function(opx.prop_mid_optics, tp.flen_nsmyth, tp.flen_nsmyth)  # test only going to prime focus
 
     ########################################
     # AO188 Propagation
@@ -145,7 +143,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     wfo.loop_over_function(proper.prop_propagate, tp.dist_dm_ao2)
 
     # AO188-OAP2
-    aber.add_aber(wfo.wf_array, tp.d_ao2, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP2')
+    # aber.add_aber(wfo.wf_array, tp.d_ao2, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP2')
     # wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)
     wfo.loop_over_function(opx.prop_mid_optics, tp.fl_ao2, tp.dist_oap2_focus)
 
