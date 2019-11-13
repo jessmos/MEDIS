@@ -25,10 +25,10 @@ def CDIprobe(theta, iw):
     Proper, the prop_dm uses a DM map that is the size of (n_ao_act, n_ao_act). This map was resampled from its
     original size to the actuator spacing, and the spacing in units of [m] is supplied as a keyword to the prop_dm
     function during the call. All that is to say, we apply the CDI probe using the coordinates of the DM actuators,
-    and supply the probe height as a addative height to the DM map, which is passed to the prop_dm function.
+    and supply the probe height as an additive height to the DM map, which is passed to the prop_dm function.
 
     :param theta: desired phase of the probe
-    :param plot: flag to plot phase probe
+    :param iw: index of wavelength number in ap.wvl_range
     :return: height of phase probes to add to the DM map in adaptive.py
     """
     x = np.linspace(-1/2, 1/2, tp.ao_act)
@@ -38,18 +38,24 @@ def CDIprobe(theta, iw):
     probe = cdip.probe_amp * np.sinc(cdip.probe_w * X) \
                            * np.sinc(cdip.probe_h * Y) \
                            * np.sin(2*np.pi*cdip.probe_center*X + theta)
-    dprint(f"CDI Probe: Min={np.min(probe)*1e9:.2f} nm, Max={np.max(probe)*1e9:.2f} nm")
+    # dprint(f"CDI Probe: Min={np.min(probe)*1e9:.2f} nm, Max={np.max(probe)*1e9:.2f} nm")
 
     if cdip.show_probe and iw == 0 and theta == cdip.phase_list[0]:
-        quick2D(probe, title=f"Phase Probe at theta={theta:.4f} rad", vlim=(-1e-8, 1e-8),
-            colormap="YlGnBu_r")  # logAmp=True)
+        quick2D(probe, title=f"Phase Probe at " r'$\theta$' + f"={cdip.phase_list[iw]/np.pi:.2f}" + r'$\pi$',
+                vlim=(-1e-6, 1e-6),
+                colormap="YlGnBu_r")  # logAmp=True)
 
     # Testing FF propagation
-    probe_ft = np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(probe)))
     if cdip.show_probe and iw == 0 and theta == cdip.phase_list[0]:
-        quick2D(probe_ft.real, title=f"Real FFT of phase probe, theta={theta:.4f} rad", vlim=(-1e-7, 1e-7),
-            colormap="YlGnBu_r")
-        quick2D(probe_ft.imag, title=f"Imag FFT of phase probe, theta={theta:.4f} rad", vlim=(-1e-7, 1e-7),
+        probe_ft = (1/np.square(2*np.pi)) * np.fft.ifftshift(np.fft.fft2(np.fft.fftshift(probe)))
+
+        quick2D(probe_ft.real,
+                title=f"Real FFT of CDI probe, " r'$\theta$' + f"={cdip.phase_list[iw]/np.pi:.2f}" + r'$\pi$',
+                vlim=(-1e-6, 1e-6),
+                colormap="YlGnBu_r")
+        quick2D(probe_ft.imag,
+                title=f"Imag FFT of CDI probe, " r'$\theta$' + f"={cdip.phase_list[iw]/np.pi:.2f}" + r'$\pi$',
+                vlim=(-1e-6, 1e-6),
                 colormap="YlGnBu_r")
 
     return probe
@@ -98,3 +104,9 @@ def gen_CDI_phase_stream():
         # TODO implement
 
     return phase_series
+
+
+if __name__ == '__main__':
+    dprint(f"Testing CDI probe")
+    theta = cdip.phase_list[0]
+    CDIprobe(theta, 0)
