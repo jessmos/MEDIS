@@ -29,8 +29,6 @@ def check_sampling():
 
     # From Params Buried in mini-medis
     legs_frac = 0.1  # [m]
-    Fnum = 12.6  # focal ratio of the beam as it approaches the focus
-    lmbda = 800e-6  # [m]  wavelength of interest
 
     #######################
     # Initial Sampling
@@ -63,16 +61,23 @@ def ideal_sampling():
     the image planes, so it is best to only choose a beam ratio that barely resolves the smallest features of the aperture
     (spiders), in order to get the best resolution of the image plane.
     """
-    print(f"Ideal Values")
-    grid_width = 30  # [m]
+    # Hard-Coded Parameters
+    Fnum = 12.6  # focal ratio of the beam as it approaches the focus
+    lmbda = 800e-9  # [m]  wavelength of interest
+    grid_width = tp.enterance_d/sp.beam_ratio  # [m]
+
+    # Sampling
     samp_good = Fnum*lmbda*tp.enterance_d / grid_width
     samp_nyq = Fnum*lmbda/2
-    print(f"Ideal Sampling is {samp_good:.6f} m/pix \nNyquist Sampling is {samp_nyq:.6f} m/pix")
+    print(f"In the pupil plane at lambda={lmbda*1e6:.3f} um:\n"
+          f" Ideal Sampling is {samp_good:.6f} m/pix \n"
+          f"Nyquist Sampling is {samp_nyq:.6f} m/pix ")
 
     # selecting beam ratio
     br_good = tp.enterance_d/(samp_good*sp.grid_size)
     br_nyq = tp.enterance_d/samp_nyq/sp.grid_size
-    print(f"Good starter beam ratio is {br_good} \nNyquist beam ratio is {br_nyq}")
+    print(f"Good starter beam ratio is {br_good} \n"
+          f"Nyquist beam ratio is {br_nyq}")
 
     ###########################################
     # Beam Size and Grid Width at other Plane
