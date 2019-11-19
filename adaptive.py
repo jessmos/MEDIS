@@ -5,7 +5,7 @@ functions relating to simulating an AO system with Proper
 mostly code copied from the original MEDIS from Rupert
 
 Generally, the optical perscription will call the deformable_mirror function, which will compile all information and
-run seuentially all functions related to creating the adaptive optic correction (main AO functionality, relating to
+run sequentially all functions related to creating the adaptive optic correction (main AO functionality, relating to
 atmospheric and common-path aberrations) as well as using or not CDI probes, DM corrections or errors, etc
 
 """
@@ -48,7 +48,7 @@ def deformable_mirror(wfo, WFS_map, theta):
     :param wfo: wavefront object
     :param WFS_map: wavefront sensor map, should be in units of phase delay
     :param theta: phase of CDI probe (either radians or NAN if no probe to be applied at this timestep)
-    :return:
+    :return: nothing is returned, but the probe map has been applied to the DM via proper.prop_dm
     """
 
     # DM Coordinates
@@ -114,7 +114,7 @@ def quick_ao(wfo, WFS_map):
 
     Then, we interpolate the cropped beam onto a grid of (n_actuators,n_actuators), such that the DM can apply a
     actuator height to each represented actuator, not a over or sub-sampled form. If the number of actuators is low
-    compared to the number of samples on the bea,, you should anti-alias the WFS map via a lowpass filter before
+    compared to the number of samples on the beam, you should anti-alias the WFS map via a lowpass filter before
     interpolating. There is a discrepancy between the sampling of the wavefront at this location (the size you cropped)
     vs the size of the DM. proper.prop_dm handles this, so just plug in the n_actuator sized DM map with specified
     parameters, and assume that prop_dm handles the resampling correctly via the spacing or n_act_across_pupil flag.
@@ -137,6 +137,7 @@ def quick_ao(wfo, WFS_map):
 
     nact = tp.ao_act                    # number of DM actuators along one axis
     nact_across_pupil = nact-2          # number of full DM actuators across pupil (oversizing DM extent)
+                                        # Note: oversample by 2 actuators hardcoded here, check if this is appropriate 
     
     ############################
     # Creating AO Surface Map
@@ -162,9 +163,10 @@ def quick_ao(wfo, WFS_map):
             # Interpolating the WFS map onto the actuator spacing
             # (tp.nact,tp.nact)
             ########################################################
-            # Lowpass Filter- prevents aliasing
-            lowpass = ndimage.gaussian_filter(ao_map, 1, mode='nearest')
-            ao_map = ao_map - lowpass
+            # Lowpass Filter- prevents aliasing; uses Gaussian filter
+            sigma = [1, 1]
+            # ao_map = ndimage.gaussian_filter(unwrapped, sigma=sigma, mode='nearest')
+            # ao_map = ao_map - lowpass
 
             f = interpolate.interp2d(range(ao_map.shape[0]), range(ao_map.shape[0]), ao_map, kind='cubic')
             ao_map = f(np.linspace(0,ao_map.shape[0],nact), np.linspace(0,ao_map.shape[0], nact))
@@ -184,20 +186,16 @@ def ideal_wfs(wf_vec):
     """
     saves the unwrapped phase [arctan2(imag/real)] of the wfo.wf_array at each wavelength
 
-    so it is an idealized image (exact copy) of the wavefront phase per wavelength. We then Gaussian filter it to
-    help avoid aliasing
+    so it is an idealized image (exact copy) of the wavefront phase per wavelength.
 
     :param wf_vec: array containing wavefront array for each wavelength in the simulation shape=[n_wavelengths]
     :return: array containing only the unwrapped phase delay of the wavefront; shape=[n_wavelengths], units=radians
     """
-    sigma = [2,2]
     WFS_map = np.zeros((len(wf_vec), sp.grid_size, sp.grid_size))
 
     for iw in range(len(wf_vec)):
-        unwrapped = unwrap_phase(proper.prop_get_phase(wf_vec[iw]))
-        # Gaussian Filter (lowpass filter)
-        WFS_map[iw] = ndimage.gaussian_filter(unwrapped, sigma=sigma, mode='nearest')
-        # WFS_map[iw] = unwrapped
+        WFS_map[iw] = unwrap_phase(proper.prop_get_phase(wf_vec[iw]))
+
     return WFS_map
 
 ################################################################################
