@@ -59,7 +59,7 @@ class Wavefronts():
             #  prop_get_sampling. If the optical system does not go directly from pupil-to-object plane at each optical
             #  plane, the beam ratio does not need to be scaled by wavelength, because of some optics wizardry that
             #  I don't fully understand
-            if sp.OOPP:
+            if sp.focused_sys:
                 self.beam_ratios[iw] = sp.beam_ratio
             else:
                 self.beam_ratios[iw] = sp.beam_ratio * ap.wvl_range[0] / w

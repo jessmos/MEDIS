@@ -2,10 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="4c18236a-dfc5-4249-b13b-a88d6fd6e999" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/coronography.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/other.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/other.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Subaru_frontend.py" beforeDir="false" afterPath="$PROJECT_DIR$/Subaru_frontend.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/adaptive.py" beforeDir="false" afterPath="$PROJECT_DIR$/adaptive.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mm_params.py" beforeDir="false" afterPath="$PROJECT_DIR$/mm_params.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/optics.py" beforeDir="false" afterPath="$PROJECT_DIR$/optics.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -64,14 +66,11 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.mini_medis">
+  <component name="RunManager" selected="Python.check_sampling">
     <configuration name="Hubble-test" type="PythonConfigurationType" factoryName="Python">
       <module name="CDI-devel" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
       <option name="SDK_HOME" value="$USER_HOME$/Programs/anaconda3/envs/mmedis/bin/python3.7" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="false" />
@@ -135,9 +134,6 @@
       <module name="CDI-devel" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
       <option name="SDK_HOME" value="$USER_HOME$/Programs/anaconda3/envs/mmedis/bin/python3.7" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="false" />
@@ -153,7 +149,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="mini_medis" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
+    <configuration name="mini_medis" type="PythonConfigurationType" factoryName="Python" singleton="false" nameIsGenerated="true">
       <module name="CDI-devel" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -255,7 +251,7 @@
       <workItem from="1571088589119" duration="17904000" />
       <workItem from="1571863526714" duration="10203000" />
       <workItem from="1573685544605" duration="15384000" />
-      <workItem from="1574104311265" duration="14542000" />
+      <workItem from="1574104311265" duration="27489000" />
     </task>
     <task id="LOCAL-00001" summary="changed rootdir in iop">
       <created>1565385158240</created>
@@ -530,7 +526,21 @@
       <option name="project" value="LOCAL" />
       <updated>1574195149464</updated>
     </task>
-    <option name="localTasksCounter" value="40" />
+    <task id="LOCAL-00040" summary="removes Gaussian filter from ideal_WFS. Uses only one instance of lowpass filtering after cropping in deformable_mirror">
+      <created>1574195378711</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1574195378711</updated>
+    </task>
+    <task id="LOCAL-00041" summary="init commit of coronography.py. code pulled from original medis codebase. moves the coronagraph to a class instance based on type specified when called">
+      <created>1574195494819</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1574195494819</updated>
+    </task>
+    <option name="localTasksCounter" value="42" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -550,8 +560,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="better equation for number of pixels on beam" />
-    <MESSAGE value="considerable annotation to adaptive.py's quick_ao" />
     <MESSAGE value="cleanup in naming convention and iop" />
     <MESSAGE value="more iop cleanup" />
     <MESSAGE value="OK results by turning off kludge in AO loop. still seeing weird effects at the longest wavelengths in absence of aberrations or atmosphere" />
@@ -575,11 +583,13 @@
     <MESSAGE value="cleanup and verifying settings" />
     <MESSAGE value="add __main__ function to test independently" />
     <MESSAGE value="updates to some print statements" />
-    <option name="LAST_COMMIT_MESSAGE" value="updates to some print statements" />
+    <MESSAGE value="removes Gaussian filter from ideal_WFS. Uses only one instance of lowpass filtering after cropping in deformable_mirror" />
+    <MESSAGE value="init commit of coronography.py. code pulled from original medis codebase. moves the coronagraph to a class instance based on type specified when called" />
+    <option name="LAST_COMMIT_MESSAGE" value="init commit of coronography.py. code pulled from original medis codebase. moves the coronagraph to a class instance based on type specified when called" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/Hubble_frontend_py$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1569885294741" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/Subaru_mini_medis_py$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1574111004719" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Subaru_mini_medis_py$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1574288160787" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/miniMEDIS$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1566340550553" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/CDI_devel$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1565285433606" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Hubble_frontend_py$mm_params.coverage" NAME="mm_params Coverage Results" MODIFIED="1568243255215" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

@@ -84,14 +84,14 @@ class Simulation_params:
         self.num_processes = 1  # multiprocessing.cpu_count()
 
         # Grid Sizing/Sampling Params
-        self.beam_ratio = 0.11  # parameter dealing with the sampling of the beam in the pupil/focal
+        self.beam_ratio = 0.14  # parameter dealing with the sampling of the beam in the pupil/focal
                                 # plane vs grid size. See Proper manual pgs 36-37 and 71-74 for discussion
         self.grid_size = 512  # creates a nxn array of samples of the wavefront
                               # must be bigger than the beam size to avoid FT effects at edges; must be factor of 2
                               # NOT the size of your detector/# of pixels
-        self.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts)
+        self.maskd_size = 512  # will truncate grid_size to this range (avoids FFT artifacts)
                                # set to grid_size if undesired
-        self.OOPP = True  # Optics Out of Pupil Plane; use this to turn scaling of beam ratio by wavelength on/off
+        self.focused_sys = True  # use this to turn scaling of beam ratio by wavelength on/off
                         # turn on/off as necessary to ensure optics in focal plane have same sampling at each
                         # wavelength. Can check focal plane sampling in the proper perscription with opx.check_sampling
                         # see Proper manual pg 36 for more info
@@ -99,12 +99,12 @@ class Simulation_params:
         # Timing Params
         self.sample_time = 0.01  # [s] seconds per timestep/frame. used in atmosphere evolution, etc
         self.startframe = 0  # useful for things like RDI
-        self.numframes = 10  # number of timesteps in the simulation
+        self.numframes = 1  # number of timesteps in the simulation
 
         # Plotting Params
         self.show_cube = False  # Plot datacube
         self.show_wframe = True  # Plot image frame
-        self.show_tseries = True
+        self.show_tseries = False
         self.spectra_cols = 3  # number of subplots per row in view_datacube
         self.tseries_cols = 4  # number of subplots per row in view_timeseries
 
@@ -206,7 +206,7 @@ class Telescope_params:
 
 class CDI_params():
     def __init__(self):
-        self.use_cdi = True
+        self.use_cdi = False
         self.show_probe = True  # False flag to plot phase probe or not
 
         self.phs_intervals = np.pi/4  # [rad] phase interval over [0, 2pi]

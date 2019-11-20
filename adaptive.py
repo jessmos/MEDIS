@@ -109,8 +109,8 @@ def quick_ao(wfo, WFS_map):
     the wfs saved the whole wavefront, so that must be cropped. During the wavefront initialization in
     wavefront.initialize_proper, the beam ratio set in sp.beam_ratio is scaled per wavelength (to achieve constant
     sampling sto create white light images), so the cropped value must also be scaled by wavelength. Note, beam ratio
-    is scaled differently depending on if sp.OOPP is True or not. See mm_params-->sp.OOPP and Proper manual pg 36
-    for more info.
+    is scaled differently depending on if sp.focused_sys is True or not. See mm_params-->sp.focused_sys and Proper
+    manual pg 36 for more info.
 
     Then, we interpolate the cropped beam onto a grid of (n_actuators,n_actuators), such that the DM can apply a
     actuator height to each represented actuator, not a over or sub-sampled form. If the number of actuators is low
@@ -164,9 +164,10 @@ def quick_ao(wfo, WFS_map):
             # (tp.nact,tp.nact)
             ########################################################
             # Lowpass Filter- prevents aliasing; uses Gaussian filter
-            sigma = [1, 1]
-            # ao_map = ndimage.gaussian_filter(unwrapped, sigma=sigma, mode='nearest')
-            # ao_map = ao_map - lowpass
+            nyquist_dm = tp.ao_act/2 * act_spacing  # [m]
+            sig = nyquist_dm/2.355  # assume we want sigma to be twice the HWHM
+            sigma = [sig, sig]
+            ao_map = ndimage.gaussian_filter(ao_map, sigma=sigma, mode='nearest')
 
             f = interpolate.interp2d(range(ao_map.shape[0]), range(ao_map.shape[0]), ao_map, kind='cubic')
             ao_map = f(np.linspace(0,ao_map.shape[0],nact), np.linspace(0,ao_map.shape[0], nact))
