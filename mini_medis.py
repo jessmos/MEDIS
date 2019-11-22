@@ -44,6 +44,9 @@ def run_mmedis():
     print('***************************************')
     start = time.time()
 
+    # =======================================================================
+    # Intialization
+    # =======================================================================
     # Check for Existing File
     check = mmu.check_exists_obs_sequence(False)
     if check:
@@ -73,13 +76,12 @@ def run_mmedis():
     # Multiprocessing Settings
     inqueue = multiprocessing.Queue()
     spectral_queue = multiprocessing.Queue()
-    photons_queue = multiprocessing.Queue()
     jobs = []
 
     # Sending Queues to gen_timeseries
     for i in range(sp.num_processes):
         p = multiprocessing.Process(target=gen_timeseries,
-                                    args=(inqueue, photons_queue, spectral_queue))
+                                    args=(inqueue, spectral_queue))
         jobs.append(p)
         p.start()
 
@@ -99,8 +101,10 @@ def run_mmedis():
     for i, p in enumerate(jobs):
         p.join()  # Send the sentinel to tell Simulation to end?
 
-    photons_queue.put(None)
     spectral_queue.put(None)
+
+    # =======================================================================
+    # Saving
     # =======================================================================
 
     obs_sequence = np.array(obs_sequence)  # obs sequence is returned by gen_timeseries (called above)
@@ -141,7 +145,7 @@ def run_mmedis():
         print(f"Data saved: {iop.obs_seq}")
 
 
-def gen_timeseries(inqueue, photons_queue, spectral_queue):  # conf_obj_tuple
+def gen_timeseries(inqueue, spectral_queue):  # conf_obj_tuple
     """
     generates observation sequence by calling optics_propagate in time series
 
