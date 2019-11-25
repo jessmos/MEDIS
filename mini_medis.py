@@ -156,7 +156,6 @@ def gen_timeseries(inqueue, spectral_queue):  # conf_obj_tuple
         is saved instead)
 
     :param inqueue: time index for parallelization (used by multiprocess)
-    :param photons_queue: photon table (list of photon packets) in the multiprocessing format
     :param spectral_queue: series of intensity images (spectral image cube) in the multiprocessing format
 
     :return: returns the observation sequence, but through the multiprocessing tools, not through more standard

@@ -71,9 +71,26 @@ tp.dist_oap2_focus = 1.261
 # Wavelength
 # ap.wvl_range = np.array([810, 1500]) / 1e9
 # sp.subplt_cols = 3
+#################################################################################################
+#################################################################################################
+#################################################################################################
 
+# Using Various Masks/Aberations/
 tp.obscure = True
 tp.use_atmos = True
+tp.use_aber = False
+
+# Plotting
+sp.show_cube = False  # Plot datacube
+sp.show_wframe = True  # Plot image frame
+sp.show_tseries = False
+
+# Saving
+sp.save_obs = False
+sp.save_cube = False  #
+sp.save_fields = False  # toggle to turn saving uniformly on/off
+sp.save_list = []  # list of locations in optics train to save
+
 
 #################################################################################################
 #################################################################################################
@@ -90,8 +107,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
         then telescope, to the focal plane
     the AO simulator happens here
     this does not include the observation of the wavefront by the detector
-    :returns spectral cube at instantaneous time
-focal_plane()
+    :returns spectral cube at instantaneous time in the focal_plane()
     """
     # print("Propagating Broadband Wavefront Through Subaru")
 
@@ -101,7 +117,7 @@ focal_plane()
 
     # Atmosphere
     # atmos.add_atmos(wfo, PASSVALUE['iter'])  # atmos has only effect on phase delay, not intensity
-    tp.use_aber = False
+
 
     if ap.companion:
         # offset companion here after running prop_define_enterance (to normalize intensity)
@@ -124,7 +140,7 @@ focal_plane()
 
     # Effective Primary
     # CPA from Effective Primary
-    # aber.add_aber(wfo.wf_array, tp.enterance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='effective-primary')
+    aber.add_aber(wfo.wf_array, tp.enterance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='effective-primary')
     # Zernike Aberrations- Low Order
     # wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
     wfo.loop_over_function(opx.prop_mid_optics, tp.flen_nsmyth, tp.dist_nsmyth_ao1)
@@ -133,13 +149,13 @@ focal_plane()
     # AO188 Propagation
     # # #######################################
     # # AO188-OAP1
-    aber.add_aber(wfo.wf_array, tp.d_ao1, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP1')
+    aber.add_aber(wfo, tp.d_ao1, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP1')
     wfo.loop_over_function(opx.prop_mid_optics, tp.fl_ao1, tp.dist_ao1_dm)
 
     # AO System
     if tp.use_ao:
         WFS_map = ao.ideal_wfs(wfo.wf_array[:, 0])
-        ao.deformable_mirror(wfo, WFS_map, PASSVALUE['theta'])
+        ao.deformable_mirror(wfo, WFS_map, PASSVALUE['theta'], name='woofer')
     # ------------------------------------------------
     wfo.loop_over_function(proper.prop_propagate, tp.dist_dm_ao2)
 

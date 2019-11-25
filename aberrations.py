@@ -64,7 +64,7 @@ def generate_maps(lens_diam, lens_name='lens'):
         # PHASE_HISTORY stuff is a kwarg Rupert added to a proper.prop_pds_errormap in proper_mod that helps
         #  ennable the small perturbations to the phase aberrations over time (quasi-static aberration evolution)
         #  however, this may not be implemented here, and the functionality may not be robust. It has yet to be
-        #  verified in a robust manner. However, I am not sure it is being used....? KD 10-15-10
+        #  verified in a robust manner. However, I am not sure it is being used....? KD 10-15-19
     # TODO verify this and add qusi-static functionality
 
     filename = f"{iop.aberdir}/t{0}_{lens_name}.fits"
@@ -85,7 +85,7 @@ def generate_maps(lens_diam, lens_name='lens'):
             saveFITS(aber_cube[0], filename)
 
 
-def add_aber(wf_array, d_lens, aber_params, step=0, lens_name='lens'):
+def add_aber(wf_array, d_lens, aber_params, step=0, lens_name=None):
     """
     loads a phase error map and adds aberrations using proper.prop_add_phase
     if no aberration file exists, creates one for specific lens using generate_maps
@@ -108,22 +108,19 @@ def add_aber(wf_array, d_lens, aber_params, step=0, lens_name='lens'):
         if not os.path.isfile(filename):
             generate_maps(d_lens, lens_name)
 
-        shape = wf_array.shape
         # The For Loop of Horror:
-        for iw in range(shape[0]):
-            for io in range(shape[1]):
+        for iw in range(wf_array.shape[0]):  # each wavelength
+            for io in range(wf_array.shape[1]):  # each object
                 if aber_params['Phase']:
                     phase_map = readFITS(filename)
 
                     # Add Phase Map
                     proper.prop_add_phase(wf_array[iw, io], phase_map)
 
-                    # quicklook_im(phase_maps[0]*1e9,
-                                # logAmp=False, colormap="jet", show=True, axis=None, title='nm', pupil=True)
-
                 if aber_params['Amp']:
                     dprint("Outdated code-please update")
                     raise NotImplementedError
+
 
 def add_zern_ab(wfo, zern_order=[2,3,4], zern_vals=np.array([175,-150,200])*1.0e-9):
     """

@@ -5,9 +5,11 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Subaru_frontend.py" beforeDir="false" afterPath="$PROJECT_DIR$/Subaru_frontend.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/aberrations.py" beforeDir="false" afterPath="$PROJECT_DIR$/aberrations.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/adaptive.py" beforeDir="false" afterPath="$PROJECT_DIR$/adaptive.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/coronography.py" beforeDir="false" afterPath="$PROJECT_DIR$/coronography.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mini_medis.py" beforeDir="false" afterPath="$PROJECT_DIR$/mini_medis.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mm_params.py" beforeDir="false" afterPath="$PROJECT_DIR$/mm_params.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/optics.py" beforeDir="false" afterPath="$PROJECT_DIR$/optics.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -44,7 +46,7 @@
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="com.intellij.ide.scratch.LRUPopupBuilder$1/New Scratch File" value="Python" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/aberrations.py" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../MEDIS/medis/get_photon_data.py" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="settings.editor.selected.configurable" value="PyScientificConfigurable" />
@@ -71,6 +73,9 @@
       <module name="CDI-devel" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="$USER_HOME$/Programs/anaconda3/envs/mmedis/bin/python3.7" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="false" />
@@ -134,6 +139,9 @@
       <module name="CDI-devel" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="$USER_HOME$/Programs/anaconda3/envs/mmedis/bin/python3.7" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="false" />
@@ -251,7 +259,8 @@
       <workItem from="1571088589119" duration="17904000" />
       <workItem from="1571863526714" duration="10203000" />
       <workItem from="1573685544605" duration="15384000" />
-      <workItem from="1574104311265" duration="36224000" />
+      <workItem from="1574104311265" duration="43913000" />
+      <workItem from="1574707780076" duration="2018000" />
     </task>
     <task id="LOCAL-00001" summary="changed rootdir in iop">
       <created>1565385158240</created>
@@ -547,7 +556,14 @@
       <option name="project" value="LOCAL" />
       <updated>1574290626154</updated>
     </task>
-    <option name="localTasksCounter" value="43" />
+    <task id="LOCAL-00043" summary="add tp.use_aber to uniformly turn on/off aberrations in aberrations.add_aber">
+      <created>1574462762974</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1574462762974</updated>
+    </task>
+    <option name="localTasksCounter" value="44" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -567,7 +583,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="more iop cleanup" />
     <MESSAGE value="OK results by turning off kludge in AO loop. still seeing weird effects at the longest wavelengths in absence of aberrations or atmosphere" />
     <MESSAGE value="init timesequence of CDI phase probes. Timeseries seems to be working, not sure if probe shape is correct" />
     <MESSAGE value="added view_timeseries to view white light images as function of time (range of obs_seq)" />
@@ -592,7 +607,19 @@
     <MESSAGE value="removes Gaussian filter from ideal_WFS. Uses only one instance of lowpass filtering after cropping in deformable_mirror" />
     <MESSAGE value="init commit of coronography.py. code pulled from original medis codebase. moves the coronagraph to a class instance based on type specified when called" />
     <MESSAGE value="changed sp.OOPP to sp.focused_sys to be a more informative name" />
-    <option name="LAST_COMMIT_MESSAGE" value="changed sp.OOPP to sp.focused_sys to be a more informative name" />
+    <MESSAGE value="add tp.use_aber to uniformly turn on/off aberrations in aberrations.add_aber" />
+    <option name="LAST_COMMIT_MESSAGE" value="add tp.use_aber to uniformly turn on/off aberrations in aberrations.add_aber" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/../MEDIS/medis/Telescope/optics_propagate.py</url>
+          <line>2</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/Hubble_frontend_py$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1569885294741" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
