@@ -7,7 +7,9 @@ object used in most prescriptions.
 """
 import numpy as np
 import proper
+import copy
 from scipy.interpolate import interp1d
+
 
 from mm_params import ap, tp, sp
 from mm_utils import dprint
@@ -43,10 +45,11 @@ class Wavefronts():
         self.beam_ratios = np.zeros_like(self.wsamples)
 
         # Init Locations of saved E-field
-        # self.save_E_fields = np.empty((0, np.shape(self.wf_array)[0],
-        #                                np.shape(self.wf_array)[1],
-        #                                sp.grid_size,
-        #                                sp.grid_size), dtype=np.complex64)
+        self.planes = []
+        self.save_E_fields = np.empty((0, np.shape(self.wf_array)[0],
+                                       np.shape(self.wf_array)[1],
+                                       sp.grid_size,
+                                       sp.grid_size), dtype=np.complex64)
 
     def initialize_proper(self):
         # Initialize the Wavefront in Proper
@@ -96,16 +99,26 @@ class Wavefronts():
             for iwf in range(shape[1]):
                 func(self.wf_array[iw, iwf], *args, **kwargs)
 
-    # def save_state(self):
-    #     if self.save_locs is not None and funcname in self.save_locs:
-            # optic_E_fields = np.zeros((1, np.shape(self.wf_array)[0],
-            #                            np.shape(self.wf_array)[1],
-            #                            sp.grid_size,
-            #                            sp.grid_size), dtype=np.complex64)
-            # Saving E-field
-#             wf = proper.prop_shift_center(self.wf_array[iw, iwf].wfarr)
-#             optic_E_fields[0, iw, iwf] = copy.copy(wf)
-        #     self.save_E_fields = np.vstack((self.save_E_fields, optic_E_fields))
+    def save_plane(self, location=None):
+        """
+        Saves the field at a spcified location in the optical system. Performs some functinality included in
+        wfo.focal_plane
+
+        :param location: name of plane where field is being saved
+        :return: self.save_E_fields
+        """
+        if sp.save_fields is True and location is not None and location in sp.save_list:
+            shape = self.wf_array.shape
+            optic_E_fields = np.zeros((1, np.shape(self.wf_array)[0],
+                                       np.shape(self.wf_array)[1],
+                                       ap.grid_size,
+                                       ap.grid_size), dtype=np.complex64)
+            for iw in range(shape[0]):
+                for iwf in range(shape[1]):
+                    wf = proper.prop_shift_center(self.wf_array[iw, iwf].wfarr)
+                    optic_E_fields[0, iw, iwf] = copy.copy(wf)
+            self.save_E_fields = np.vstack((self.save_E_fields, optic_E_fields))
+            self.planes.append(location)
 
     def focal_plane(self):
         """
@@ -158,7 +171,7 @@ class Wavefronts():
 # Optics in Proper
 ################################################################################################################
 
-def add_obscurations(wf, M2_frac=0, d_primary=0, d_secondary=0, legs_frac=0.05):
+def add_obscurations(wf, M2_frac=0, d_primary=0, d_secondary=0, legs_frac=0.05, plane_name=None):
     """
     adds central obscuration (secondary shadow) and/or spider legs as spatial mask to the wavefront
 
@@ -169,16 +182,19 @@ def add_obscurations(wf, M2_frac=0, d_primary=0, d_secondary=0, legs_frac=0.05):
     :param legs_frac: fractional size of spider legs relative to d_primary
     :return: acts upon wfo, applies a spatial mask of s=circular secondary obscuration and possibly spider legs
     """
-    # dprint('Including Obscurations')
-    if M2_frac > 0 and d_primary > 0:
-        proper.prop_circular_obscuration(wf, M2_frac * d_primary)
-    elif d_secondary > 0:
-        proper.prop_circular_aperture(wf, d_secondary)
+    if tp.obscure is False:
+        pass
     else:
-        raise ValueError('must either specify M2_frac and d_primary or d_secondary')
-    if legs_frac > 0:
-        proper.prop_rectangular_obscuration(wf, legs_frac*d_primary, d_primary*1.3, ROTATION=20)
-        proper.prop_rectangular_obscuration(wf, d_primary*1.3, legs_frac * d_primary, ROTATION=20)
+        # dprint('Including Obscurations')
+        if M2_frac > 0 and d_primary > 0:
+            proper.prop_circular_obscuration(wf, M2_frac * d_primary)
+        elif d_secondary > 0:
+            proper.prop_circular_aperture(wf, d_secondary)
+        else:
+            raise ValueError('must either specify M2_frac and d_primary or d_secondary')
+        if legs_frac > 0:
+            proper.prop_rectangular_obscuration(wf, legs_frac*d_primary, d_primary*1.3, ROTATION=20)
+            proper.prop_rectangular_obscuration(wf, d_primary*1.3, legs_frac * d_primary, ROTATION=20)
 
 
 def prop_mid_optics(wfo, fl_lens, dist):

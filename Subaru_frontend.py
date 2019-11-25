@@ -75,15 +75,16 @@ tp.dist_oap2_focus = 1.261
 #################################################################################################
 #################################################################################################
 
-# Using Various Masks/Aberations/
+# Toggles for Aberrations and Control
 tp.obscure = True
 tp.use_atmos = True
-tp.use_aber = False
+tp.use_aber = True
+tp.use_ao = True
 
 # Plotting
 sp.show_cube = True  # Plot spectral cube at single timestep
 sp.show_wframe = True  # Plot white light image frame
-sp.show_tseries = False  # Plot full timeseries of white light frames
+sp.show_tseries = True  # Plot full timeseries of white light frames
 
 # Saving
 sp.save_obs = False  # save obs_sequence (timestep, wavelength, x, y)
@@ -115,8 +116,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     wfo.initialize_proper()
 
     # Atmosphere
-    # atmos.add_atmos(wfo, PASSVALUE['iter'])  # atmos has only effect on phase delay, not intensity
-
+    wfo.loop_over_function(atmos.add_atmos, PASSVALUE['iter'])  # atmos has only effect on phase delay, not intensity
 
     if ap.companion:
         # offset companion here after running prop_define_enterance (to normalize intensity)

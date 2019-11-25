@@ -85,12 +85,12 @@ def generate_maps(lens_diam, lens_name='lens'):
             saveFITS(aber_cube[0], filename)
 
 
-def add_aber(wfo, d_lens, aber_params, step=0, lens_name=None):
+def add_aber(wf, d_lens, aber_params, step=0, lens_name=None):
     """
     loads a phase error map and adds aberrations using proper.prop_add_phase
     if no aberration file exists, creates one for specific lens using generate_maps
 
-    :param wfo: wavefront object
+    :param wf: a single (2D) wfo.wf_array[iw,io] at one wavelength and object
     :param d_lens: diameter (in m) of lens (only used when generating new aberrations maps)
     :param aber_params: parameters specified by tp.aber_params
     :param step: is the step number for quasistatic aberrations
@@ -100,25 +100,23 @@ def add_aber(wfo, d_lens, aber_params, step=0, lens_name=None):
     # TODO this does not currently loop over time, so it is not using quasi-static abberations.
     # dprint("Adding Abberations")
     if tp.use_aber is False:
-        pass
+        pass  # don't do anything. Putting this type of check here allows universal toggling on/off rather than
+              # commenting/uncommenting in the proper perscription
     else:
         # Load in or Generate Aberration Map
         filename = f"{iop.aberdir}/t{step}_{lens_name}.fits"
         if not os.path.isfile(filename):
             generate_maps(d_lens, lens_name)
 
-        # The For Loop of Horror:
-        for iw in range(wfo.wf_array.shape[0]):  # each wavelength
-            for io in range(wfo.wf_array.shape[1]):  # each object
-                if aber_params['Phase']:
-                    phase_map = readFITS(filename)
+        if aber_params['Phase']:
+            phase_map = readFITS(filename)
 
-                    # Add Phase Map
-                    proper.prop_add_phase(wfo.wf_array[iw, io], phase_map)
+            # Add Phase Map
+            proper.prop_add_phase(wf, phase_map)
 
-                if aber_params['Amp']:
-                    dprint("Outdated code-please update")
-                    raise NotImplementedError
+        if aber_params['Amp']:
+            dprint("Outdated code-please update")
+            raise NotImplementedError
 
 
 def add_zern_ab(wfo, zern_order=[2,3,4], zern_vals=np.array([175,-150,200])*1.0e-9):

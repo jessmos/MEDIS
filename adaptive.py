@@ -25,7 +25,7 @@ from mm_utils import dprint
 ################################################################################
 # Ideal AO
 ################################################################################
-def deformable_mirror(wfo, WFS_map, theta):
+def deformable_mirror(wfo, WFS_map, theta, plane_name=None):
     """
     combine different DM actuator commands into single map to send to prop_dm
 
@@ -98,6 +98,8 @@ def deformable_mirror(wfo, WFS_map, theta):
             # proper.prop_dm(wfo, dm_map, dm_xc, dm_yc, N_ACT_ACROSS_PUPIL=nact, FIT=True)  #
             # check_sampling(0, wfo, "post-DM in quickAO")  # check sampling in optics.py
 
+        if plane_name is not None:
+            wfo.save_plane(plane_name)
     return
 
 
