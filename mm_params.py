@@ -91,7 +91,7 @@ class Simulation_params:
                               # NOT the size of your detector/# of pixels
         self.maskd_size = 512  # will truncate grid_size to this range (avoids FFT artifacts)
                                # set to grid_size if undesired
-        self.focused_sys = True  # use this to turn scaling of beam ratio by wavelength on/off
+        self.focused_sys = False  # use this to turn scaling of beam ratio by wavelength on/off
                         # turn on/off as necessary to ensure optics in focal plane have same sampling at each
                         # wavelength. Can check focal plane sampling in the proper perscription with opx.check_sampling
                         # see Proper manual pg 36 for more info
@@ -102,17 +102,16 @@ class Simulation_params:
         self.numframes = 1  # number of timesteps in the simulation
 
         # Plotting Params
-        self.show_cube = False  # Plot datacube
-        self.show_wframe = True  # Plot image frame
-        self.show_tseries = False
+        self.show_cube = False  # Plot spectral cube at single timestep
+        self.show_wframe = True  # Plot white light image frame
+        self.show_tseries = False  # Plot full timeseries of white light frames
         self.spectra_cols = 3  # number of subplots per row in view_datacube
         self.tseries_cols = 4  # number of subplots per row in view_timeseries
 
         # Reading/Saving Params
-        self.save_obs = False
-        self.save_cube = False  #
-        self.get_ints = False
-        self.save_locs = None
+        self.save_obs = False  # Saves observation sequence (timestep, wavelength, x, y)
+        self.save_fields = False  # toggle to turn saving in non-focal planes uniformly on/off
+        self.save_list = []  # list of locations in optics train to save
 
     def __iter__(self):
         for attr, value in self.__dict__.items():

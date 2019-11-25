@@ -81,13 +81,12 @@ tp.use_atmos = True
 tp.use_aber = False
 
 # Plotting
-sp.show_cube = False  # Plot datacube
-sp.show_wframe = True  # Plot image frame
-sp.show_tseries = False
+sp.show_cube = True  # Plot spectral cube at single timestep
+sp.show_wframe = True  # Plot white light image frame
+sp.show_tseries = False  # Plot full timeseries of white light frames
 
 # Saving
-sp.save_obs = False
-sp.save_cube = False  #
+sp.save_obs = False  # save obs_sequence (timestep, wavelength, x, y)
 sp.save_fields = False  # toggle to turn saving uniformly on/off
 sp.save_list = []  # list of locations in optics train to save
 
@@ -140,7 +139,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
 
     # Effective Primary
     # CPA from Effective Primary
-    aber.add_aber(wfo.wf_array, tp.enterance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='effective-primary')
+    wfo.loop_over_function(aber.add_aber, tp.enterance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='effective-primary')
     # Zernike Aberrations- Low Order
     # wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
     wfo.loop_over_function(opx.prop_mid_optics, tp.flen_nsmyth, tp.dist_nsmyth_ao1)
@@ -149,18 +148,18 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # AO188 Propagation
     # # #######################################
     # # AO188-OAP1
-    aber.add_aber(wfo, tp.d_ao1, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP1')
+    wfo.loop_over_function(aber.add_aber, tp.d_ao1, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP1')
     wfo.loop_over_function(opx.prop_mid_optics, tp.fl_ao1, tp.dist_ao1_dm)
 
     # AO System
     if tp.use_ao:
         WFS_map = ao.ideal_wfs(wfo.wf_array[:, 0])
-        ao.deformable_mirror(wfo, WFS_map, PASSVALUE['theta'], name='woofer')
+        ao.deformable_mirror(wfo, WFS_map, PASSVALUE['theta'], plane_name='woofer')
     # ------------------------------------------------
     wfo.loop_over_function(proper.prop_propagate, tp.dist_dm_ao2)
 
     # AO188-OAP2
-    aber.add_aber(wfo.wf_array, tp.d_ao2, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP2')
+    wfo.loop_over_function(aber.add_aber, tp.d_ao2, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP2')
     # wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)
     wfo.loop_over_function(opx.prop_mid_optics, tp.fl_ao2, tp.dist_oap2_focus)
 

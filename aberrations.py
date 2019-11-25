@@ -85,13 +85,12 @@ def generate_maps(lens_diam, lens_name='lens'):
             saveFITS(aber_cube[0], filename)
 
 
-def add_aber(wf_array, d_lens, aber_params, step=0, lens_name=None):
+def add_aber(wfo, d_lens, aber_params, step=0, lens_name=None):
     """
     loads a phase error map and adds aberrations using proper.prop_add_phase
     if no aberration file exists, creates one for specific lens using generate_maps
 
-    :param wf_array: 2D wavefront
-    :param f_lens: focal length (m) of lens to add aberrations to
+    :param wfo: wavefront object
     :param d_lens: diameter (in m) of lens (only used when generating new aberrations maps)
     :param aber_params: parameters specified by tp.aber_params
     :param step: is the step number for quasistatic aberrations
@@ -109,13 +108,13 @@ def add_aber(wf_array, d_lens, aber_params, step=0, lens_name=None):
             generate_maps(d_lens, lens_name)
 
         # The For Loop of Horror:
-        for iw in range(wf_array.shape[0]):  # each wavelength
-            for io in range(wf_array.shape[1]):  # each object
+        for iw in range(wfo.wf_array.shape[0]):  # each wavelength
+            for io in range(wfo.wf_array.shape[1]):  # each object
                 if aber_params['Phase']:
                     phase_map = readFITS(filename)
 
                     # Add Phase Map
-                    proper.prop_add_phase(wf_array[iw, io], phase_map)
+                    proper.prop_add_phase(wfo.wf_array[iw, io], phase_map)
 
                 if aber_params['Amp']:
                     dprint("Outdated code-please update")
