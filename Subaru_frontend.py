@@ -116,7 +116,8 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     wfo.initialize_proper()
 
     # Atmosphere
-    wfo.loop_over_function(atmos.add_atmos, PASSVALUE['iter'], plane_name='atmosphere')  # atmos has only effect on phase delay, not intensity
+    # atmos has only effect on phase delay, not intensity
+    wfo.loop_over_function(atmos.add_atmos, PASSVALUE['iter'], plane_name='atmosphere')
 
     if ap.companion:
         # offset companion here after running prop_define_enterance (to normalize intensity)
@@ -153,7 +154,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
 
     # AO System
     if tp.use_ao:
-        WFS_map = ao.ideal_wfs(wfo.wf_array[:, 0])
+        WFS_map = ao.ideal_wfs(wfo)
         ao.deformable_mirror(wfo, WFS_map, PASSVALUE['theta'], plane_name='woofer')
     # ------------------------------------------------
     wfo.loop_over_function(proper.prop_propagate, tp.dist_dm_ao2)

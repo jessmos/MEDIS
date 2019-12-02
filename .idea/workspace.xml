@@ -4,8 +4,8 @@
     <list default="true" id="4c18236a-dfc5-4249-b13b-a88d6fd6e999" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Subaru_frontend.py" beforeDir="false" afterPath="$PROJECT_DIR$/Subaru_frontend.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/adaptive.py" beforeDir="false" afterPath="$PROJECT_DIR$/adaptive.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/coronography.py" beforeDir="false" afterPath="$PROJECT_DIR$/coronography.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/optics.py" beforeDir="false" afterPath="$PROJECT_DIR$/optics.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -37,6 +37,11 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="ProjectId" id="1OTFxOCmRRcgD0fR0eGZaVXOHW2" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showExcludedFiles" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
@@ -51,7 +56,7 @@
       <recent name="$PROJECT_DIR$" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.mini_medis">
+  <component name="RunManager" selected="Python.adaptive">
     <configuration name="Hubble-test" type="PythonConfigurationType" factoryName="Python">
       <module name="CDI-devel" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -88,6 +93,28 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="adaptive" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="CDI-devel" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/adaptive.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="true" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -190,9 +217,11 @@
       <item itemvalue="Python.Hubble-test" />
       <item itemvalue="Python.check_sampling" />
       <item itemvalue="Python.mm_params" />
+      <item itemvalue="Python.adaptive" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.adaptive" />
         <item itemvalue="Python.check_sampling" />
         <item itemvalue="Python.mm_params" />
       </list>
@@ -257,7 +286,7 @@
       <workItem from="1574104311265" duration="43913000" />
       <workItem from="1574707780076" duration="10066000" />
       <workItem from="1574803940615" duration="11142000" />
-      <workItem from="1575326170126" duration="1457000" />
+      <workItem from="1575326170126" duration="2278000" />
     </task>
     <task id="LOCAL-00001" summary="changed rootdir in iop">
       <created>1565385158240</created>
@@ -574,7 +603,14 @@
       <option name="project" value="LOCAL" />
       <updated>1574712345258</updated>
     </task>
-    <option name="localTasksCounter" value="46" />
+    <task id="LOCAL-00046" summary="enabled wfo.save_plane functionality. Will save the complex field of planes specified in sp.save_list to a complex-valued data structure (observation seq) with shape [tstep, wavelength, x, y, plane]">
+      <created>1575329705935</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1575329705935</updated>
+    </task>
+    <option name="localTasksCounter" value="47" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -594,7 +630,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="added view_timeseries to view white light images as function of time (range of obs_seq)" />
     <MESSAGE value="updated mm_params and run_mmedis to use view_timeseries" />
     <MESSAGE value="only plot shortest wavelength when plotting new atmosphere model" />
     <MESSAGE value="add toggle to turn AO on/off; also add differential sampling by wavelength to view_datacube" />
@@ -619,25 +654,34 @@
     <MESSAGE value="add tp.use_aber to uniformly turn on/off aberrations in aberrations.add_aber" />
     <MESSAGE value="cleanup in aberrations.py, including a universal toggle to turn on/off all aberrations using add_aber" />
     <MESSAGE value="more cleanup in aberrations.py. Now add_aber uses wfo input, so can be called in the perscription with wfo.loop_over_function" />
-    <option name="LAST_COMMIT_MESSAGE" value="more cleanup in aberrations.py. Now add_aber uses wfo input, so can be called in the perscription with wfo.loop_over_function" />
+    <MESSAGE value="enabled wfo.save_plane functionality. Will save the complex field of planes specified in sp.save_list to a complex-valued data structure (observation seq) with shape [tstep, wavelength, x, y, plane]" />
+    <option name="LAST_COMMIT_MESSAGE" value="enabled wfo.save_plane functionality. Will save the complex field of planes specified in sp.save_list to a complex-valued data structure (observation seq) with shape [tstep, wavelength, x, y, plane]" />
   </component>
   <component name="WindowStateProjectService">
-    <state width="1423" height="204" key="GridCell.Tab.0.bottom" timestamp="1575329529736">
+    <state x="78" y="139" width="1436" height="610" key="CommitChangelistDialog2" timestamp="1575329705723">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="204" key="GridCell.Tab.0.bottom/67.27.1469.837@67.27.1469.837" timestamp="1575329529736" />
-    <state width="1423" height="204" key="GridCell.Tab.0.center" timestamp="1575329529736">
+    <state x="78" y="139" width="1436" height="610" key="CommitChangelistDialog2/67.27.1469.837@67.27.1469.837" timestamp="1575329705723" />
+    <state width="1423" height="204" key="GridCell.Tab.0.bottom" timestamp="1575330231037">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="204" key="GridCell.Tab.0.center/67.27.1469.837@67.27.1469.837" timestamp="1575329529736" />
-    <state width="1423" height="204" key="GridCell.Tab.0.left" timestamp="1575329529736">
+    <state width="1423" height="204" key="GridCell.Tab.0.bottom/67.27.1469.837@67.27.1469.837" timestamp="1575330231037" />
+    <state width="1423" height="204" key="GridCell.Tab.0.center" timestamp="1575330231036">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="204" key="GridCell.Tab.0.left/67.27.1469.837@67.27.1469.837" timestamp="1575329529736" />
-    <state width="1423" height="204" key="GridCell.Tab.0.right" timestamp="1575329529736">
+    <state width="1423" height="204" key="GridCell.Tab.0.center/67.27.1469.837@67.27.1469.837" timestamp="1575330231036" />
+    <state width="1423" height="204" key="GridCell.Tab.0.left" timestamp="1575330231036">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="204" key="GridCell.Tab.0.right/67.27.1469.837@67.27.1469.837" timestamp="1575329529736" />
+    <state width="1423" height="204" key="GridCell.Tab.0.left/67.27.1469.837@67.27.1469.837" timestamp="1575330231036" />
+    <state width="1423" height="204" key="GridCell.Tab.0.right" timestamp="1575330231037">
+      <screen x="67" y="27" width="1469" height="837" />
+    </state>
+    <state width="1423" height="204" key="GridCell.Tab.0.right/67.27.1469.837@67.27.1469.837" timestamp="1575330231037" />
+    <state x="396" y="180" width="800" height="528" key="Vcs.Push.Dialog.v2" timestamp="1575329717019">
+      <screen x="67" y="27" width="1469" height="837" />
+    </state>
+    <state x="396" y="180" width="800" height="528" key="Vcs.Push.Dialog.v2/67.27.1469.837@67.27.1469.837" timestamp="1575329717019" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

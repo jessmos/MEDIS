@@ -185,19 +185,24 @@ def quick_ao(wfo, WFS_map):
             return ao_map
             
 
-def ideal_wfs(wf_vec):
+def ideal_wfs(wfo):
     """
     saves the unwrapped phase [arctan2(imag/real)] of the wfo.wf_array at each wavelength
 
-    so it is an idealized image (exact copy) of the wavefront phase per wavelength.
+    It is an idealized image (exact copy) of the wavefront phase per wavelength. Only the map for the first object
+    (the star) is saved
 
-    :param wf_vec: array containing wavefront array for each wavelength in the simulation shape=[n_wavelengths]
+    :param wfo: wavefront object
     :return: array containing only the unwrapped phase delay of the wavefront; shape=[n_wavelengths], units=radians
     """
-    WFS_map = np.zeros((len(wf_vec), sp.grid_size, sp.grid_size))
+    star_wf = wfo.wf_array[:, 0]
+    WFS_map = np.zeros((len(star_wf), sp.grid_size, sp.grid_size))
 
-    for iw in range(len(wf_vec)):
-        WFS_map[iw] = unwrap_phase(proper.prop_get_phase(wf_vec[iw]))
+    for iw in range(len(star_wf)):
+        WFS_map[iw] = unwrap_phase(proper.prop_get_phase(star_wf[iw]))
+
+    if 'ideal_wfs' in sp.save_list:
+        wfo.save_plane(location='ideal_wfs')
 
     return WFS_map
 
