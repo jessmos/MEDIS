@@ -45,11 +45,12 @@ class Wavefronts():
         self.beam_ratios = np.zeros_like(self.wsamples)
 
         # Init Locations of saved E-field
-        self.planes = []
-        self.save_E_fields = np.empty((0, np.shape(self.wf_array)[0],
-                                       np.shape(self.wf_array)[1],
-                                       sp.grid_size,
-                                       sp.grid_size), dtype=np.complex64)
+        if sp.save_fields:
+            self.saved_planes = []  # string of locations where fields have been saved (should match sp.save_list after run is completed)
+            self.Efield_sequence = np.empty((0, np.shape(self.wf_array)[0],  # array of saved complex field data at
+                                           np.shape(self.wf_array)[1],    # specified locations of the optical train
+                                           sp.grid_size,
+                                           sp.grid_size), dtype=np.complex64)
 
     def initialize_proper(self):
         # Initialize the Wavefront in Proper
@@ -90,35 +91,44 @@ class Wavefronts():
         The wavefront object has dimensions of shape=(n_wavelengths, n_astro_objects, grid_sz, grid_sz)
 
         :param func: function to be applied e.g. ap.add_aber()
+        :param plane_name: name the plane where this is called if you want to save the complex field data via save_plane
         :param args: args to be passed to the function
         :param kwargs: kwargs to be passed to the function
         :return: everything is just applied to the wfo, so nothing is returned in the traditional sense
         """
+        if 'plane_name' in kwargs:
+            plane_name = kwargs.pop('plane_name')  # remove plane_name from **kwargs
+        else:
+            plane_name = None
         shape = self.wf_array.shape
         for iw in range(shape[0]):
             for iwf in range(shape[1]):
                 func(self.wf_array[iw, iwf], *args, **kwargs)
+                if plane_name is not None:
+                    dprint(f"location = {plane_name}")
+                    self.save_plane(location=plane_name)
 
     def save_plane(self, location=None):
         """
-        Saves the field at a spcified location in the optical system. Performs some functinality included in
-        wfo.focal_plane
+        Saves the complex field at a specified location in the optical system.
+
+        Converts the
 
         :param location: name of plane where field is being saved
         :return: self.save_E_fields
         """
         if sp.save_fields is True and location is not None and location in sp.save_list:
             shape = self.wf_array.shape
-            optic_E_fields = np.zeros((1, np.shape(self.wf_array)[0],
+            E_field = np.zeros((1, np.shape(self.wf_array)[0],
                                        np.shape(self.wf_array)[1],
-                                       ap.grid_size,
-                                       ap.grid_size), dtype=np.complex64)
+                                       sp.grid_size,
+                                       sp.grid_size), dtype=np.complex64)
             for iw in range(shape[0]):
                 for iwf in range(shape[1]):
                     wf = proper.prop_shift_center(self.wf_array[iw, iwf].wfarr)
-                    optic_E_fields[0, iw, iwf] = copy.copy(wf)
-            self.save_E_fields = np.vstack((self.save_E_fields, optic_E_fields))
-            self.planes.append(location)
+                    E_field[0, iw, iwf] = copy.copy(wf)
+            self.Efield_sequence = np.vstack((self.Efield_sequence, E_field))
+            self.saved_planes.append(location)
 
     def focal_plane(self):
         """
@@ -163,6 +173,9 @@ class Wavefronts():
             new_heights = np.linspace(0, 1, ap.n_wvl_final)
             datacube = f_out(new_heights)
             sampling = np.linspace(sampling[0], sampling[-1], ap.n_wvl_final)
+
+        if sp.save_fields and 'detector' in sp.save_list:
+            self.save_plane(location='detector')
 
         return datacube, sampling
 

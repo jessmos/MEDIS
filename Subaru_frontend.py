@@ -88,8 +88,8 @@ sp.show_tseries = True  # Plot full timeseries of white light frames
 
 # Saving
 sp.save_obs = False  # save obs_sequence (timestep, wavelength, x, y)
-sp.save_fields = False  # toggle to turn saving uniformly on/off
-sp.save_list = []  # list of locations in optics train to save
+sp.save_fields = True  # toggle to turn saving uniformly on/off
+sp.save_list = ['atmosphere', 'detector']  # list of locations in optics train to save
 
 
 #################################################################################################
@@ -116,7 +116,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     wfo.initialize_proper()
 
     # Atmosphere
-    wfo.loop_over_function(atmos.add_atmos, PASSVALUE['iter'])  # atmos has only effect on phase delay, not intensity
+    wfo.loop_over_function(atmos.add_atmos, PASSVALUE['iter'], plane_name='atmosphere')  # atmos has only effect on phase delay, not intensity
 
     if ap.companion:
         # offset companion here after running prop_define_enterance (to normalize intensity)
@@ -128,8 +128,8 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     #######################################
     # Defines aperture (baffle-before primary)
     wfo.loop_over_function(proper.prop_circular_aperture, **{'radius': tp.enterance_d/2})  # clear inside, dark outside
-    # Obscurations
-    # wfo.loop_over_function(opx.add_obscurations, d_primary=tp.d_nsmyth, d_secondary=tp.d_secondary, legs_frac=0.1)
+    # Obscurations (Secondary and Spiders)
+    wfo.loop_over_function(opx.add_obscurations, d_primary=tp.d_nsmyth, d_secondary=tp.d_secondary, legs_frac=0.01)
     wfo.loop_over_function(proper.prop_define_entrance)  # normalizes the intensity
 
     # Test Sampling
@@ -170,7 +170,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     opx.check_sampling(PASSVALUE['iter'], wfo, "focal plane", units='nm')
     # opx.check_sampling(PASSVALUE['iter'], wfo, "focal plane", units='arcsec')
 
-    # wfo.focal_plane 1) sums the wfo over objects(companions) 2) shifts wfo from Fourier Space (origin==lower left
+    # wfo.focal_plane 1) sums the wfo over objects(companions) 2) fft-shifts wfo from Fourier Space (origin==lower left
     #  corner) to object space (origin==center) 3) converts complex-valued field into intensity units 4) interpolates
     #  over wavelength
     datacube, sampling = wfo.focal_plane()
