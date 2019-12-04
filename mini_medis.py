@@ -57,13 +57,14 @@ def run_mmedis():
 
         return obs_sequence
 
-    # Initialize Obs Sequence
-    if sp.maskd_size != sp.grid_size:
-        obs_sequence = np.zeros((sp.numframes, ap.n_wvl_final, sp.maskd_size, sp.maskd_size))
-    else:
-        obs_sequence = np.zeros((sp.numframes, ap.n_wvl_final, sp.grid_size, sp.grid_size))
     if ap.companion is False:
         ap.contrast = []
+
+    # Initialize Obs Sequence
+    obs_sequence = np.zeros((sp.numframes, ap.n_wvl_final, sp.maskd_size, sp.maskd_size))
+    if sp.save_list:
+        cpx_sequence = np.zeros((sp.numframes, len(sp.save_list), ap.n_wvl_init, 1 + len(ap.contrast),
+                                 sp.grid_size, sp.grid_size))
 
     # =======================================================================================================
     # Multiprocessing with gen_timeseries
@@ -75,13 +76,13 @@ def run_mmedis():
 
     # Multiprocessing Settings
     inqueue = multiprocessing.Queue()
-    spectral_queue = multiprocessing.Queue()
+    out_queue = multiprocessing.Queue()
     jobs = []
 
     # Sending Queues to gen_timeseries
     for i in range(sp.num_processes):
         p = multiprocessing.Process(target=gen_timeseries,
-                                    args=(inqueue, spectral_queue))
+                                    args=(inqueue, out_queue))
         jobs.append(p)
         p.start()
 
@@ -92,23 +93,36 @@ def run_mmedis():
     for i in range(sp.num_processes):
         inqueue.put(sentinel)
 
+    # ========================
+    # Generate Obs Sequence
+    # ========================
     # Getting Returned Variables from gen_timeseries
     for t in range(sp.numframes):
-        t, spectralcube, sampling = spectral_queue.get()
+        t, spectralcube, planes, sampling = out_queue.get()
         obs_sequence[t - sp.startframe] = spectralcube  # should be in the right order now because of the identifier
+        if sp.save_list:
+            cpx_sequence[t-sp.startframe] = planes
 
     # Ending the gen_timeseries loop via multiprocessing protocol
     for i, p in enumerate(jobs):
         p.join()  # Send the sentinel to tell Simulation to end?
+    out_queue.put(None)
 
-    spectral_queue.put(None)
+    print('mini-MEDIS Data Run Completed')
+    print('**************************************')
+    finish = time.time()
+    print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
+    print(f"Number of timesteps = {np.shape(obs_sequence)[0]}")
+    print(f"Number of wavelength bins = {np.shape(obs_sequence)[1]}")
 
     # =======================================================================
-    # Saving
+    # Plotting
     # =======================================================================
 
     obs_sequence = np.array(obs_sequence)  # obs sequence is returned by gen_timeseries (called above)
                                            # (n_timesteps , n_wavelength_bins , x_grid , y_grid)
+    if sp.save_list:
+        cpx_sequence = np.array(cpx_sequence)
 
     # Plotting Spectra at second-to-last tstep
     if sp.show_cube:
@@ -124,28 +138,34 @@ def run_mmedis():
 
     # Plotting Timeseries
     if sp.show_tseries:
-        view_timeseries(obs_sequence, title=f"White Light Timeseries\n"
+        img_tseries = np.sum(obs_sequence, axis=1)
+        view_timeseries(img_tseries, title=f"White Light Timeseries\n"
                                             f"AO={tp.use_ao}. CDI={cdip.use_cdi}",
                         subplt_cols=sp.tseries_cols,
                         logAmp=True,
                         vlim=(1e-6, 1e-3))
                         # dx=sampling
 
-    print('mini-MEDIS Data Run Completed')
-    print('**************************************')
-    finish = time.time()
-    print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
-    print(f"Number of timesteps = {np.shape(obs_sequence)[0]}")
-    print(f"Number of wavelength bins = {np.shape(obs_sequence)[1]}")
+    # Plotting Selected Plane
+    if sp.save_list:
+        plot_plane = 'ideal_wfs'
+        ip = sp.save_list.index(plot_plane)
+        img_plane = np.sum(cpx_sequence, axis=3)  # sum over objects
+        img_plane = np.sum(img_plane, axis=2)
+        quick2D(np.abs(img_plane[sp.numframes,ip])**2,
+                        title=f"White Light at {plot_plane}",
+                        logAmp=True)
 
+    # =======================================================================
     # Saving
+    # =======================================================================
     if sp.save_obs:
         mmu.dprint("Saving obs_sequence:")
         mmu.save_obs_sequence(obs_sequence, obs_seq_file=iop.obs_seq)
         print(f"Data saved: {iop.obs_seq}")
 
 
-def gen_timeseries(inqueue, spectral_queue):  # conf_obj_tuple
+def gen_timeseries(inqueue, out_queue):  # conf_obj_tuple
     """
     generates observation sequence by calling optics_propagate in time series
 
@@ -156,10 +176,13 @@ def gen_timeseries(inqueue, spectral_queue):  # conf_obj_tuple
         is saved instead)
 
     :param inqueue: time index for parallelization (used by multiprocess)
-    :param spectral_queue: series of intensity images (spectral image cube) in the multiprocessing format
+    :param out_queue: series of intensity images (spectral image cube) in the multiprocessing format
 
     :return: returns the observation sequence, but through the multiprocessing tools, not through more standard
-      return protocols
+      return protocols.
+      : intensity_seq is the intensity data in the focal plane only, with shape [timestep, wavelength, x, y]
+      : cpx_seq is the complex-valued E-field in the planes specified by sp.save_list. with shape [timestep, planes, wavelength, x, y]
+      : sampling is the final sampling per wavelength in the focal plane
     """
     try:
         start = time.time()
@@ -168,20 +191,20 @@ def gen_timeseries(inqueue, spectral_queue):  # conf_obj_tuple
         if cdip.use_cdi is True:
             theta_series = cdi.gen_CDI_phase_stream()
         else:
-            theta_series = np.zeros(sp.numframes) * np.nan
+            theta_series = np.zeros(sp.numframes) * np.nan  # string of Nans
         # mmu.dprint(f"Theta={theta_series}")
 
         for it, t in enumerate(iter(inqueue.get, sentinel)):
             kwargs = {'iter': t, 'params': [ap, tp, iop, sp], 'theta': theta_series[t]}
-            spectralcube, sampling = pm.prop_run(tp.prescription, 1, sp.grid_size, PASSVALUE=kwargs,
-                                                 VERBOSE=False, TABLE=True)
+            intensity_seq, cpx_seq, sampling = pm.prop_run(tp.prescription, 1, sp.grid_size, PASSVALUE=kwargs,
+                                                 VERBOSE=False, TABLE=True)  # 1 is dummy wavelength
 
             # for cx in range(len(ap.contrast) + 1):
             #     mmu.dprint(f"E-field shape is {save_E_fields.shape}")
             #     cube = np.abs(save_E_fields[-1, :, cx]) ** 2
 
             # Returning variables to run_mmedis
-            spectral_queue.put((t, spectralcube, sampling))
+            out_queue.put((t, intensity_seq, cpx_seq, sampling))
 
         now = time.time()
         elapsed = float(now - start) / 60.
@@ -191,7 +214,7 @@ def gen_timeseries(inqueue, spectral_queue):  # conf_obj_tuple
         mmu.dprint(f'{elapsed:.2f} minutes elapsed, each time step took {each_iter:.4f} minutes')
 
         if tp.detector == 'ideal':
-            image = np.sum(spectralcube, axis=0)  # sum 3D spectralcube over wavelength (at this timestep)
+            image = np.sum(intensity_seq, axis=0)  # sum 3D spectralcube over wavelength (at this timestep)
 
         # Plotting
         if sp.show_wframe:

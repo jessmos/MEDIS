@@ -74,6 +74,7 @@ tp.dist_oap2_focus = 1.261
 #################################################################################################
 #################################################################################################
 #################################################################################################
+sp.focused_sys = True
 
 # Toggles for Aberrations and Control
 tp.obscure = True
@@ -89,7 +90,7 @@ sp.show_tseries = True  # Plot full timeseries of white light frames
 # Saving
 sp.save_obs = False  # save obs_sequence (timestep, wavelength, x, y)
 sp.save_fields = True  # toggle to turn saving uniformly on/off
-sp.save_list = ['atmosphere', 'detector']  # list of locations in optics train to save
+sp.save_list = ['atmosphere', 'ideal_wfs', 'woofer', 'detector']  # list of locations in optics train to save
 
 
 #################################################################################################
@@ -174,9 +175,20 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # wfo.focal_plane 1) sums the wfo over objects(companions) 2) fft-shifts wfo from Fourier Space (origin==lower left
     #  corner) to object space (origin==center) 3) converts complex-valued field into intensity units 4) interpolates
     #  over wavelength
-    datacube, sampling = wfo.focal_plane()
+    datacube, cpx_planes, sampling = wfo.focal_plane()
 
     print(f"Finished datacube at timestep = {PASSVALUE['iter']}")
+
+    # import plot_tools
+    # pn = 'detector'
+    # ip = sp.save_list.index(pn)
+    img_plane = np.sum(cpx_planes, axis=2)  # sum over objects
+    img_plane = np.sum(img_plane, axis=1)  # sum over wavelengths
+    # dprint(f"img_plane.shape is {img_plane.shape}")
+    # plot_tools.quick2D(np.abs(img_plane[ip]) ** 2,
+    #                 title=f"White Light at  {pn}",
+    #                 logAmp=True
+    #                 )
 
     return datacube, sampling
 

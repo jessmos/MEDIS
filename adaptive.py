@@ -23,7 +23,7 @@ from mm_utils import dprint
 
 
 ################################################################################
-# Ideal AO
+# Deformable Mirror
 ################################################################################
 def deformable_mirror(wfo, WFS_map, theta, plane_name=None):
     """
@@ -98,11 +98,14 @@ def deformable_mirror(wfo, WFS_map, theta, plane_name=None):
             # proper.prop_dm(wfo, dm_map, dm_xc, dm_yc, N_ACT_ACROSS_PUPIL=nact, FIT=True)  #
             # check_sampling(0, wfo, "post-DM in quickAO")  # check sampling in optics.py
 
-        if plane_name is not None:
-            wfo.save_plane(plane_name)
+    if plane_name is not None:
+        wfo.save_plane(plane_name)
     return
 
 
+################################################################################
+# Ideal AO
+################################################################################
 def quick_ao(wfo, WFS_map):
     """
     calculate the offset map to send to the DM from the WFS map

@@ -138,7 +138,7 @@ def prop_run(routine_name, lambda0, gridsize, **kwargs):
         func = getattr(module, routine_name.split('.')[-1])
 
         if "PASSVALUE" in kwargs:
-            psf_ilam, pixscale = func(lam[ilam], gridsize, kwargs["PASSVALUE"])
+            psf_ilam, pixscale, dummy = func(lam[ilam], gridsize, kwargs["PASSVALUE"])
         else:
             psf_ilam, pixscale = func(lam[ilam], gridsize)
 
@@ -156,4 +156,4 @@ def prop_run(routine_name, lambda0, gridsize, **kwargs):
     if proper.print_it:
         print("Total elapsed time (seconds) = %8.4f" %(end_time - start_time))
 
-    return (psf, pixscale)
+    return (psf, pixscale,1)

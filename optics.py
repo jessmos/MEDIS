@@ -37,9 +37,9 @@ class Wavefronts():
         # each 2D field in the wf_array is the 2D array of complex E-field values at that wavelength, per object
         # the E-field size is given by (sp.grid_size x sp.grid_size)
         if ap.companion:
-            self.wf_array = np.empty((len(self.wsamples), 1 + len(ap.contrast)), dtype=object)
+            self.wf_array = np.empty((ap.n_wvl_init, 1 + len(ap.contrast)), dtype=object)
         else:
-            self.wf_array = np.empty((len(self.wsamples), 1), dtype=object)
+            self.wf_array = np.empty((ap.n_wvl_init, 1), dtype=object)
 
         # Init Beam Ratios
         self.beam_ratios = np.zeros_like(self.wsamples)
@@ -47,10 +47,13 @@ class Wavefronts():
         # Init Locations of saved E-field
         if sp.save_fields:
             self.saved_planes = []  # string of locations where fields have been saved (should match sp.save_list after run is completed)
-            self.Efield_sequence = np.empty((0, np.shape(self.wf_array)[0],  # array of saved complex field data at
+            self.Efield_planes = np.empty((0, np.shape(self.wf_array)[0],  # array of saved complex field data at
                                            np.shape(self.wf_array)[1],    # specified locations of the optical train
                                            sp.grid_size,
                                            sp.grid_size), dtype=np.complex64)
+        else:
+            self.Efield_planes = None  # save empty attribute so it can be returned by the proper perscription even
+                                         # if it is empty
 
     def initialize_proper(self):
         # Initialize the Wavefront in Proper
@@ -62,7 +65,7 @@ class Wavefronts():
             #  in the focal plane is constant. You can check this with check_sampling, which returns the value from
             #  prop_get_sampling. If the optical system does not go directly from pupil-to-object plane at each optical
             #  plane, the beam ratio does not need to be scaled by wavelength, because of some optics wizardry that
-            #  I don't fully understand
+            #  I don't fully understand. KD 2019
             if sp.focused_sys:
                 self.beam_ratios[iw] = sp.beam_ratio
             else:
@@ -90,6 +93,12 @@ class Wavefronts():
 
         The wavefront object has dimensions of shape=(n_wavelengths, n_astro_objects, grid_sz, grid_sz)
 
+        To save, you must pass in the keyword argument plane_name when you call this function from the perscription.
+        This function does not have a keyword argument for plane_name specifically, since you need to distinguish
+        it from the **kwargs you want to pass to the function that you are looping over.
+        If you are saving the plane at this location, keep in mind it is saved AFTER the function is applied. This
+        is desirable for most functions but be careful when using it for prop_lens, etc
+
         :param func: function to be applied e.g. ap.add_aber()
         :param plane_name: name the plane where this is called if you want to save the complex field data via save_plane
         :param args: args to be passed to the function
@@ -102,17 +111,19 @@ class Wavefronts():
             plane_name = None
         shape = self.wf_array.shape
         for iw in range(shape[0]):
-            for iwf in range(shape[1]):
-                func(self.wf_array[iw, iwf], *args, **kwargs)
-                if plane_name is not None:
-                    dprint(f"location = {plane_name}")
-                    self.save_plane(location=plane_name)
+            for io in range(shape[1]):
+                func(self.wf_array[iw, io], *args, **kwargs)
+
+        # Saving complex field data
+        if plane_name is not None:
+            self.save_plane(location=plane_name)
 
     def save_plane(self, location=None):
         """
         Saves the complex field at a specified location in the optical system.
 
-        Converts the
+        Note that the complex planes saved are not summed by object, interpolated over wavelength, nor masked down
+        to the sp.maskd_size.
 
         :param location: name of plane where field is being saved
         :return: self.save_E_fields
@@ -124,10 +135,12 @@ class Wavefronts():
                                        sp.grid_size,
                                        sp.grid_size), dtype=np.complex64)
             for iw in range(shape[0]):
-                for iwf in range(shape[1]):
-                    wf = proper.prop_shift_center(self.wf_array[iw, iwf].wfarr)
-                    E_field[0, iw, iwf] = copy.copy(wf)
-            self.Efield_sequence = np.vstack((self.Efield_sequence, E_field))
+                for io in range(shape[1]):
+                    wf = proper.prop_shift_center(self.wf_array[iw, io].wfarr)
+                    E_field[0, iw, io] = copy.copy(wf)
+
+            dprint(f"saving plane at {location}")
+            self.Efield_planes = np.vstack((self.Efield_planes, E_field))
             self.saved_planes.append(location)
 
     def focal_plane(self):
@@ -146,6 +159,12 @@ class Wavefronts():
 
         sampling = np.zeros(ap.n_wvl_init)
         shape = self.wf_array.shape
+
+        # Saving Complex Data via save_plane
+        if sp.save_fields and 'detector' in sp.save_list:  # save before prop_end so unaffected by EXTRACT flag and
+            self.save_plane(location='detector')           # shifting, etc already done in save_plane function
+
+        # Proper prop_end
         for iw in range(shape[0]):
             for io in range(shape[1]):
                 # EXTRACT flag removes only middle portion of the array. Used to remove FFT wrap-around effects
@@ -162,6 +181,7 @@ class Wavefronts():
             # (number_wavelengths x sp.grid_size x sp.grid_size)
 
         datacube = np.array(datacube)
+        cpx_planes = np.array(self.Efield_planes)
         # Conex Mirror-- cirshift array for off-axis observing
         if tp.pix_shift is not [0, 0]:
             datacube = np.roll(np.roll(datacube, tp.pix_shift[0], 1), tp.pix_shift[1], 2)
@@ -174,10 +194,7 @@ class Wavefronts():
             datacube = f_out(new_heights)
             sampling = np.linspace(sampling[0], sampling[-1], ap.n_wvl_final)
 
-        if sp.save_fields and 'detector' in sp.save_list:
-            self.save_plane(location='detector')
-
-        return datacube, sampling
+        return datacube, cpx_planes, sampling
 
 
 ################################################################################################################

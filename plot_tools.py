@@ -198,7 +198,10 @@ def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True,
     :param dx: sampling of the image in m. Hardcoded to convert to um
     :return:
     """
-    img_tseries = np.sum(obs_seq, axis=1)
+    # Summing over wavelengths
+    img_tseries = obs_seq
+
+    # Recreate CDI phase stream for plot titles
     if cdip.use_cdi:
         from CDI import gen_CDI_phase_stream
         phases = gen_CDI_phase_stream()
