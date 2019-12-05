@@ -4,9 +4,10 @@
     <list default="true" id="4c18236a-dfc5-4249-b13b-a88d6fd6e999" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Subaru_frontend.py" beforeDir="false" afterPath="$PROJECT_DIR$/Subaru_frontend.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/adaptive.py" beforeDir="false" afterPath="$PROJECT_DIR$/adaptive.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/coronography.py" beforeDir="false" afterPath="$PROJECT_DIR$/coronography.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mini_medis.py" beforeDir="false" afterPath="$PROJECT_DIR$/mini_medis.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mm_params.py" beforeDir="false" afterPath="$PROJECT_DIR$/mm_params.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mm_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/mm_utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/optics.py" beforeDir="false" afterPath="$PROJECT_DIR$/optics.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/plot_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/plot_tools.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/proper_mod/prop_run.py" beforeDir="false" afterPath="$PROJECT_DIR$/proper_mod/prop_run.py" afterDir="false" />
@@ -50,7 +51,7 @@
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="com.intellij.ide.scratch.LRUPopupBuilder$1/New Scratch File" value="Python" />
-    <property name="last_opened_file_path" value="$USER_HOME$/Programs/Proper3.1.1/proper/prop_end.py" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/mm_utils.py" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="settings.editor.selected.configurable" value="PyScientificConfigurable" />
@@ -291,7 +292,7 @@
       <workItem from="1574707780076" duration="10066000" />
       <workItem from="1574803940615" duration="11142000" />
       <workItem from="1575326170126" duration="6562000" />
-      <workItem from="1575405951244" duration="19280000" />
+      <workItem from="1575405951244" duration="29808000" />
     </task>
     <task id="LOCAL-00001" summary="changed rootdir in iop">
       <created>1565385158240</created>
@@ -622,7 +623,14 @@
       <option name="project" value="LOCAL" />
       <updated>1575330530641</updated>
     </task>
-    <option name="localTasksCounter" value="48" />
+    <task id="LOCAL-00048" summary="bugfixes related to saving planes. unworking commit; prior to re-working return structure">
+      <created>1575501891883</created>
+      <option name="number" value="00048" />
+      <option name="presentableId" value="LOCAL-00048" />
+      <option name="project" value="LOCAL" />
+      <updated>1575501891883</updated>
+    </task>
+    <option name="localTasksCounter" value="49" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -642,7 +650,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="only plot shortest wavelength when plotting new atmosphere model" />
     <MESSAGE value="add toggle to turn AO on/off; also add differential sampling by wavelength to view_datacube" />
     <MESSAGE value="add optics.offset_companion to both scale and offset the companion wavefront" />
     <MESSAGE value="change ap.nwsamp and ap.w_bins to ap.n_wvl_init and ap.n_wvl_final; move focal plane functions to the Wavefront class and update in Subaru_frontend; added optics.check sampling to return the sampling at each wavelength" />
@@ -667,37 +674,38 @@
     <MESSAGE value="more cleanup in aberrations.py. Now add_aber uses wfo input, so can be called in the perscription with wfo.loop_over_function" />
     <MESSAGE value="enabled wfo.save_plane functionality. Will save the complex field of planes specified in sp.save_list to a complex-valued data structure (observation seq) with shape [tstep, wavelength, x, y, plane]" />
     <MESSAGE value="convert ideal_wfs to use wfo instead of only first object to enable saving via wfo.save_plane if 'ideal_wfs' in sp.save_list" />
-    <option name="LAST_COMMIT_MESSAGE" value="convert ideal_wfs to use wfo instead of only first object to enable saving via wfo.save_plane if 'ideal_wfs' in sp.save_list" />
+    <MESSAGE value="bugfixes related to saving planes. unworking commit; prior to re-working return structure" />
+    <option name="LAST_COMMIT_MESSAGE" value="bugfixes related to saving planes. unworking commit; prior to re-working return structure" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="78" y="139" width="1436" height="610" key="CommitChangelistDialog2" timestamp="1575330530542">
+    <state x="78" y="139" width="1436" height="610" key="CommitChangelistDialog2" timestamp="1575501891666">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state x="78" y="139" width="1436" height="610" key="CommitChangelistDialog2/67.27.1469.837@67.27.1469.837" timestamp="1575330530542" />
+    <state x="78" y="139" width="1436" height="610" key="CommitChangelistDialog2/67.27.1469.837@67.27.1469.837" timestamp="1575501891666" />
     <state x="167" y="125" width="1269" height="639" key="DiffContextDialog" timestamp="1575496940294">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
     <state x="167" y="125" width="1269" height="639" key="DiffContextDialog/67.27.1469.837@67.27.1469.837" timestamp="1575496940294" />
-    <state x="584" y="202" width="424" height="484" key="FileChooserDialogImpl" timestamp="1575501727690">
+    <state x="584" y="202" width="424" height="484" key="FileChooserDialogImpl" timestamp="1575501979053">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state x="584" y="202" width="424" height="484" key="FileChooserDialogImpl/67.27.1469.837@67.27.1469.837" timestamp="1575501727690" />
-    <state width="1423" height="204" key="GridCell.Tab.0.bottom" timestamp="1575501562597">
+    <state x="584" y="202" width="424" height="484" key="FileChooserDialogImpl/67.27.1469.837@67.27.1469.837" timestamp="1575501979053" />
+    <state width="1423" height="204" key="GridCell.Tab.0.bottom" timestamp="1575515243911">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="204" key="GridCell.Tab.0.bottom/67.27.1469.837@67.27.1469.837" timestamp="1575501562597" />
-    <state width="1423" height="204" key="GridCell.Tab.0.center" timestamp="1575501562596">
+    <state width="1423" height="204" key="GridCell.Tab.0.bottom/67.27.1469.837@67.27.1469.837" timestamp="1575515243911" />
+    <state width="1423" height="204" key="GridCell.Tab.0.center" timestamp="1575515243910">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="204" key="GridCell.Tab.0.center/67.27.1469.837@67.27.1469.837" timestamp="1575501562596" />
-    <state width="1423" height="204" key="GridCell.Tab.0.left" timestamp="1575501562596">
+    <state width="1423" height="204" key="GridCell.Tab.0.center/67.27.1469.837@67.27.1469.837" timestamp="1575515243910" />
+    <state width="1423" height="204" key="GridCell.Tab.0.left" timestamp="1575515243910">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="204" key="GridCell.Tab.0.left/67.27.1469.837@67.27.1469.837" timestamp="1575501562596" />
-    <state width="1423" height="204" key="GridCell.Tab.0.right" timestamp="1575501562597">
+    <state width="1423" height="204" key="GridCell.Tab.0.left/67.27.1469.837@67.27.1469.837" timestamp="1575515243910" />
+    <state width="1423" height="204" key="GridCell.Tab.0.right" timestamp="1575515243911">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="204" key="GridCell.Tab.0.right/67.27.1469.837@67.27.1469.837" timestamp="1575501562597" />
+    <state width="1423" height="204" key="GridCell.Tab.0.right/67.27.1469.837@67.27.1469.837" timestamp="1575515243911" />
     <state width="1423" height="225" key="GridCell.Tab.1.bottom" timestamp="1575499028265">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
@@ -740,6 +748,6 @@
     <SUITE FILE_PATH="coverage/Hubble_frontend_py$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1569885294741" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Hubble_frontend_py$mm_params.coverage" NAME="mm_params Coverage Results" MODIFIED="1568243255215" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/miniMEDIS$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1566340550553" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/Subaru_mini_medis_py$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1575501562575" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Subaru_mini_medis_py$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1575515243888" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

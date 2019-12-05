@@ -102,16 +102,15 @@ class Simulation_params:
         self.numframes = 1  # number of timesteps in the simulation
 
         # Plotting Params
-        self.show_cube = False  # Plot spectral cube at single timestep
+        self.show_spectra = True  # Plot spectral cube at single timestep
         self.show_wframe = True  # Plot white light image frame
-        self.show_tseries = False  # Plot full timeseries of white light frames
+        self.show_tseries = True  # Plot full timeseries of white light frames
         self.spectra_cols = 3  # number of subplots per row in view_datacube
         self.tseries_cols = 4  # number of subplots per row in view_timeseries
 
         # Reading/Saving Params
         self.save_obs = False  # Saves observation sequence (timestep, wavelength, x, y)
-        self.save_fields = False  # toggle to turn saving in non-focal planes uniformly on/off
-        self.save_list = []  # list of locations in optics train to save
+        self.save_list = ['atmosphere', 'ideal_wfs', 'woofer', 'detector']  # list of locations in optics train to save
 
     def __iter__(self):
         for attr, value in self.__dict__.items():

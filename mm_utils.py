@@ -4,11 +4,15 @@ from inspect import getframeinfo, stack
 import pickle
 import tables as pt
 import astropy.io.fits as afits
+from scipy.interpolate import interp1d
 
-from mm_params import ap, tp, iop
+from mm_params import sp, ap, tp, iop
 
 
 def dprint(message):
+    """
+    prints location of code where message is printed from
+    """
     caller = getframeinfo(stack()[1][0])
     print("%s:%d - %s" % (caller.filename, caller.lineno, message))
 
@@ -36,11 +40,47 @@ def phase_cal(wavelengths):
     phase = tp.wavecal_coeffs[0] * wavelengths + tp.wavecal_coeffs[1]
     return phase
 
+
+####################################################################################################
+# Functions Relating to Processing Complex Cubes
+####################################################################################################
+def interp_wavelength(data_in, ax):
+    """
+    Interpolating spectral cube from ap.n_wvl_init discreet wavelengths to ap.n_wvl_final
+
+    :param data_in array where one axis contains the wavelength of the data
+    :param ax  axis of wavelength
+    :return data_out array that has been interpolated over axis=ax
+    """
+    # Interpolating spectral cube from ap.n_wvl_init discreet wavelengths to ap.n_wvl_final
+    if ap.interp_wvl and 1 < ap.n_wvl_init < ap.n_wvl_final:
+        wave_samps = np.linspace(0, 1, ap.n_wvl_init)
+        f_out = interp1d(wave_samps, data_in, axis=ax)
+        new_heights = np.linspace(0, 1, ap.n_wvl_final)
+        data_out = f_out(new_heights)
+
+    return data_out
+
+
+def pull_plane(data_in, plane_name):
+    """
+    pull out the specified plane of the detector from complex array
+
+    """
+    ip = sp.save_list.index(plane_name)
+    return data_in[:, ip, :, :, :]  # [tsteps, #planes, #wavelengths, x, y]
+
+
+def cpx_to_intensity(data_in):
+    """
+    converts complex data to units of intensity
+    """
+    return np.abs(data_in)**2
+
+
 ####################################################################################################
 # Functions Relating to Reading, Loading, and Saving Data #
 ####################################################################################################
-
-
 def save_obs_sequence(obs_sequence, obs_seq_file='obs_seq.pkl'):
     """saves obs sequence as a .pkl file
 

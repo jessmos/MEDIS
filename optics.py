@@ -8,8 +8,6 @@ object used in most prescriptions.
 import numpy as np
 import proper
 import copy
-from scipy.interpolate import interp1d
-
 
 from mm_params import ap, tp, sp
 from mm_utils import dprint
@@ -45,15 +43,11 @@ class Wavefronts():
         self.beam_ratios = np.zeros_like(self.wsamples)
 
         # Init Locations of saved E-field
-        if sp.save_fields:
-            self.saved_planes = []  # string of locations where fields have been saved (should match sp.save_list after run is completed)
-            self.Efield_planes = np.empty((0, np.shape(self.wf_array)[0],  # array of saved complex field data at
+        self.saved_planes = []  # string of locations where fields have been saved (should match sp.save_list after run is completed)
+        self.Efield_planes = np.empty((0, np.shape(self.wf_array)[0],  # array of saved complex field data at
                                            np.shape(self.wf_array)[1],    # specified locations of the optical train
                                            sp.grid_size,
                                            sp.grid_size), dtype=np.complex64)
-        else:
-            self.Efield_planes = None  # save empty attribute so it can be returned by the proper perscription even
-                                         # if it is empty
 
     def initialize_proper(self):
         # Initialize the Wavefront in Proper
@@ -128,7 +122,7 @@ class Wavefronts():
         :param location: name of plane where field is being saved
         :return: self.save_E_fields
         """
-        if sp.save_fields is True and location is not None and location in sp.save_list:
+        if location is not None and location in sp.save_list:
             shape = self.wf_array.shape
             E_field = np.zeros((1, np.shape(self.wf_array)[0],
                                        np.shape(self.wf_array)[1],
@@ -145,17 +139,10 @@ class Wavefronts():
 
     def focal_plane(self):
         """
-        ends the proper perscription and prepares the datacube to be sent to run_mmedis
+        ends the proper perscription and return sampling. most functionality involving image processing now in utils
 
-        Converting Array of Arrays (wfo) into 3D array
-        sums over objects for composite image
-        prop_end moves center of the wavefront from lower left corner (Fourier space) back to the center
-        also takes square modulus of complex values, so gives units as intensity not field
-
-        :param tstep: timestep of the iteration, mostly used for check_sampling
         :return:
         """
-        datacube = []
 
         sampling = np.zeros(ap.n_wvl_init)
         shape = self.wf_array.shape
@@ -167,34 +154,17 @@ class Wavefronts():
         # Proper prop_end
         for iw in range(shape[0]):
             for io in range(shape[1]):
-                # EXTRACT flag removes only middle portion of the array. Used to remove FFT wrap-around effects
-                if sp.maskd_size != sp.grid_size:
-                    wframes = np.zeros((sp.maskd_size, sp.maskd_size))
-                    (wframe, w_sampling) = proper.prop_end(self.wf_array[iw, io], EXTRACT=np.int(sp.maskd_size))
-                else:
-                    wframes = np.zeros((sp.grid_size, sp.grid_size))
-                    (wframe, w_sampling) = proper.prop_end(
-                        self.wf_array[iw, io])  # Sampling returned by proper is in [m]
-                wframes += wframe  # adds 2D wavefront from all astro_objects together into single wavefront, per wavelength
+                (wframe, w_sampling) = proper.prop_end(self.wf_array[iw, io])  # Sampling returned by proper is in [m]
             sampling[iw] = w_sampling
-            datacube.append(wframes)  # puts each wavlength's wavefront into an array
-            # (number_wavelengths x sp.grid_size x sp.grid_size)
 
-        datacube = np.array(datacube)
+        sampling = np.linspace(sampling[0], sampling[-1], ap.n_wvl_final)
+
         cpx_planes = np.array(self.Efield_planes)
         # Conex Mirror-- cirshift array for off-axis observing
-        if tp.pix_shift is not [0, 0]:
-            datacube = np.roll(np.roll(datacube, tp.pix_shift[0], 1), tp.pix_shift[1], 2)
+        # if tp.pix_shift is not [0, 0]:
+        #     datacube = np.roll(np.roll(datacube, tp.pix_shift[0], 1), tp.pix_shift[1], 2)
 
-        # Interpolating spectral cube from ap.n_wvl_init discreet wavelengths to ap.n_wvl_final
-        if ap.interp_wvl and 1 < ap.n_wvl_init < ap.n_wvl_final:
-            wave_samps = np.linspace(0, 1, ap.n_wvl_init)
-            f_out = interp1d(wave_samps, datacube, axis=0)
-            new_heights = np.linspace(0, 1, ap.n_wvl_final)
-            datacube = f_out(new_heights)
-            sampling = np.linspace(sampling[0], sampling[-1], ap.n_wvl_final)
-
-        return datacube, cpx_planes, sampling
+        return cpx_planes, sampling
 
 
 ################################################################################################################

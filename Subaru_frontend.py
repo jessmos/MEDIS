@@ -175,7 +175,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # wfo.focal_plane 1) sums the wfo over objects(companions) 2) fft-shifts wfo from Fourier Space (origin==lower left
     #  corner) to object space (origin==center) 3) converts complex-valued field into intensity units 4) interpolates
     #  over wavelength
-    datacube, cpx_planes, sampling = wfo.focal_plane()
+    cpx_planes, sampling = wfo.focal_plane()
 
     print(f"Finished datacube at timestep = {PASSVALUE['iter']}")
 
@@ -190,5 +190,5 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     #                 logAmp=True
     #                 )
 
-    return datacube, sampling
+    return cpx_planes, sampling
 

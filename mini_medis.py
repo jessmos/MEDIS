@@ -19,7 +19,7 @@ import proper_mod as pm
 import glob
 
 from mm_params import iop, ap, tp, sp, cdip
-from plot_tools import view_datacube, view_timeseries, quick2D
+from plot_tools import view_spectra, view_timeseries, quick2D
 import atmosphere as atmos
 import CDI as cdi
 import mm_utils as mmu
@@ -61,10 +61,9 @@ def run_mmedis():
         ap.contrast = []
 
     # Initialize Obs Sequence
-    obs_sequence = np.zeros((sp.numframes, ap.n_wvl_final, sp.maskd_size, sp.maskd_size))
-    if sp.save_list:
-        cpx_sequence = np.zeros((sp.numframes, len(sp.save_list), ap.n_wvl_init, 1 + len(ap.contrast),
-                                 sp.grid_size, sp.grid_size))
+    # obs_sequence = np.zeros((sp.numframes, ap.n_wvl_final, sp.maskd_size, sp.maskd_size))
+    cpx_sequence = np.zeros((sp.numframes, len(sp.save_list), ap.n_wvl_init, 1 + len(ap.contrast),
+                                 sp.grid_size, sp.grid_size), dtype=np.complex)
 
     # =======================================================================================================
     # Multiprocessing with gen_timeseries
@@ -98,36 +97,42 @@ def run_mmedis():
     # ========================
     # Getting Returned Variables from gen_timeseries
     for t in range(sp.numframes):
-        t, spectralcube, planes, sampling = out_queue.get()
-        obs_sequence[t - sp.startframe] = spectralcube  # should be in the right order now because of the identifier
-        if sp.save_list:
-            cpx_sequence[t-sp.startframe] = planes
+        t, planes, sampling = out_queue.get()
+        cpx_sequence[t - sp.startframe, :, :, :, :, :] = planes  # cpx_seq dimensions (tsteps, #planes, #wavelengths, #objects, sp.grid_size, sp.grid_size)
+
+    # obs_sequence[t - sp.startframe] = spectralcube  # should be in the right order now because of the identifier
+
 
     # Ending the gen_timeseries loop via multiprocessing protocol
     for i, p in enumerate(jobs):
         p.join()  # Send the sentinel to tell Simulation to end?
     out_queue.put(None)
 
+    ######################################
+    # Focal Plane Processing
+    ######################################
+    # obs_sequence = np.array(obs_sequence)  # obs sequence is returned by gen_timeseries (called above)
+    # (n_timesteps ,n_planes, n_waves_init, n_objects, nx ,ny)
+    cpx_sequence = mmu.interp_wavelength(cpx_sequence, 2)  # interpolate over wavelength
+    cpx_sequence = np.sum(cpx_sequence, axis=3)  # sum over object, essentially removes axis
+    focal_plane = mmu.pull_plane(cpx_sequence, 'detector')
+    focal_plane = mmu.cpx_to_intensity(focal_plane)  # convert to intensity
+
     print('mini-MEDIS Data Run Completed')
     print('**************************************')
     finish = time.time()
     print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
-    print(f"Number of timesteps = {np.shape(obs_sequence)[0]}")
-    print(f"Number of wavelength bins = {np.shape(obs_sequence)[1]}")
+    print(f"Number of timesteps = {np.shape(cpx_sequence)[0]}")
+    print(f"Number of wavelength bins = {np.shape(cpx_sequence)[2]}")
 
     # =======================================================================
     # Plotting
     # =======================================================================
 
-    obs_sequence = np.array(obs_sequence)  # obs sequence is returned by gen_timeseries (called above)
-                                           # (n_timesteps , n_wavelength_bins , x_grid , y_grid)
-    if sp.save_list:
-        cpx_sequence = np.array(cpx_sequence)
-
-    # Plotting Spectra at second-to-last tstep
-    if sp.show_cube:
+    # Plotting Spectra at last tstep
+    if sp.show_spectra:
         tstep = sp.numframes-1
-        view_datacube(obs_sequence[tstep],
+        view_spectra(focal_plane[sp.numframes-1],
                       title=f"Intensity per Spectral Bin at Timestep {tstep} \n"
                             f" AO={tp.use_ao}, CDI={cdip.use_cdi}"
                             f"Beam Ratio = {sp.beam_ratio:.4f}",#  sampling = {sampling*1e6:.4f} [um/gridpt]",
@@ -138,7 +143,7 @@ def run_mmedis():
 
     # Plotting Timeseries
     if sp.show_tseries:
-        img_tseries = np.sum(obs_sequence, axis=1)
+        img_tseries = np.sum(focal_plane, axis=1)  # sum over wavelength
         view_timeseries(img_tseries, title=f"White Light Timeseries\n"
                                             f"AO={tp.use_ao}. CDI={cdip.use_cdi}",
                         subplt_cols=sp.tseries_cols,
@@ -146,13 +151,23 @@ def run_mmedis():
                         vlim=(1e-6, 1e-3))
                         # dx=sampling
 
+    if sp.show_wframe:
+        # vlim = (np.min(spectralcube) * 10, np.max(spectralcube))  # setting z-axis limits
+        img = np.sum(focal_plane[sp.numframes-1], axis=0)  # sum over wavelength
+        mmu.dprint(f"shape of image is {img.shape}")
+        quick2D(img, title=f"White light image at timestep {sp.numframes} \n"
+                                                f"AO={tp.use_ao}, CDI={cdip.use_cdi} "
+                                                f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio} ",
+                                                # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
+                logAmp=True,
+                dx=sampling[0],
+                vlim=(1e-6, 1e-3))
+
     # Plotting Selected Plane
     if sp.save_list:
         plot_plane = 'ideal_wfs'
-        ip = sp.save_list.index(plot_plane)
-        img_plane = np.sum(cpx_sequence, axis=3)  # sum over objects
-        img_plane = np.sum(img_plane, axis=2)
-        quick2D(np.abs(img_plane[sp.numframes,ip])**2,
+        plane = mmu.pull_plane(cpx_sequence, plot_plane)
+        quick2D(mmu.cpx_to_intensity(plane),
                         title=f"White Light at {plot_plane}",
                         logAmp=True)
 
@@ -196,15 +211,13 @@ def gen_timeseries(inqueue, out_queue):  # conf_obj_tuple
 
         for it, t in enumerate(iter(inqueue.get, sentinel)):
             kwargs = {'iter': t, 'params': [ap, tp, iop, sp], 'theta': theta_series[t]}
-            intensity_seq, cpx_seq, sampling = pm.prop_run(tp.prescription, 1, sp.grid_size, PASSVALUE=kwargs,
+            cpx_seq, sampling = pm.prop_run(tp.prescription, 1, sp.grid_size, PASSVALUE=kwargs,
                                                  VERBOSE=False, TABLE=True)  # 1 is dummy wavelength
 
-            # for cx in range(len(ap.contrast) + 1):
-            #     mmu.dprint(f"E-field shape is {save_E_fields.shape}")
-            #     cube = np.abs(save_E_fields[-1, :, cx]) ** 2
+            cpx_seq = np.array(cpx_seq)
 
             # Returning variables to run_mmedis
-            out_queue.put((t, intensity_seq, cpx_seq, sampling))
+            out_queue.put((t, cpx_seq, sampling))
 
         now = time.time()
         elapsed = float(now - start) / 60.
@@ -212,23 +225,6 @@ def gen_timeseries(inqueue, out_queue):  # conf_obj_tuple
 
         print('***********************************')
         mmu.dprint(f'{elapsed:.2f} minutes elapsed, each time step took {each_iter:.4f} minutes')
-
-        if tp.detector == 'ideal':
-            image = np.sum(intensity_seq, axis=0)  # sum 3D spectralcube over wavelength (at this timestep)
-
-        # Plotting
-        if sp.show_wframe:
-            # vlim = (np.min(spectralcube) * 10, np.max(spectralcube))  # setting z-axis limits
-            quick2D(image, title=f"White light image at timestep {it} \n"
-                                 # f"Through Subaru with aberrations+atmosphere\n"
-                                 f"AO={tp.use_ao}, CDI={cdip.use_cdi} "
-                                 f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio} ",
-                                 # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
-                    logAmp=True,
-                    dx=sampling[0],
-                    vlim=(1e-6, 1e-3))
-        # loop_frames(obs_sequence[:, 0])
-        # loop_frames(obs_sequence[0])
 
     except Exception as e:
         traceback.print_exc()

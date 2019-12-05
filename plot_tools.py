@@ -88,12 +88,12 @@ def quick2D(image, dx=None, title=None, logAmp=False, vlim=(None,None), colormap
     plt.show()
 
 
-def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, vlim=(None,None), subplt_cols=3,
+def view_spectra(datacube, title=None, show=True, logAmp=False, use_axis=True, vlim=(None,None), subplt_cols=3,
                   dx=None):
     """
     view plot of intensity in each wavelength bin at a single (last) timestep
 
-    :param datacube: 3D spectral cube at single timestep
+    :param datacube: 3D spectral cube (n_wavelengths, nx, ny) at single timestep
     :param title: string, must be set or will error!
     :param show: flag possibly useful for plotting loops of things?
     :param logAmp: turn logscale plotting on or off
@@ -182,6 +182,7 @@ def view_datacube(datacube, title=None, show=True, logAmp=False, use_axis=True, 
 
     if show is True:
         plt.show(block=True)
+
 
 def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True, vlim =(None,None),
                     dx=None, subplt_cols=3):
