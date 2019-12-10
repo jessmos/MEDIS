@@ -13,6 +13,7 @@ atmospheric and common-path aberrations) as well as using or not CDI probes, DM 
 import numpy as np
 from skimage.restoration import unwrap_phase
 from scipy import interpolate, ndimage
+from inspect import getframeinfo, stack
 import proper
 
 from mm_params import sp, tp, ap, cdip
@@ -97,7 +98,7 @@ def deformable_mirror(wfo, WFS_map, theta, plane_name=None):
             prop_dm(wfo.wf_array[iw, io], dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
             # proper.prop_dm(wfo, dm_map, dm_xc, dm_yc, N_ACT_ACROSS_PUPIL=nact, FIT=True)  #
 
-    check_sampling(0, wfo, "E-Field after DM", units='um')  # check sampling in optics.py
+    check_sampling(0, wfo, "E-Field after DM", getframeinfo(stack()[0][0]), units='um')  # check sampling in optics.py
 
     if plane_name is not None:
         wfo.save_plane(plane_name)

@@ -249,18 +249,19 @@ def offset_companion(wfo):
                 wfo.wf_array[iw, io].wfarr = wfo.wf_array[iw, io].wfarr * np.sqrt(ap.contrast[io] * cont_scaling[iw])
 
 
-def check_sampling(tstep, wfo, location, units=None):
+def check_sampling(tstep, wfo, location, line_info, units=None):
     """
     checks the sampling of the wavefront at the given location and prints to console
 
     :param tstep: timestep, will only check for first timestep, so when tstep==0
     :param wfo: wavefront object
     :param location: string that identifies where call is being made
+    :param line_info: info on the line number and function name from where check_sampling was called
     :param units: desired units of returned print statement; options are 'mm,'um','nm','arcsec','rad'
     :return:
     """
     if tstep == 0:
-        print(f"{location}")
+        print(f"From {line_info.filename}:{line_info.lineno}\n Sampling at {location}")
         for w in range(wfo.wf_array.shape[0]):
             check_sampling = proper.prop_get_sampling(wfo.wf_array[w,0])
             if units == 'mm':
