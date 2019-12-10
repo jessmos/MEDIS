@@ -96,7 +96,8 @@ def deformable_mirror(wfo, WFS_map, theta, plane_name=None):
             #########################
             prop_dm(wfo.wf_array[iw, io], dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
             # proper.prop_dm(wfo, dm_map, dm_xc, dm_yc, N_ACT_ACROSS_PUPIL=nact, FIT=True)  #
-            # check_sampling(0, wfo, "post-DM in quickAO")  # check sampling in optics.py
+
+    check_sampling(0, wfo, "post-DM in quickAO")  # check sampling in optics.py
 
     if plane_name is not None:
         wfo.save_plane(plane_name)

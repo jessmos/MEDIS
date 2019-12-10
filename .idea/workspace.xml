@@ -2,15 +2,14 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="4c18236a-dfc5-4249-b13b-a88d6fd6e999" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/run_SubaruFrontend.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Subaru_frontend.py" beforeDir="false" afterPath="$PROJECT_DIR$/Subaru_frontend.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/adaptive.py" beforeDir="false" afterPath="$PROJECT_DIR$/adaptive.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/coronography.py" beforeDir="false" afterPath="$PROJECT_DIR$/coronography.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mini_medis.py" beforeDir="false" afterPath="$PROJECT_DIR$/mini_medis.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mm_params.py" beforeDir="false" afterPath="$PROJECT_DIR$/mm_params.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mm_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/mm_utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/optics.py" beforeDir="false" afterPath="$PROJECT_DIR$/optics.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/plot_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/plot_tools.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proper_mod/prop_run.py" beforeDir="false" afterPath="$PROJECT_DIR$/proper_mod/prop_run.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -51,7 +50,7 @@
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="com.intellij.ide.scratch.LRUPopupBuilder$1/New Scratch File" value="Python" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/mm_utils.py" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/run_SubaruFrontend.py" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="settings.editor.selected.configurable" value="PyScientificConfigurable" />
@@ -61,7 +60,7 @@
       <recent name="$PROJECT_DIR$" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.mini_medis">
+  <component name="RunManager" selected="Python.run_Subaru">
     <configuration name="Hubble-test" type="PythonConfigurationType" factoryName="Python">
       <module name="CDI-devel" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -172,28 +171,6 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="mini_medis" type="PythonConfigurationType" factoryName="Python" singleton="false" nameIsGenerated="true">
-      <module name="CDI-devel" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/mini_medis.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
     <configuration name="mm_params" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="CDI-devel" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -216,8 +193,30 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="run_Subaru" type="PythonConfigurationType" factoryName="Python" singleton="false">
+      <module name="CDI-devel" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/run_SubaruFrontend.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <list>
-      <item itemvalue="Python.mini_medis" />
+      <item itemvalue="Python.run_Subaru" />
       <item itemvalue="Python.check_CDIprobe" />
       <item itemvalue="Python.Hubble-test" />
       <item itemvalue="Python.check_sampling" />
@@ -292,7 +291,7 @@
       <workItem from="1574707780076" duration="10066000" />
       <workItem from="1574803940615" duration="11142000" />
       <workItem from="1575326170126" duration="6562000" />
-      <workItem from="1575405951244" duration="29808000" />
+      <workItem from="1575405951244" duration="41550000" />
     </task>
     <task id="LOCAL-00001" summary="changed rootdir in iop">
       <created>1565385158240</created>
@@ -630,7 +629,14 @@
       <option name="project" value="LOCAL" />
       <updated>1575501891883</updated>
     </task>
-    <option name="localTasksCounter" value="49" />
+    <task id="LOCAL-00049" summary="major overhaul of data structure. Now, the perscription only returns the complex field data (rather than intensity data). Functionality to do prop_end and wfo.focal_plane now moved to mm_utils as a series of functions. run_mmedis now handles all plotting functionality (removed white light image plotting from gen_timeseries). Still need to work on updating mm_params from within the perscription, this is currently limiting sp.save_list editied only in default params, not in perscription.">
+      <created>1575515502548</created>
+      <option name="number" value="00049" />
+      <option name="presentableId" value="LOCAL-00049" />
+      <option name="project" value="LOCAL" />
+      <updated>1575515502548</updated>
+    </task>
+    <option name="localTasksCounter" value="50" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -650,7 +656,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="add toggle to turn AO on/off; also add differential sampling by wavelength to view_datacube" />
     <MESSAGE value="add optics.offset_companion to both scale and offset the companion wavefront" />
     <MESSAGE value="change ap.nwsamp and ap.w_bins to ap.n_wvl_init and ap.n_wvl_final; move focal plane functions to the Wavefront class and update in Subaru_frontend; added optics.check sampling to return the sampling at each wavelength" />
     <MESSAGE value="move beam_ratios, grid_size, maskd_size, and OOPP to sp rather than tp" />
@@ -675,53 +680,58 @@
     <MESSAGE value="enabled wfo.save_plane functionality. Will save the complex field of planes specified in sp.save_list to a complex-valued data structure (observation seq) with shape [tstep, wavelength, x, y, plane]" />
     <MESSAGE value="convert ideal_wfs to use wfo instead of only first object to enable saving via wfo.save_plane if 'ideal_wfs' in sp.save_list" />
     <MESSAGE value="bugfixes related to saving planes. unworking commit; prior to re-working return structure" />
-    <option name="LAST_COMMIT_MESSAGE" value="bugfixes related to saving planes. unworking commit; prior to re-working return structure" />
+    <MESSAGE value="major overhaul of data structure. Now, the perscription only returns the complex field data (rather than intensity data). Functionality to do prop_end and wfo.focal_plane now moved to mm_utils as a series of functions. run_mmedis now handles all plotting functionality (removed white light image plotting from gen_timeseries). Still need to work on updating mm_params from within the perscription, this is currently limiting sp.save_list editied only in default params, not in perscription." />
+    <option name="LAST_COMMIT_MESSAGE" value="major overhaul of data structure. Now, the perscription only returns the complex field data (rather than intensity data). Functionality to do prop_end and wfo.focal_plane now moved to mm_utils as a series of functions. run_mmedis now handles all plotting functionality (removed white light image plotting from gen_timeseries). Still need to work on updating mm_params from within the perscription, this is currently limiting sp.save_list editied only in default params, not in perscription." />
   </component>
   <component name="WindowStateProjectService">
-    <state x="78" y="139" width="1436" height="610" key="CommitChangelistDialog2" timestamp="1575501891666">
+    <state x="259" y="102" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1575923874731">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state x="78" y="139" width="1436" height="610" key="CommitChangelistDialog2/67.27.1469.837@67.27.1469.837" timestamp="1575501891666" />
+    <state x="259" y="102" key="#com.intellij.execution.impl.EditConfigurationsDialog/67.27.1469.837@67.27.1469.837" timestamp="1575923874731" />
+    <state x="78" y="139" width="1436" height="610" key="CommitChangelistDialog2" timestamp="1575515502393">
+      <screen x="67" y="27" width="1469" height="837" />
+    </state>
+    <state x="78" y="139" width="1436" height="610" key="CommitChangelistDialog2/67.27.1469.837@67.27.1469.837" timestamp="1575515502393" />
     <state x="167" y="125" width="1269" height="639" key="DiffContextDialog" timestamp="1575496940294">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
     <state x="167" y="125" width="1269" height="639" key="DiffContextDialog/67.27.1469.837@67.27.1469.837" timestamp="1575496940294" />
-    <state x="584" y="202" width="424" height="484" key="FileChooserDialogImpl" timestamp="1575501979053">
+    <state x="584" y="202" width="424" height="484" key="FileChooserDialogImpl" timestamp="1575923868365">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state x="584" y="202" width="424" height="484" key="FileChooserDialogImpl/67.27.1469.837@67.27.1469.837" timestamp="1575501979053" />
-    <state width="1423" height="204" key="GridCell.Tab.0.bottom" timestamp="1575515243911">
+    <state x="584" y="202" width="424" height="484" key="FileChooserDialogImpl/67.27.1469.837@67.27.1469.837" timestamp="1575923868365" />
+    <state width="1423" height="204" key="GridCell.Tab.0.bottom" timestamp="1576012183861">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="204" key="GridCell.Tab.0.bottom/67.27.1469.837@67.27.1469.837" timestamp="1575515243911" />
-    <state width="1423" height="204" key="GridCell.Tab.0.center" timestamp="1575515243910">
+    <state width="1423" height="204" key="GridCell.Tab.0.bottom/67.27.1469.837@67.27.1469.837" timestamp="1576012183861" />
+    <state width="1423" height="204" key="GridCell.Tab.0.center" timestamp="1576012183860">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="204" key="GridCell.Tab.0.center/67.27.1469.837@67.27.1469.837" timestamp="1575515243910" />
-    <state width="1423" height="204" key="GridCell.Tab.0.left" timestamp="1575515243910">
+    <state width="1423" height="204" key="GridCell.Tab.0.center/67.27.1469.837@67.27.1469.837" timestamp="1576012183860" />
+    <state width="1423" height="204" key="GridCell.Tab.0.left" timestamp="1576012183860">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="204" key="GridCell.Tab.0.left/67.27.1469.837@67.27.1469.837" timestamp="1575515243910" />
-    <state width="1423" height="204" key="GridCell.Tab.0.right" timestamp="1575515243911">
+    <state width="1423" height="204" key="GridCell.Tab.0.left/67.27.1469.837@67.27.1469.837" timestamp="1576012183860" />
+    <state width="1423" height="204" key="GridCell.Tab.0.right" timestamp="1576012183861">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="204" key="GridCell.Tab.0.right/67.27.1469.837@67.27.1469.837" timestamp="1575515243911" />
-    <state width="1423" height="225" key="GridCell.Tab.1.bottom" timestamp="1575499028265">
+    <state width="1423" height="204" key="GridCell.Tab.0.right/67.27.1469.837@67.27.1469.837" timestamp="1576012183861" />
+    <state width="1423" height="225" key="GridCell.Tab.1.bottom" timestamp="1576011338300">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="225" key="GridCell.Tab.1.bottom/67.27.1469.837@67.27.1469.837" timestamp="1575499028265" />
-    <state width="1423" height="225" key="GridCell.Tab.1.center" timestamp="1575499028265">
+    <state width="1423" height="225" key="GridCell.Tab.1.bottom/67.27.1469.837@67.27.1469.837" timestamp="1576011338300" />
+    <state width="1423" height="225" key="GridCell.Tab.1.center" timestamp="1576011338299">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="225" key="GridCell.Tab.1.center/67.27.1469.837@67.27.1469.837" timestamp="1575499028265" />
-    <state width="1423" height="225" key="GridCell.Tab.1.left" timestamp="1575499028264">
+    <state width="1423" height="225" key="GridCell.Tab.1.center/67.27.1469.837@67.27.1469.837" timestamp="1576011338299" />
+    <state width="1423" height="225" key="GridCell.Tab.1.left" timestamp="1576011338299">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="225" key="GridCell.Tab.1.left/67.27.1469.837@67.27.1469.837" timestamp="1575499028264" />
-    <state width="1423" height="225" key="GridCell.Tab.1.right" timestamp="1575499028265">
+    <state width="1423" height="225" key="GridCell.Tab.1.left/67.27.1469.837@67.27.1469.837" timestamp="1576011338299" />
+    <state width="1423" height="225" key="GridCell.Tab.1.right" timestamp="1576011338300">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="225" key="GridCell.Tab.1.right/67.27.1469.837@67.27.1469.837" timestamp="1575499028265" />
+    <state width="1423" height="225" key="GridCell.Tab.1.right/67.27.1469.837@67.27.1469.837" timestamp="1576011338300" />
     <state x="396" y="180" width="800" height="528" key="Vcs.Push.Dialog.v2" timestamp="1575330545096">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
@@ -739,6 +749,11 @@
           <line>2</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/mini_medis.py</url>
+          <line>181</line>
+          <option name="timeStamp" value="6" />
+        </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
@@ -748,6 +763,6 @@
     <SUITE FILE_PATH="coverage/Hubble_frontend_py$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1569885294741" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Hubble_frontend_py$mm_params.coverage" NAME="mm_params Coverage Results" MODIFIED="1568243255215" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/miniMEDIS$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1566340550553" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/Subaru_mini_medis_py$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1575515243888" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Subaru_mini_medis_py$mini_medis.coverage" NAME="run_Subaru Coverage Results" MODIFIED="1576012183852" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
