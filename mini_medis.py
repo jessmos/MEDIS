@@ -135,7 +135,7 @@ def run_mmedis():
     if sp.show_wframe:
         # vlim = (np.min(spectralcube) * 10, np.max(spectralcube))  # setting z-axis limits
         img = np.sum(focal_plane[sp.numframes - 1], axis=0)  # sum over wavelength
-        quick2D(img, title=f"White light image at timestep {sp.numframes} \n"
+        quick2D(mmu.extract(img), title=f"White light image at timestep {sp.numframes} \n"
                            f"AO={tp.use_ao}, CDI={cdip.use_cdi} "
                            f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio} ",
                 # f"sampling = {sampling*1e6:.4f} (um/gridpt)",

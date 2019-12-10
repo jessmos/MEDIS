@@ -18,6 +18,7 @@ This script is meant to override any Subaru/SCExAO-specific parameters specified
 """
 
 import numpy as np
+from inspect import getframeinfo, stack
 import proper
 
 from mm_params import ap, tp, sp
@@ -54,6 +55,11 @@ tp.d_secondary = 1.265  # m diameter secondary, used for central obscuration
 # tp.fn_secondary = 12.6
 # tp.flen_secondary = - tp.d_secondary * tp.fn_secondary  # m focal length of secondary
 
+# Re-writing mm_params terms in Subaru-units
+# need this to accurately make atmospheric and aberration maps
+tp.enterance_d = tp.d_nsmyth
+tp.flen_primary = tp.flen_nsmyth
+
 # ----------------------------
 # AO188 OAP1
 # Paramaters taken from "Design of the Subaru laser guide star adaptive optics module"
@@ -67,31 +73,6 @@ tp.dist_dm_ao2 = 2.511-tp.dist_ao1_dm  # m distance DM to OAP2
 tp.d_ao2 = 0.2  # m  diamater of AO2
 tp.fl_ao2 = 1.201  # m  focal length AO2
 tp.dist_oap2_focus = 1.261
-
-# Wavelength
-# ap.wvl_range = np.array([810, 1500]) / 1e9
-# sp.subplt_cols = 3
-#################################################################################################
-#################################################################################################
-#################################################################################################
-sp.focused_sys = True
-
-# Toggles for Aberrations and Control
-tp.obscure = True
-tp.use_atmos = True
-tp.use_aber = True
-tp.use_ao = True
-
-# Plotting
-sp.show_cube = True  # Plot spectral cube at single timestep
-sp.show_wframe = True  # Plot white light image frame
-sp.show_tseries = True  # Plot full timeseries of white light frames
-
-# Saving
-sp.save_obs = False  # save obs_sequence (timestep, wavelength, x, y)
-sp.save_fields = True  # toggle to turn saving uniformly on/off
-sp.save_list = ['atmosphere', 'ideal_wfs', 'woofer', 'detector']  # list of locations in optics train to save
-
 
 #################################################################################################
 #################################################################################################
@@ -132,10 +113,10 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     wfo.loop_over_function(proper.prop_circular_aperture, **{'radius': tp.enterance_d/2})  # clear inside, dark outside
     # Obscurations (Secondary and Spiders)
     wfo.loop_over_function(opx.add_obscurations, d_primary=tp.d_nsmyth, d_secondary=tp.d_secondary, legs_frac=0.01)
-    wfo.loop_over_function(proper.prop_define_entrance)  # normalizes the intensity
+    wfo.loop_over_function(proper.prop_define_entrance, plane_name='enterance_pupil')  # normalizes the intensity
 
     # Test Sampling
-    # opx.check_sampling(PASSVALUE['iter'], wfo, "initial", units='mm')
+    # opx.check_sampling(PASSVALUE['iter'], wfo, "initial", getframeinfo(stack()[0][0]), units='mm')
     # Testing Primary Focus (instead of propagating to focal plane)
     # wfo.loop_over_function(opx.prop_mid_optics, tp.flen_nsmyth, tp.flen_nsmyth)  # test only going to prime focus
 
@@ -169,26 +150,13 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # Focal Plane
     # #######################################
     # Check Sampling in focal plane
-    opx.check_sampling(PASSVALUE['iter'], wfo, "focal plane", units='nm')
-    # opx.check_sampling(PASSVALUE['iter'], wfo, "focal plane", units='arcsec')
+    opx.check_sampling(PASSVALUE['iter'], wfo, "focal plane", getframeinfo(stack()[0][0]), units='nm')
+    # opx.check_sampling(PASSVALUE['iter'], wfo, "focal plane", getframeinfo(stack()[0][0]), units='arcsec')
 
-    # wfo.focal_plane 1) sums the wfo over objects(companions) 2) fft-shifts wfo from Fourier Space (origin==lower left
-    #  corner) to object space (origin==center) 3) converts complex-valued field into intensity units 4) interpolates
-    #  over wavelength
+    # wfo.focal_plane fft-shifts wfo from Fourier Space (origin==lower left corner) to object space (origin==center)
     cpx_planes, sampling = wfo.focal_plane()
 
     print(f"Finished datacube at timestep = {PASSVALUE['iter']}")
-
-    # import plot_tools
-    # pn = 'detector'
-    # ip = sp.save_list.index(pn)
-    img_plane = np.sum(cpx_planes, axis=2)  # sum over objects
-    img_plane = np.sum(img_plane, axis=1)  # sum over wavelengths
-    # dprint(f"img_plane.shape is {img_plane.shape}")
-    # plot_tools.quick2D(np.abs(img_plane[ip]) ** 2,
-    #                 title=f"White Light at  {pn}",
-    #                 logAmp=True
-    #                 )
 
     return cpx_planes, sampling
 
