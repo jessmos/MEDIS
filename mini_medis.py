@@ -62,6 +62,7 @@ def run_mmedis():
 
     # Initialize Obs Sequence
     # obs_sequence = np.zeros((sp.numframes, ap.n_wvl_final, sp.maskd_size, sp.maskd_size))
+    # cpx_seq = (tsteps, planes, wavelengths, objects, x, y)
     cpx_sequence = np.zeros((sp.numframes, len(sp.save_list), ap.n_wvl_init, 1 + len(ap.contrast),
                                  sp.grid_size, sp.grid_size), dtype=np.complex)
 
@@ -98,7 +99,9 @@ def run_mmedis():
     # Getting Returned Variables from gen_timeseries
     for t in range(sp.numframes):
         t, planes, sampling = out_queue.get()
-        cpx_sequence[t - sp.startframe, :, :, :, :, :] = planes  # cpx_seq dimensions (tsteps, #planes, #wavelengths, #objects, sp.grid_size, sp.grid_size)
+        cpx_sequence[t - sp.startframe, :, :, :, :, :] = planes
+        # cpx_seq dimensions (tsteps, planes, wavelengths, objects, x, y)
+        # size is (sp.numframes, len(sp.save_list), ap.n_wavl_init, 1+len(ap.contrast), sp.grid_size, sp.grid_size)
 
     # obs_sequence[t - sp.startframe] = spectralcube  # should be in the right order now because of the identifier
 
@@ -122,12 +125,23 @@ def run_mmedis():
     print('**************************************')
     finish = time.time()
     print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
-    print(f"Number of timesteps = {np.shape(cpx_sequence)[0]}")
-    print(f"Number of wavelength bins = {np.shape(cpx_sequence)[2]}")
+    # print(f"Number of timesteps = {np.shape(cpx_sequence)[0]}")
+    print(f"Focal Plane Sampling = {sampling[0]*1e9:.2f} nm")
 
     # =======================================================================
     # Plotting
     # =======================================================================
+    # White Light, Last Timestep
+    if sp.show_wframe:
+        # vlim = (np.min(spectralcube) * 10, np.max(spectralcube))  # setting z-axis limits
+        img = np.sum(focal_plane[sp.numframes - 1], axis=0)  # sum over wavelength
+        quick2D(img, title=f"White light image at timestep {sp.numframes} \n"
+                           f"AO={tp.use_ao}, CDI={cdip.use_cdi} "
+                           f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio} ",
+                # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
+                logAmp=True,
+                dx=sampling[0],
+                vlim=(1e-6, 1e-3))
 
     # Plotting Spectra at last tstep
     if sp.show_spectra:
@@ -141,7 +155,7 @@ def run_mmedis():
                       vlim=(1e-8, 1e-3),
                       dx=sampling)
 
-    # Plotting Timeseries
+    # Plotting Timeseries in White Light
     if sp.show_tseries:
         img_tseries = np.sum(focal_plane, axis=1)  # sum over wavelength
         view_timeseries(img_tseries, title=f"White Light Timeseries\n"
@@ -151,25 +165,16 @@ def run_mmedis():
                         vlim=(1e-6, 1e-3))
                         # dx=sampling
 
-    if sp.show_wframe:
-        # vlim = (np.min(spectralcube) * 10, np.max(spectralcube))  # setting z-axis limits
-        img = np.sum(focal_plane[sp.numframes-1], axis=0)  # sum over wavelength
-        mmu.dprint(f"shape of image is {img.shape}")
-        quick2D(img, title=f"White light image at timestep {sp.numframes} \n"
-                                                f"AO={tp.use_ao}, CDI={cdip.use_cdi} "
-                                                f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio} ",
-                                                # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
-                logAmp=True,
-                dx=sampling[0],
-                vlim=(1e-6, 1e-3))
-
     # Plotting Selected Plane
     if sp.save_list:
-        plot_plane = 'ideal_wfs'
+        plot_plane = 'enterance_pupil'
         plane = mmu.pull_plane(cpx_sequence, plot_plane)
-        quick2D(mmu.cpx_to_intensity(plane),
-                        title=f"White Light at {plot_plane}",
-                        logAmp=True)
+        # plane = np.sum(mmu.cpx_to_intensity(plane[sp.numframes-1]), axis=0)
+        plane = mmu.extract(mmu.cpx_to_intensity(plane[sp.numframes - 1,0]))
+        quick2D(plane,
+                title=f"White Light at {plot_plane}",
+                logAmp=True,
+                vlim=[1e-15, 1e-2])
 
     # =======================================================================
     # Saving
@@ -195,9 +200,10 @@ def gen_timeseries(inqueue, out_queue):  # conf_obj_tuple
 
     :return: returns the observation sequence, but through the multiprocessing tools, not through more standard
       return protocols.
-      : intensity_seq is the intensity data in the focal plane only, with shape [timestep, wavelength, x, y]
-      : cpx_seq is the complex-valued E-field in the planes specified by sp.save_list. with shape [timestep, planes, wavelength, x, y]
-      : sampling is the final sampling per wavelength in the focal plane
+      :intensity_seq is the intensity data in the focal plane only, with shape [timestep, wavelength, x, y]
+      :cpx_seq is the complex-valued E-field in the planes specified by sp.save_list.
+            has shape [timestep, planes, wavelength, objects, x, y]
+      :sampling is the final sampling per wavelength in the focal plane
     """
     try:
         start = time.time()

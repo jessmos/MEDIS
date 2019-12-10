@@ -84,12 +84,12 @@ class Simulation_params:
         self.num_processes = 1  # multiprocessing.cpu_count()
 
         # Grid Sizing/Sampling Params
-        self.beam_ratio = 0.14  # parameter dealing with the sampling of the beam in the pupil/focal
+        self.beam_ratio = 0.5  # parameter dealing with the sampling of the beam in the pupil/focal
                                 # plane vs grid size. See Proper manual pgs 36-37 and 71-74 for discussion
         self.grid_size = 512  # creates a nxn array of samples of the wavefront
                               # must be bigger than the beam size to avoid FT effects at edges; must be factor of 2
                               # NOT the size of your detector/# of pixels
-        self.maskd_size = 512  # will truncate grid_size to this range (avoids FFT artifacts)
+        self.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts)
                                # set to grid_size if undesired
         self.focused_sys = False  # use this to turn scaling of beam ratio by wavelength on/off
                         # turn on/off as necessary to ensure optics in focal plane have same sampling at each
@@ -102,15 +102,15 @@ class Simulation_params:
         self.numframes = 1  # number of timesteps in the simulation
 
         # Plotting Params
-        self.show_spectra = True  # Plot spectral cube at single timestep
+        self.show_spectra = False  # Plot spectral cube at single timestep
         self.show_wframe = True  # Plot white light image frame
-        self.show_tseries = True  # Plot full timeseries of white light frames
-        self.spectra_cols = 3  # number of subplots per row in view_datacube
-        self.tseries_cols = 4  # number of subplots per row in view_timeseries
+        self.show_tseries = False  # Plot full timeseries of white light frames
+        self.spectra_cols = 2  # number of subplots per row in view_datacube
+        self.tseries_cols = 2  # number of subplots per row in view_timeseries
 
         # Reading/Saving Params
         self.save_obs = False  # Saves observation sequence (timestep, wavelength, x, y)
-        self.save_list = ['atmosphere', 'ideal_wfs', 'woofer', 'detector']  # list of locations in optics train to save
+        self.save_list = ['detector']  # list of locations in optics train to save
 
     def __iter__(self):
         for attr, value in self.__dict__.items():
@@ -129,7 +129,7 @@ class Astro_params:
         # Companion Object Params
         self.star_photons = int(1e5)  # A 5 apparent mag star 1e6 cts/cm^2/s
         self.companion = False
-        self.contrast = [0.05]
+        self.contrast = []
         self.C_spec = 1.5  # the gradient of the increase in contrast towards shorter wavelengths
         self.companion_locations = [[-1.0e-6, 1.0e-6]]  # [m] initial location (no rotation)
 
@@ -140,7 +140,7 @@ class Astro_params:
         self.n_wvl_init = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
         self.n_wvl_final = 9  # final number of wavelength bins in spectral cube after interpolation
         self.interp_wvl = True  # Set to interpolate wavelengths from ap.n_wvl_init to ap.n_wvl_final
-        self.wvl_range = np.array([810, 1500]) / 1e9  # wavelength range in [m] (formerly ap.band)
+        self.wvl_range = np.array([800, 1500]) / 1e9  # wavelength range in [m] (formerly ap.band)
             # eg. DARKNESS band is [800, 1500], J band =  [1100,1400])
 
     def __iter__(self):
@@ -157,10 +157,10 @@ class Telescope_params:
     """
     def __init__(self):
         # Optics + Detector
-        self.prescription = 'Subaru_frontend'
-        self.enterance_d = 7.9716  # 7.971  # [m] telescope enterence pupil diameter in meters
-        self.fnum_primary = 13.612  # f-number of primary
-        self.flen_primary = 108.5124  # [m] focal length of primary
+        self.prescription = 'Hubble_frontend'
+        self.enterance_d = 5  # 7.971  # [m] telescope enterence pupil diameter in meters
+        self.fnum_primary = 12  # f-number of primary
+        self.flen_primary = 25  # [m] focal length of primary
 
         # AO System Settings
         self.use_ao = True
@@ -186,9 +186,9 @@ class Telescope_params:
                             # Coefficients used to calcuate PSD errormap in Proper (see pg 56 in manual)
                             # only change these if making new aberration maps
         self.aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4)
-                           'b': [0.8, 0.2],  # correlation length (b/2pi defines knee)
-                           'c': [3.1, 0.5],  #
-                           'a_amp': [0.05, 0.01]}
+                          'b': [0.8, 0.2],  # correlation length (b/2pi defines knee)
+                          'c': [3.1, 0.5],  #
+                          'a_amp': [0.05, 0.01]}
         # Zernike Settings- see pg 192 for details
         self.zernike_orders = [2, 3, 4]  # Order of Zernike Polynomials to include
         self.zernike_vals = np.array([175, -150, 200])*1.0e-9  # value of Zernike order in nm,
