@@ -63,6 +63,7 @@ def gen_atmos(plot=False):
             wf2 = atmos.forward(wf)
 
             filename = get_filename(it, wsamples[iw])
+            dprint(f"atmos file = {filename}")
             hdu = fits.ImageHDU(wf2.phase.reshape(sp.grid_size, sp.grid_size))
             hdu.header['PIXSIZE'] = tp.enterance_d/sp.grid_size
             hdu.writeto(filename, overwrite=True)
@@ -142,5 +143,8 @@ def get_filename(it, lamda):
     :return:
     """
     wave = eformat(lamda, 3, 2)
+    iop.atmosroot = f"atmos/gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
+    iop.atmosdir = os.path.join(iop.testdir, iop.atmosroot)  # full path to FITS files
+
     return f'{iop.atmosdir}/atmos_t{sp.sample_time*it:.3f}_{atmp.model}_wvl{wave}.fits'
 

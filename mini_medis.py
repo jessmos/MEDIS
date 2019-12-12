@@ -19,7 +19,7 @@ import proper_mod as pm
 import glob
 
 from mm_params import iop, ap, tp, sp, cdip
-from plot_tools import view_spectra, view_timeseries, quick2D
+from plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
 import atmosphere as atmos
 import CDI as cdi
 import mm_utils as mmu
@@ -103,9 +103,6 @@ def run_mmedis():
         # cpx_seq dimensions (tsteps, planes, wavelengths, objects, x, y)
         # size is (sp.numframes, len(sp.save_list), ap.n_wavl_init, 1+len(ap.contrast), sp.grid_size, sp.grid_size)
 
-    # obs_sequence[t - sp.startframe] = spectralcube  # should be in the right order now because of the identifier
-
-
     # Ending the gen_timeseries loop via multiprocessing protocol
     for i, p in enumerate(jobs):
         p.join()  # Send the sentinel to tell Simulation to end?
@@ -167,14 +164,10 @@ def run_mmedis():
 
     # Plotting Selected Plane
     if sp.save_list:
-        plot_plane = 'enterance_pupil'
-        plane = mmu.pull_plane(cpx_sequence, plot_plane)
-        # plane = np.sum(mmu.cpx_to_intensity(plane[sp.numframes-1]), axis=0)
-        plane = mmu.extract(mmu.cpx_to_intensity(plane[sp.numframes - 1,0]))
-        quick2D(plane,
-                title=f"White Light at {plot_plane}",
+        plot_planes(cpx_sequence,
+                title=f"White Light through Optical System",
                 logAmp=True,
-                vlim=[1e-15, 1e-2])
+                dx=sampling)
 
     # =======================================================================
     # Saving

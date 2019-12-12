@@ -11,7 +11,7 @@ import matplotlib.ticker as ticker
 import matplotlib.gridspec as gridspec
 
 from mm_params import tp, sp, iop, ap, cdip
-from mm_utils import dprint
+import mm_utils as mmu
 import colormaps as cmaps
 
 plt.register_cmap(name='viridis', cmap=cmaps.viridis)
@@ -285,12 +285,97 @@ def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True,
         plt.show(block=True)
 
 
-# def fmt(x, pos):
-#     a, b = '{:.0e}'.format(x).split('e')
-#     b = int(b)
-#     return r'${} e^{{{}}}$'.format(a, b)
-#
-#
+def plot_planes(cpx_seq, title=None, logAmp=False, use_axis=True, vlim=(None, None), subplt_cols=3,
+                 dx=None):
+    """
+    view plot of intensity in each wavelength bin at a single (last) timestep
+
+    :param cpx_seq:
+    :param title: string, must be set or will error!
+    :param logAmp: turn logscale plotting on or off
+    :param use_axis: turn on/off using axis ticks, colorbar, etc
+    :param vlim: tuple of colorbar axis limits (min,max)
+    :param subplt_cols: number of subplots per row
+    :param dx: sampling of the image in m. Hardcoded to convert to um
+    :return:
+    """
+    plt.close('all')
+
+    # Subplot number, size, layout
+    fig = plt.figure()
+    n_planes = len(sp.save_list)
+    n_rows = int(np.ceil(n_planes / float(subplt_cols)) + 1)
+    plt.axis('off')
+    gs = gridspec.GridSpec(n_rows, subplt_cols, wspace=0.08, top=0.9, bottom=0.2)
+
+    # Main Title
+    if title is None:
+        raise NameError("Plots without titles: Don't Do It!")
+        title = input("Please Enter Title: ")
+        pass
+    fig.suptitle(title, fontweight='bold', fontsize=16)
+
+    # Checking Colorbar axis limits
+    vmin = vlim[0]
+    vmax = vlim[1]
+
+    if dx is not None:
+        dx = dx * 1e6  # [convert to um]
+
+    for w in range(n_planes):
+        ax = fig.add_subplot(gs[w])
+
+        # Retreiving Data
+        plot_plane = sp.save_list[w]
+        plane = mmu.pull_plane(cpx_seq, plot_plane)
+        plane = np.sum(mmu.cpx_to_intensity(plane[sp.numframes-1]), axis=0)  # sums wavelength + converts to intensity
+        plane = mmu.extract(plane)
+
+        # X,Y lables
+        if dx is not None:
+            # dprint(f"sampling = {sampl[w]}")
+            tic_spacing = np.linspace(0, sp.maskd_size, 5)  # 5 (# of ticks) is just set by hand, arbitrarily chosen
+            tic_lables = np.round(
+                np.linspace(-dx[w] * sp.maskd_size / 2, dx[w] * sp.maskd_size / 2, 5)).astype(
+                int)  # nsteps must be same as tic_spacing
+            tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
+            tic_spacing[-1] = tic_spacing[-1] - 1  # hack for edge effects
+            plt.xticks(tic_spacing, tic_lables, fontsize=6)
+            plt.yticks(tic_spacing, tic_lables, fontsize=6)
+            # plt.xlabel('[um]', fontsize=8)
+            # plt.ylabel('[um]', fontsize=8)
+        # Z-axis scale
+        if logAmp:
+            if vmin is not None and vmin <= 0:
+                ax.set_title(f"{sp.save_list[w]}")
+                im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vmin, vmax=vmax,
+                               norm=SymLogNorm(linthresh=1e-5),
+                               cmap="YlGnBu_r")
+                clabel = "Log Normalized Intensity"
+            else:
+                ax.set_title(f"{sp.save_list[w]}")
+                im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vmin, vmax=vmax, norm=LogNorm(),
+                               cmap="YlGnBu_r")
+                cb = fig.colorbar(im)  #
+                # clabel = "Log Normalized Intensity"
+                # cb.set_label(clabel)
+        else:
+            ax.set_title(f"{sp.save_list[w]}")
+            im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vmin, vmax=vmax, cmap="YlGnBu_r")
+            clabel = "Normalized Intensity"
+            cb = fig.colorbar(im)  #
+            cb.set_label(clabel)
+
+    if use_axis:
+        gs.tight_layout(fig, pad=0.08, rect=(0, 0, 1, 0.85))  # rect = (left, bottom, right, top)
+        # fig.tight_layout(pad=50)
+        # cbar_ax = fig.add_axes([0.55, 0.1, 0.2, 0.05])  # Add axes for colorbar @ position [left,bottom,width,height]
+        # cb = fig.colorbar(im, cax=cbar_ax, orientation='horizontal')  #
+        # cb.set_label(clabel)
+
+    plt.show(block=True)
+
+
 # def grid(datacube, nrows=2, logAmp=False, axis=None, width=None, titles=None, ctitles=None, annos=None,
 #          scale=1, vmins=None, vmaxs=None, show=True):
 #     import matplotlib
@@ -545,144 +630,8 @@ def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True,
 #     plt.show()
 #
 #
-# def get_intensity(wf_array, sp, logAmp=True, show=False, save=True, phase=False):
-#     if show is True:
-#         wfo = wf_array[0, 0]
-#         after_dm = proper.prop_get_amplitude(wfo)
-#         phase_afterdm = proper.prop_get_phase(wfo)
 #
-#         fig = plt.figure(figsize=(14, 10))
-#         ax1 = plt.subplot2grid((3, 2), (0, 0), rowspan=2)
-#         ax2 = plt.subplot2grid((3, 2), (0, 1), rowspan=2)
-#         ax3 = plt.subplot2grid((3, 2), (2, 0))
-#         ax4 = plt.subplot2grid((3, 2), (2, 1))
-#         if logAmp:
-#             ax1.imshow(after_dm, origin='lower', cmap="YlGnBu_r", norm=LogNorm())
-#         else:
-#             ax1.imshow(after_dm, origin='lower', cmap="YlGnBu_r")
-#         ax2.imshow(phase_afterdm, origin='lower', cmap="YlGnBu_r")  # , vmin=-0.5, vmax=0.5)
-#
-#         ax3.plot(after_dm[int(sp.grid_size / 2)])
-#         ax3.plot(np.sum(np.eye(sp.grid_size) * after_dm, axis=1))
-#
-#         # plt.plot(np.sum(after_dm,axis=1)/after_dm[128,128])
-#
-#         ax4.plot(phase_afterdm[int(sp.grid_size / 2)])
-#         # ax4.plot(np.sum(np.eye(sp.grid_size)*phase_afterdm,axis=1))
-#         plt.xlim([0, proper.prop_get_gridsize(wfo)])
-#         fig.set_tight_layout(True)
-#
-#         plt.show()
-#
-#     if save:
-#         ws = sp.get_ints['w']
-#         cs = sp.get_ints['c']
-#
-#         int_maps = np.empty((0, sp.grid_size, sp.grid_size))
-#         for iw in ws:
-#             for iwf in cs:
-#                 # int_maps.append(proper.prop_shift_center(np.abs(wf_array[iw, iwf].wfarr) ** 2))
-#                 if phase:
-#                     int_map = proper.prop_get_phase(wf_array[iw, iwf])
-#
-#                 # int_map = proper.prop_shift_center(np.abs(wf_array[iw, iwf].wfarr) ** 2)
-#                 else:
-#                     int_map = proper.prop_shift_center(np.abs(wf_array[iw, iwf].wfarr) ** 2)
-#                 int_maps = np.vstack((int_maps, [int_map]))
-#                 # quicklook_im(int_map)#, logAmp=True)
-#
-#         import pickle, os
-#         if os.path.exists(iop.int_maps):
-#             # "with" statements are very handy for opening files.
-#             with open(iop.int_maps, 'rb') as rfp:
-#                 # dprint(np.array(pickle.load(rfp)).shape)
-#                 int_maps = np.vstack((int_maps, pickle.load(rfp)))
-#
-#         with open(iop.int_maps, 'wb') as wfp:
-#             pickle.dump(int_maps, wfp, protocol=pickle.HIGHEST_PROTOCOL)
-#
-#
-#
-# def initialize_GUI():
-#     # plt.ion()
-#     sp.show_wframe = 'continuous'
-#     sp.fig = plt.figure()
-#     # ax = sp.fig.add_subplot(111)
-#     # ax.plot(range(5))
-#
-#
-#
-# def quicklook_im(image, logAmp=False, show=True, vmin=None, vmax=None, axis=False, anno=None, title=None, pupil=False,
-#                  colormap="YlGnBu_r", mark_star=False, label=None, block=False):
-#     """
-#     Looks at a 2D array, has bunch of handles for plot.imshow
-#
-#     :param image: 2D array to plot (data)
-#     :param logAmp:
-#     :param show:
-#     :param vmin: colorbar axis limits (min)
-#     :param vmax: colorbar axis limits (max)
-#     :param axis:
-#     :param anno:
-#     :param title:
-#     :param pupil: flag to change the colorscheme whether the image is a focal plane image or pupil plane image
-#     :param colormap:
-#     :param mark_star: flag to mark the location of central star (useful if coronagraph)
-#     :param label:
-#     :return:
-#     """
-#     fig = plt.figure()
-#     if pupil:
-#         import medis.Analysis.phot
-#         image = image * Analysis.phot.aperture(sp.grid_size / 2, sp.grid_size / 2, sp.grid_size / 2)
-#
-#     if title is None:
-#         title = r'  $I / I^{*}$'
-#
-#     ax = fig.add_subplot(111)
-#     if logAmp:
-#         if np.min(image) <= 0:
-#
-#             cax = ax.imshow(image, interpolation='none', origin='lower', vmin=vmin, vmax=vmax,
-#                             norm=SymLogNorm(linthresh=1e-5),
-#                             cmap="YlGnBu_r")
-#         else:
-#             cax = ax.imshow(image, interpolation='none', origin='lower', vmin=vmin, vmax=vmax,
-#                             norm=LogNorm(), cmap="YlGnBu_r")
-#
-#     else:
-#         cax = ax.imshow(image, interpolation='none', origin='lower', vmin=vmin, vmax=vmax, cmap=colormap)
-#     if axis:
-#         annotate_axis(cax, ax, image.shape[0])
-#
-#     cb = plt.colorbar(cax)
-#
-#     if axis is None:
-#         ax.axis('off')
-#
-#     # if anno:
-#     #     props = dict(boxstyle='square', facecolor='k', alpha=0.3)
-#     #     ax.text(0.05, 0.05, anno, transform=ax.transAxes, fontweight='bold', color='w', fontsize=22, bbox=props)
-#     # if label:
-#     #     props = dict(boxstyle='square', facecolor='k', alpha=0.3)
-#     #     ax.text(0.05, 0.9, label, transform=ax.transAxes, fontweight='bold', color='w', fontsize=22, family='serif',
-#     #             bbox=props)
-#     # # ax.text(0.84, 0.9, '0.5"', transform=ax.transAxes, fontweight='bold', color='w', ha='center', fontsize=14, family='serif')
-#     # # ax.plot([0.78, 0.9], [0.87, 0.87],transform=ax.transAxes, color='w', linestyle='-', linewidth=3)
-#     # if mark_star:
-#     #     ax.plot(image.shape[0] / 2, image.shape[1] / 2, marker='*', color='r')
-#
-#     # # For plotting on the leftmost screen
-#     # figManager = plt.get_current_fig_manager()
-#     # # if px=0, plot will display on 1st screen
-#     # figManager.window.move(-1920, 0)
-#     # figManager.window.setFocus()
-#
-#     if show:
-#         #plt.tight_layout()
-#         plt.show()
-#
-#
+
 # def annotate_axis(im, ax, width):
 #     rad = tp.platescale / 1000 * width / 2
 #     ticks = np.linspace(-rad, rad, 5)
@@ -747,68 +696,6 @@ def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True,
 #     fig.canvas.mpl_connect('button_press_event', frame.update)
 #     if show:
 #         plt.show()
-#
-#
-# def quicklook_wf(wfo, logAmp=True, show=True):
-#     after_dm = proper.prop_get_amplitude(wfo)
-#     phase_afterdm = proper.prop_get_phase(wfo)
-#
-#     fig = plt.figure(figsize=(14, 10))
-#     ax1 = plt.subplot2grid((3, 2), (0, 0), rowspan=2)
-#     ax2 = plt.subplot2grid((3, 2), (0, 1), rowspan=2)
-#     ax3 = plt.subplot2grid((3, 2), (2, 0))
-#     ax4 = plt.subplot2grid((3, 2), (2, 1))
-#     if logAmp:
-#         ax1.imshow(after_dm, origin='lower', cmap="YlGnBu_r", norm=LogNorm())
-#     else:
-#         ax1.imshow(after_dm, origin='lower', cmap="YlGnBu_r")
-#     ax2.imshow(phase_afterdm, origin='lower', cmap="YlGnBu_r")  # , vmin=-0.5, vmax=0.5)
-#
-#     ax3.plot(after_dm[int(sp.grid_size / 2)])
-#     ax3.plot(np.sum(np.eye(sp.grid_size) * after_dm, axis=1))
-#
-#     # plt.plot(np.sum(after_dm,axis=1)/after_dm[128,128])
-#
-#     ax4.plot(phase_afterdm[int(sp.grid_size / 2)])
-#     # ax4.plot(np.sum(np.eye(sp.grid_size)*phase_afterdm,axis=1))
-#     plt.xlim([0, proper.prop_get_gridsize(wfo)])
-#     fig.set_tight_layout(True)
-#
-#     if show:
-#         plt.show()
-#     # ans = raw_input('here')
-#
-#
-# def quicklook_IQ(wfo, logAmp=False, show=True):
-#     I = np.real(wfo.wfarr)
-#     Q = np.imag(wfo.wfarr)
-#
-#     I = proper.prop_shift_center(I)
-#     Q = proper.prop_shift_center(Q)
-#
-#     fig = plt.figure(figsize=(14, 10))
-#     ax1 = plt.subplot2grid((3, 2), (0, 0), rowspan=2)
-#     ax2 = plt.subplot2grid((3, 2), (0, 1), rowspan=2)
-#     ax3 = plt.subplot2grid((3, 2), (2, 0))
-#     ax4 = plt.subplot2grid((3, 2), (2, 1))
-#     if logAmp:
-#         ax1.imshow(I, origin='lower', cmap="YlGnBu_r", norm=LogNorm())
-#     else:
-#         ax1.imshow(I, origin='lower', cmap="YlGnBu_r")
-#     ax2.imshow(Q, origin='lower', cmap="YlGnBu_r")  # , vmin=-0.5, vmax=0.5)
-#
-#     ax3.plot(I[int(sp.grid_size / 2)])
-#     ax3.plot(np.sum(np.eye(sp.grid_size) * I, axis=1))
-#
-#     # plt.plot(np.sum(after_dm,axis=1)/after_dm[128,128])
-#
-#     ax4.plot(Q[int(sp.grid_size / 2)])
-#     # ax4.plot(np.sum(np.eye(sp.grid_size)*phase_afterdm,axis=1))
-#     plt.xlim([0, proper.prop_get_gridsize(wfo)])
-#     fig.set_tight_layout(True)
-#     if show == True:
-#         plt.show()
-#         # ans = raw_input('here')
 #
 #
 # def add_subplot_axes(ax, rect, axisbg='w'):

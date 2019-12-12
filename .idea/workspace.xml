@@ -2,9 +2,14 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="4c18236a-dfc5-4249-b13b-a88d6fd6e999" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Subaru_frontend.py" beforeDir="false" afterPath="$PROJECT_DIR$/Subaru_frontend.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/adaptive.py" beforeDir="false" afterPath="$PROJECT_DIR$/adaptive.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/atmosphere.py" beforeDir="false" afterPath="$PROJECT_DIR$/atmosphere.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/coronography.py" beforeDir="false" afterPath="$PROJECT_DIR$/coronography.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/optics.py" beforeDir="false" afterPath="$PROJECT_DIR$/optics.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mini_medis.py" beforeDir="false" afterPath="$PROJECT_DIR$/mini_medis.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/plot_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/plot_tools.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/run_SubaruFrontend.py" beforeDir="false" afterPath="$PROJECT_DIR$/run_SubaruFrontend.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -45,7 +50,7 @@
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="com.intellij.ide.scratch.LRUPopupBuilder$1/New Scratch File" value="Python" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/Subaru_frontend.py" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/atmosphere.py" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="settings.editor.selected.configurable" value="PyScientificConfigurable" />
@@ -286,14 +291,8 @@
       <workItem from="1574707780076" duration="10066000" />
       <workItem from="1574803940615" duration="11142000" />
       <workItem from="1575326170126" duration="6562000" />
-      <workItem from="1575405951244" duration="46626000" />
-    </task>
-    <task id="LOCAL-00004" summary="cleanup involving smapling/plotting">
-      <created>1565797549046</created>
-      <option name="number" value="00004" />
-      <option name="presentableId" value="LOCAL-00004" />
-      <option name="project" value="LOCAL" />
-      <updated>1565797549046</updated>
+      <workItem from="1575405951244" duration="60535000" />
+      <workItem from="1576114326224" duration="281000" />
     </task>
     <task id="LOCAL-00005" summary="added check_sampling. not part of mini-medis, but a supplemental file helpful to checking sampling of the initial params">
       <created>1565799210535</created>
@@ -631,7 +630,14 @@
       <option name="project" value="LOCAL" />
       <updated>1576017382129</updated>
     </task>
-    <option name="localTasksCounter" value="53" />
+    <task id="LOCAL-00053" summary="print linenumber when checking the sampling in different planes.">
+      <created>1576017413285</created>
+      <option name="number" value="00053" />
+      <option name="presentableId" value="LOCAL-00053" />
+      <option name="project" value="LOCAL" />
+      <updated>1576017413285</updated>
+    </task>
+    <option name="localTasksCounter" value="54" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -651,7 +657,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="cleanup and testing. Good baseline" />
     <MESSAGE value="removed atmosphere initialization from run_mmedis and initiate it in add_atmos" />
     <MESSAGE value="fixed aliasing problem in quick_ao" />
     <MESSAGE value="update check_sampling to two separate functions" />
@@ -676,65 +681,70 @@
     <MESSAGE value="minor bugfix" />
     <MESSAGE value="minor bugfixes as well as changing more mm_params to default values" />
     <MESSAGE value="Separate the perscription Subaru_frontend.py from a wrapper called run_SubaruFrontend.py. This more closely matches the setup in MEDISv1.0 (example script and optics_propagate relationship). The perscription should contain the &quot;static&quot; optical parameters and the run_(perscription) should contain all the toggles/switches/flags/other params that you would like to change and turn on/off for testing various aspects. The run_(perscription) file mostly copies params from mm_params that can be rapidly changed, and moves changing settings directly in the mm_params file. This does make things more redundant, but allows quicker turning things on/off. You can more easily do a .gitignore on the run_(perscription) file" />
-    <option name="LAST_COMMIT_MESSAGE" value="Separate the perscription Subaru_frontend.py from a wrapper called run_SubaruFrontend.py. This more closely matches the setup in MEDISv1.0 (example script and optics_propagate relationship). The perscription should contain the &quot;static&quot; optical parameters and the run_(perscription) should contain all the toggles/switches/flags/other params that you would like to change and turn on/off for testing various aspects. The run_(perscription) file mostly copies params from mm_params that can be rapidly changed, and moves changing settings directly in the mm_params file. This does make things more redundant, but allows quicker turning things on/off. You can more easily do a .gitignore on the run_(perscription) file" />
+    <MESSAGE value="print linenumber when checking the sampling in different planes." />
+    <option name="LAST_COMMIT_MESSAGE" value="print linenumber when checking the sampling in different planes." />
   </component>
   <component name="WindowStateProjectService">
     <state x="259" y="102" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1575923874731">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
     <state x="259" y="102" key="#com.intellij.execution.impl.EditConfigurationsDialog/67.27.1469.837@67.27.1469.837" timestamp="1575923874731" />
-    <state x="78" y="139" width="1436" height="610" key="CommitChangelistDialog2" timestamp="1576017382073">
+    <state x="669" y="148" width="254" height="593" key="#xdebugger.evaluate" timestamp="1576108590729">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state x="78" y="139" width="1436" height="610" key="CommitChangelistDialog2/67.27.1469.837@67.27.1469.837" timestamp="1576017382073" />
+    <state x="669" y="148" width="254" height="593" key="#xdebugger.evaluate/67.27.1469.837@67.27.1469.837" timestamp="1576108590729" />
+    <state x="78" y="139" width="1436" height="610" key="CommitChangelistDialog2" timestamp="1576017413231">
+      <screen x="67" y="27" width="1469" height="837" />
+    </state>
+    <state x="78" y="139" width="1436" height="610" key="CommitChangelistDialog2/67.27.1469.837@67.27.1469.837" timestamp="1576017413231" />
     <state x="167" y="125" width="1269" height="639" key="DiffContextDialog" timestamp="1575496940294">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
     <state x="167" y="125" width="1269" height="639" key="DiffContextDialog/67.27.1469.837@67.27.1469.837" timestamp="1575496940294" />
-    <state x="584" y="202" width="424" height="484" key="FileChooserDialogImpl" timestamp="1576015419380">
+    <state x="584" y="202" width="424" height="484" key="FileChooserDialogImpl" timestamp="1576112916746">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state x="584" y="202" width="424" height="484" key="FileChooserDialogImpl/67.27.1469.837@67.27.1469.837" timestamp="1576015419380" />
-    <state width="1423" height="204" key="GridCell.Tab.0.bottom" timestamp="1576017020605">
+    <state x="584" y="202" width="424" height="484" key="FileChooserDialogImpl/67.27.1469.837@67.27.1469.837" timestamp="1576112916746" />
+    <state width="1423" height="204" key="GridCell.Tab.0.bottom" timestamp="1576114561154">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="204" key="GridCell.Tab.0.bottom/67.27.1469.837@67.27.1469.837" timestamp="1576017020605" />
-    <state width="1423" height="204" key="GridCell.Tab.0.center" timestamp="1576017020605">
+    <state width="1423" height="204" key="GridCell.Tab.0.bottom/67.27.1469.837@67.27.1469.837" timestamp="1576114561154" />
+    <state width="1423" height="204" key="GridCell.Tab.0.center" timestamp="1576114561153">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="204" key="GridCell.Tab.0.center/67.27.1469.837@67.27.1469.837" timestamp="1576017020605" />
-    <state width="1423" height="204" key="GridCell.Tab.0.left" timestamp="1576017020604">
+    <state width="1423" height="204" key="GridCell.Tab.0.center/67.27.1469.837@67.27.1469.837" timestamp="1576114561153" />
+    <state width="1423" height="204" key="GridCell.Tab.0.left" timestamp="1576114561153">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="204" key="GridCell.Tab.0.left/67.27.1469.837@67.27.1469.837" timestamp="1576017020604" />
-    <state width="1423" height="204" key="GridCell.Tab.0.right" timestamp="1576017020605">
+    <state width="1423" height="204" key="GridCell.Tab.0.left/67.27.1469.837@67.27.1469.837" timestamp="1576114561153" />
+    <state width="1423" height="204" key="GridCell.Tab.0.right" timestamp="1576114561153">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="204" key="GridCell.Tab.0.right/67.27.1469.837@67.27.1469.837" timestamp="1576017020605" />
-    <state width="1423" height="225" key="GridCell.Tab.1.bottom" timestamp="1576014085614">
+    <state width="1423" height="204" key="GridCell.Tab.0.right/67.27.1469.837@67.27.1469.837" timestamp="1576114561153" />
+    <state width="1423" height="225" key="GridCell.Tab.1.bottom" timestamp="1576114307844">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="225" key="GridCell.Tab.1.bottom/67.27.1469.837@67.27.1469.837" timestamp="1576014085614" />
-    <state width="1423" height="225" key="GridCell.Tab.1.center" timestamp="1576014085613">
+    <state width="1423" height="225" key="GridCell.Tab.1.bottom/67.27.1469.837@67.27.1469.837" timestamp="1576114307844" />
+    <state width="1423" height="225" key="GridCell.Tab.1.center" timestamp="1576114307843">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="225" key="GridCell.Tab.1.center/67.27.1469.837@67.27.1469.837" timestamp="1576014085613" />
-    <state width="1423" height="225" key="GridCell.Tab.1.left" timestamp="1576014085613">
+    <state width="1423" height="225" key="GridCell.Tab.1.center/67.27.1469.837@67.27.1469.837" timestamp="1576114307843" />
+    <state width="1423" height="225" key="GridCell.Tab.1.left" timestamp="1576114307843">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="225" key="GridCell.Tab.1.left/67.27.1469.837@67.27.1469.837" timestamp="1576014085613" />
-    <state width="1423" height="225" key="GridCell.Tab.1.right" timestamp="1576014085614">
+    <state width="1423" height="225" key="GridCell.Tab.1.left/67.27.1469.837@67.27.1469.837" timestamp="1576114307843" />
+    <state width="1423" height="225" key="GridCell.Tab.1.right" timestamp="1576114307843">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state width="1423" height="225" key="GridCell.Tab.1.right/67.27.1469.837@67.27.1469.837" timestamp="1576014085614" />
-    <state x="396" y="180" width="800" height="528" key="Vcs.Push.Dialog.v2" timestamp="1575330545096">
+    <state width="1423" height="225" key="GridCell.Tab.1.right/67.27.1469.837@67.27.1469.837" timestamp="1576114307843" />
+    <state x="396" y="180" width="800" height="528" key="Vcs.Push.Dialog.v2" timestamp="1576017421353">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state x="396" y="180" width="800" height="528" key="Vcs.Push.Dialog.v2/67.27.1469.837@67.27.1469.837" timestamp="1575330545096" />
-    <state x="67" y="27" width="866" height="837" key="find.popup" timestamp="1575413842813">
+    <state x="396" y="180" width="800" height="528" key="Vcs.Push.Dialog.v2/67.27.1469.837@67.27.1469.837" timestamp="1576017421353" />
+    <state x="67" y="27" width="866" height="837" key="find.popup" timestamp="1576112908173">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state x="67" y="27" width="866" height="837" key="find.popup/67.27.1469.837@67.27.1469.837" timestamp="1575413842813" />
+    <state x="67" y="27" width="866" height="837" key="find.popup/67.27.1469.837@67.27.1469.837" timestamp="1576112908173" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -746,7 +756,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/mini_medis.py</url>
-          <line>181</line>
+          <line>174</line>
           <option name="timeStamp" value="6" />
         </line-breakpoint>
       </breakpoints>
@@ -764,7 +774,8 @@
     <SUITE FILE_PATH="coverage/CDI_devel$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1565285433606" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Hubble_frontend_py$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1569885294741" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Hubble_frontend_py$mm_params.coverage" NAME="mm_params Coverage Results" MODIFIED="1568243255215" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Subaru_mini_medis_py$run_Subaru.coverage" NAME="run_Subaru Coverage Results" MODIFIED="1576114561122" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/miniMEDIS$mini_medis.coverage" NAME="mini_medis Coverage Results" MODIFIED="1566340550553" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/Subaru_mini_medis_py$mini_medis.coverage" NAME="run_Subaru Coverage Results" MODIFIED="1576017020595" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Subaru_mini_medis_py$mini_medis.coverage" NAME="run_Subaru Coverage Results" MODIFIED="1576114265716" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

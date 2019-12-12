@@ -53,7 +53,6 @@ tp.dist_nsmyth_ao1 = tp.flen_nsmyth + 1.14  # m distance secondary to M1 of AO18
 # Secondary
 tp.d_secondary = 1.265  # m diameter secondary, used for central obscuration
 # tp.fn_secondary = 12.6
-# tp.flen_secondary = - tp.d_secondary * tp.fn_secondary  # m focal length of secondary
 
 # Re-writing mm_params terms in Subaru-units
 # need this to accurately make atmospheric and aberration maps
@@ -129,7 +128,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
 
     ########################################
     # AO188 Propagation
-    # # #######################################
+    ########################################
     # # AO188-OAP1
     wfo.loop_over_function(aber.add_aber, tp.d_ao1, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP1')
     wfo.loop_over_function(opx.prop_mid_optics, tp.fl_ao1, tp.dist_ao1_dm)
