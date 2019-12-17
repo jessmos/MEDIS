@@ -2,12 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="4c18236a-dfc5-4249-b13b-a88d6fd6e999" name="Default Changelist" comment="small bugfixes; update atmosphere.py to make new directory per params updated in run_(perscription); plot_planes now plots all the planes saved in sp.save_list">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CDI.py" beforeDir="false" afterPath="$PROJECT_DIR$/CDI.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Subaru_frontend.py" beforeDir="false" afterPath="$PROJECT_DIR$/Subaru_frontend.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/aberrations.py" beforeDir="false" afterPath="$PROJECT_DIR$/aberrations.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/adaptive.py" beforeDir="false" afterPath="$PROJECT_DIR$/adaptive.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/atmosphere.py" beforeDir="false" afterPath="$PROJECT_DIR$/atmosphere.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/coronography.py" beforeDir="false" afterPath="$PROJECT_DIR$/coronography.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mini_medis.py" beforeDir="false" afterPath="$PROJECT_DIR$/mini_medis.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mm_params.py" beforeDir="false" afterPath="$PROJECT_DIR$/mm_params.py" afterDir="false" />
@@ -298,14 +296,7 @@
       <workItem from="1575326170126" duration="6562000" />
       <workItem from="1575405951244" duration="60535000" />
       <workItem from="1576114326224" duration="21149000" />
-      <workItem from="1576532169896" duration="6951000" />
-    </task>
-    <task id="LOCAL-00006" summary="moved zernike aberrations from optics.py to aberrations.py; added orders/values as params settings">
-      <created>1565817208817</created>
-      <option name="number" value="00006" />
-      <option name="presentableId" value="LOCAL-00006" />
-      <option name="project" value="LOCAL" />
-      <updated>1565817208817</updated>
+      <workItem from="1576532169896" duration="7208000" />
     </task>
     <task id="LOCAL-00007" summary="updates to check_sampling">
       <created>1565978491869</created>
@@ -643,7 +634,14 @@
       <option name="project" value="LOCAL" />
       <updated>1576114705635</updated>
     </task>
-    <option name="localTasksCounter" value="55" />
+    <task id="LOCAL-00055" summary="update aberrations.py to make new directory per params updated in run_(prescription)">
+      <created>1576545766033</created>
+      <option name="number" value="00055" />
+      <option name="presentableId" value="LOCAL-00055" />
+      <option name="project" value="LOCAL" />
+      <updated>1576545766033</updated>
+    </task>
+    <option name="localTasksCounter" value="56" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -663,7 +661,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="fixed aliasing problem in quick_ao" />
     <MESSAGE value="update check_sampling to two separate functions" />
     <MESSAGE value="better lowpass filter in quick_ao. separated DM functions into quick_ao and deformable_mirror functions" />
     <MESSAGE value="removed bad Gaussian filter in ideal_WFS in adaptive.py" />
@@ -688,7 +685,8 @@
     <MESSAGE value="Separate the perscription Subaru_frontend.py from a wrapper called run_SubaruFrontend.py. This more closely matches the setup in MEDISv1.0 (example script and optics_propagate relationship). The perscription should contain the &quot;static&quot; optical parameters and the run_(perscription) should contain all the toggles/switches/flags/other params that you would like to change and turn on/off for testing various aspects. The run_(perscription) file mostly copies params from mm_params that can be rapidly changed, and moves changing settings directly in the mm_params file. This does make things more redundant, but allows quicker turning things on/off. You can more easily do a .gitignore on the run_(perscription) file" />
     <MESSAGE value="print linenumber when checking the sampling in different planes." />
     <MESSAGE value="small bugfixes; update atmosphere.py to make new directory per params updated in run_(perscription); plot_planes now plots all the planes saved in sp.save_list" />
-    <option name="LAST_COMMIT_MESSAGE" value="small bugfixes; update atmosphere.py to make new directory per params updated in run_(perscription); plot_planes now plots all the planes saved in sp.save_list" />
+    <MESSAGE value="update aberrations.py to make new directory per params updated in run_(prescription)" />
+    <option name="LAST_COMMIT_MESSAGE" value="update aberrations.py to make new directory per params updated in run_(prescription)" />
   </component>
   <component name="WindowStateProjectService">
     <state x="259" y="102" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1575923874731">
@@ -699,10 +697,10 @@
       <screen x="67" y="27" width="1469" height="837" />
     </state>
     <state x="391" y="148" width="254" height="593" key="#xdebugger.evaluate/67.27.1469.837@67.27.1469.837" timestamp="1576119514680" />
-    <state x="76" y="136" width="1436" height="610" key="CommitChangelistDialog2" timestamp="1576545509636">
+    <state x="76" y="136" width="1436" height="610" key="CommitChangelistDialog2" timestamp="1576545765810">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
-    <state x="76" y="136" width="1436" height="610" key="CommitChangelistDialog2/67.27.1469.837@67.27.1469.837" timestamp="1576545509636" />
+    <state x="76" y="136" width="1436" height="610" key="CommitChangelistDialog2/67.27.1469.837@67.27.1469.837" timestamp="1576545765810" />
     <state x="167" y="125" width="1269" height="639" key="DiffContextDialog" timestamp="1576188600160">
       <screen x="67" y="27" width="1469" height="837" />
     </state>
