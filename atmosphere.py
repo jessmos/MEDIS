@@ -100,9 +100,9 @@ def add_atmos(wf, it):
 
         # Check for Existing File
         atmos_map = get_filename(it, wavelength)
+        # dprint(f"atmos map applied is {atmos_map}")
         if not os.path.exists(atmos_map):
             gen_atmos(plot=True)
-
 
         atm_map = fits.open(atmos_map)[1].data
         atm_map = unwrap_phase(atm_map)
@@ -143,8 +143,12 @@ def get_filename(it, lamda):
     :return:
     """
     wave = eformat(lamda, 3, 2)
+
+    # Check or Make Directory for Atmosphere with Current beam ratio, grid size, and time steps
     iop.atmosroot = f"atmos/gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
     iop.atmosdir = os.path.join(iop.testdir, iop.atmosroot)  # full path to FITS files
+    if not os.path.isdir(iop.atmosdir):
+        os.makedirs(iop.atmosdir, exist_ok=True)
 
     return f'{iop.atmosdir}/atmos_t{sp.sample_time*it:.3f}_{atmp.model}_wvl{wave}.fits'
 
