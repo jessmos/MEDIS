@@ -285,7 +285,7 @@ def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True,
         plt.show(block=True)
 
 
-def plot_planes(cpx_seq, title=None, logAmp=False, use_axis=True, vlim=(None, None), subplt_cols=3,
+def plot_planes(cpx_seq, title=None, logAmp=[False], use_axis=True, vlim=(None, None), subplt_cols=3,
                  dx=None):
     """
     view plot of intensity in each wavelength bin at a single (last) timestep
@@ -296,7 +296,7 @@ def plot_planes(cpx_seq, title=None, logAmp=False, use_axis=True, vlim=(None, No
     :param use_axis: turn on/off using axis ticks, colorbar, etc
     :param vlim: tuple of colorbar axis limits (min,max)
     :param subplt_cols: number of subplots per row
-    :param dx: sampling of the image in m. Hardcoded to convert to um
+    :param dx: sampling of the image at each saved plane
     :return:
     """
     plt.close('all')
@@ -315,12 +315,11 @@ def plot_planes(cpx_seq, title=None, logAmp=False, use_axis=True, vlim=(None, No
         pass
     fig.suptitle(title, fontweight='bold', fontsize=16)
 
-    # Checking Colorbar axis limits
-    vmin = vlim[0]
-    vmax = vlim[1]
-
-    if dx is not None:
-        dx = dx * 1e6  # [convert to um]
+    # Small Hack to repeat axis if defaults used
+    if len(logAmp) == 1:
+        logAmp = np.repeat(logAmp,len(sp.save_list))
+    if len(vlim) == 2:
+        vlim = (vlim,)*len(sp.save_list)
 
     for w in range(n_planes):
         ax = fig.add_subplot(gs[w])
@@ -330,6 +329,19 @@ def plot_planes(cpx_seq, title=None, logAmp=False, use_axis=True, vlim=(None, No
         plane = mmu.pull_plane(cpx_seq, plot_plane)
         plane = np.sum(mmu.cpx_to_intensity(plane[sp.numframes-1]), axis=0)  # sums wavelength + converts to intensity
         plane = mmu.extract(plane)
+
+        # Converting Sampling Units to Readable numbers
+        if dx[w] < 1e-6:
+            dx[w] *= 1e6  # [convert to um]
+            axlabel = 'um'
+        elif dx[w] < 1e-3:
+            dx[w] *= 1e3  # [convert to mm]
+            axlabel = 'mm'
+        elif dx[w] < 1e-2 and dx[w] > 1e-3:
+            dx[w] *= 1e2  # [convert to cm]
+            axlabel = 'cm'
+        else:
+            axlabel = 'm'
 
         # X,Y lables
         if dx is not None:
@@ -343,35 +355,34 @@ def plot_planes(cpx_seq, title=None, logAmp=False, use_axis=True, vlim=(None, No
             plt.xticks(tic_spacing, tic_lables, fontsize=6)
             plt.yticks(tic_spacing, tic_lables, fontsize=6)
             # plt.xlabel('[um]', fontsize=8)
-            # plt.ylabel('[um]', fontsize=8)
+            plt.ylabel(axlabel, fontsize=8)
         # Z-axis scale
-        if logAmp:
-            if vmin is not None and vmin <= 0:
+        if logAmp[w]:
+            if vlim[w][0] is not None and vlim[w][0] <= 0:
                 ax.set_title(f"{sp.save_list[w]}")
-                im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vmin, vmax=vmax,
+                im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[w][0], vmax=vlim[w][1],
                                norm=SymLogNorm(linthresh=1e-5),
                                cmap="YlGnBu_r")
-                clabel = "Log Normalized Intensity"
+                cb = fig.colorbar(im)
+                # clabel = "Log Normalized Intensity"
             else:
                 ax.set_title(f"{sp.save_list[w]}")
-                im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vmin, vmax=vmax, norm=LogNorm(),
-                               cmap="YlGnBu_r")
-                cb = fig.colorbar(im)  #
+                im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[w][0], vmax=vlim[w][1],
+                               norm=LogNorm(), cmap="YlGnBu_r")
+                cb = fig.colorbar(im)
                 # clabel = "Log Normalized Intensity"
                 # cb.set_label(clabel)
         else:
             ax.set_title(f"{sp.save_list[w]}")
-            im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vmin, vmax=vmax, cmap="YlGnBu_r")
-            clabel = "Normalized Intensity"
+            im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[w][0], vmax=vlim[w][1],
+                           cmap="YlGnBu_r")
             cb = fig.colorbar(im)  #
-            cb.set_label(clabel)
+            # clabel = "Normalized Intensity"
+            # cb.set_label(clabel)
 
     if use_axis:
         gs.tight_layout(fig, pad=0.08, rect=(0, 0, 1, 0.85))  # rect = (left, bottom, right, top)
         # fig.tight_layout(pad=50)
-        # cbar_ax = fig.add_axes([0.55, 0.1, 0.2, 0.05])  # Add axes for colorbar @ position [left,bottom,width,height]
-        # cb = fig.colorbar(im, cax=cbar_ax, orientation='horizontal')  #
-        # cb.set_label(clabel)
 
     plt.show(block=True)
 

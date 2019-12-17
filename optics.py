@@ -48,6 +48,7 @@ class Wavefronts():
                                            np.shape(self.wf_array)[1],    # specified locations of the optical train
                                            sp.grid_size,
                                            sp.grid_size), dtype=np.complex64)
+        self.plane_sampling = []
 
     def initialize_proper(self):
         # Initialize the Wavefront in Proper
@@ -109,7 +110,7 @@ class Wavefronts():
                 func(self.wf_array[iw, io], *args, **kwargs)
 
         # Saving complex field data
-        if plane_name is not None:
+        if sp.save_fields and plane_name is not None:
             self.save_plane(location=plane_name)
 
     def save_plane(self, location=None):
@@ -136,6 +137,7 @@ class Wavefronts():
             dprint(f"saving plane at {location}")
             self.Efield_planes = np.vstack((self.Efield_planes, E_field))
             self.saved_planes.append(location)
+            self.plane_sampling.append(proper.prop_get_sampling(self.wf_array[0][0]))
 
     def focal_plane(self):
         """

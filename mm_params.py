@@ -42,13 +42,11 @@ class IO_params:
         # Aberration Metadata
         self.aberroot = 'aberrations'
         self.aberdata = f"gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
-        self.aberdir = os.path.join(self.testdir, self.aberroot, self.aberdata)
-        self.NCPA_meas = os.path.join(self.aberdir, 'NCPA_meas.pkl')  #
-        self.CPA_meas = os.path.join(self.aberdir, 'CPA_meas.pkl')
+        # self.aberdir = os.path.join(self.testdir, self.aberroot, self.aberdata)
 
         # Atmosphere Metadata
-        self.atmosroot = f"atmos/gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
-        self.atmosdir = os.path.join(self.testdir, self.atmosroot)  # full path to FITS files
+        # self.atmosroot = f"atmos/gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
+        # self.atmosdir = os.path.join(self.testdir, self.atmosroot)  # full path to FITS files
 
     def update(self, new_name='example1'):
         self.__init__(testname=new_name)
@@ -61,10 +59,9 @@ class IO_params:
             os.makedirs(self.testdir, exist_ok=True)
         if not os.path.isdir(self.scidir):
             os.makedirs(self.scidir, exist_ok=True)
-        if not os.path.isdir(self.aberdir):
-            os.makedirs(self.aberdir, exist_ok=True)
-        if not os.path.isdir(self.atmosdir):
-            os.makedirs(self.atmosdir, exist_ok=True)
+        # if not os.path.isdir(self.aberdir):
+        #     os.makedirs(self.aberdir, exist_ok=True)
+
 
     def __iter__(self):
         for attr, value in self.__dict__.items():
@@ -89,7 +86,7 @@ class Simulation_params:
         self.grid_size = 512  # creates a nxn array of samples of the wavefront
                               # must be bigger than the beam size to avoid FT effects at edges; must be factor of 2
                               # NOT the size of your detector/# of pixels
-        self.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts)
+        self.maskd_size = 300  # will truncate grid_size to this range (avoids FFT artifacts)
                                # set to grid_size if undesired
         self.focused_sys = False  # use this to turn scaling of beam ratio by wavelength on/off
                         # turn on/off as necessary to ensure optics in focal plane have same sampling at each
@@ -138,7 +135,7 @@ class Astro_params:
         # given by ap.n_wvl_init. Later, in gen_timeseries(), the 3rd axis of the spectral cube is interpolated so that
         # there are ap.n_wvl_final over the range in ap.wvl_range.
         self.n_wvl_init = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
-        self.n_wvl_final = 9  # final number of wavelength bins in spectral cube after interpolation
+        self.n_wvl_final = 5  # final number of wavelength bins in spectral cube after interpolation
         self.interp_wvl = True  # Set to interpolate wavelengths from ap.n_wvl_init to ap.n_wvl_final
         self.wvl_range = np.array([800, 1500]) / 1e9  # wavelength range in [m] (formerly ap.band)
             # eg. DARKNESS band is [800, 1500], J band =  [1100,1400])

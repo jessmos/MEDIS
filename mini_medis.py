@@ -19,7 +19,6 @@ import proper_mod as pm
 import glob
 
 from mm_params import iop, ap, tp, sp, cdip
-from plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
 import atmosphere as atmos
 import CDI as cdi
 import mm_utils as mmu
@@ -108,16 +107,6 @@ def run_mmedis():
         p.join()  # Send the sentinel to tell Simulation to end?
     out_queue.put(None)
 
-    ######################################
-    # Focal Plane Processing
-    ######################################
-    # obs_sequence = np.array(obs_sequence)  # obs sequence is returned by gen_timeseries (called above)
-    # (n_timesteps ,n_planes, n_waves_init, n_objects, nx ,ny)
-    cpx_sequence = mmu.interp_wavelength(cpx_sequence, 2)  # interpolate over wavelength
-    cpx_sequence = np.sum(cpx_sequence, axis=3)  # sum over object, essentially removes axis
-    focal_plane = mmu.pull_plane(cpx_sequence, 'detector')
-    focal_plane = mmu.cpx_to_intensity(focal_plane)  # convert to intensity
-
     print('mini-MEDIS Data Run Completed')
     print('**************************************')
     finish = time.time()
@@ -126,56 +115,14 @@ def run_mmedis():
     print(f"Focal Plane Sampling = {sampling[0]*1e9:.2f} nm")
 
     # =======================================================================
-    # Plotting
-    # =======================================================================
-    # White Light, Last Timestep
-    if sp.show_wframe:
-        # vlim = (np.min(spectralcube) * 10, np.max(spectralcube))  # setting z-axis limits
-        img = np.sum(focal_plane[sp.numframes - 1], axis=0)  # sum over wavelength
-        quick2D(mmu.extract(img), title=f"White light image at timestep {sp.numframes} \n"
-                           f"AO={tp.use_ao}, CDI={cdip.use_cdi} "
-                           f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio} ",
-                # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
-                logAmp=True,
-                dx=sampling[0],
-                vlim=(1e-6, 1e-3))
-
-    # Plotting Spectra at last tstep
-    if sp.show_spectra:
-        tstep = sp.numframes-1
-        view_spectra(focal_plane[sp.numframes-1],
-                      title=f"Intensity per Spectral Bin at Timestep {tstep} \n"
-                            f" AO={tp.use_ao}, CDI={cdip.use_cdi}"
-                            f"Beam Ratio = {sp.beam_ratio:.4f}",#  sampling = {sampling*1e6:.4f} [um/gridpt]",
-                      logAmp=True,
-                      subplt_cols=sp.spectra_cols,
-                      vlim=(1e-8, 1e-3),
-                      dx=sampling)
-
-    # Plotting Timeseries in White Light
-    if sp.show_tseries:
-        img_tseries = np.sum(focal_plane, axis=1)  # sum over wavelength
-        view_timeseries(img_tseries, title=f"White Light Timeseries\n"
-                                            f"AO={tp.use_ao}. CDI={cdip.use_cdi}",
-                        subplt_cols=sp.tseries_cols,
-                        logAmp=True,
-                        vlim=(1e-6, 1e-3))
-                        # dx=sampling
-
-    # Plotting Selected Plane
-    if sp.save_list:
-        plot_planes(cpx_sequence,
-                title=f"White Light through Optical System",
-                logAmp=True,
-                dx=sampling)
-
-    # =======================================================================
     # Saving
     # =======================================================================
     if sp.save_obs:
         mmu.dprint("Saving obs_sequence:")
-        mmu.save_obs_sequence(obs_sequence, obs_seq_file=iop.obs_seq)
+        mmu.save_obs_sequence(cpx_sequence, obs_seq_file=iop.obs_seq)
         print(f"Data saved: {iop.obs_seq}")
+
+    return cpx_sequence, sampling
 
 
 def gen_timeseries(inqueue, out_queue):  # conf_obj_tuple

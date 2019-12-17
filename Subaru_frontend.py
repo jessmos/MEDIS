@@ -109,10 +109,12 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # Subaru Propagation
     #######################################
     # Defines aperture (baffle-before primary)
-    wfo.loop_over_function(proper.prop_circular_aperture, **{'radius': tp.enterance_d/2})  # clear inside, dark outside
     # Obscurations (Secondary and Spiders)
     wfo.loop_over_function(opx.add_obscurations, d_primary=tp.d_nsmyth, d_secondary=tp.d_secondary, legs_frac=0.01)
-    wfo.loop_over_function(proper.prop_define_entrance, plane_name='enterance_pupil')  # normalizes the intensity
+    wfo.loop_over_function(proper.prop_circular_aperture,
+                           **{'radius': tp.enterance_d / 2})  # clear inside, dark outside
+    wfo.loop_over_function(proper.prop_define_entrance, plane_name='entrance_pupil')  # normalizes abs intensity
+
 
     # Test Sampling
     # opx.check_sampling(PASSVALUE['iter'], wfo, "initial", getframeinfo(stack()[0][0]), units='mm')
@@ -157,5 +159,5 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
 
     print(f"Finished datacube at timestep = {PASSVALUE['iter']}")
 
-    return cpx_planes, sampling
+    return cpx_planes, wfo.plane_sampling
 
