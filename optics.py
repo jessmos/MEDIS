@@ -141,7 +141,7 @@ class Wavefronts():
 
     def focal_plane(self):
         """
-        ends the proper perscription and return sampling. most functionality involving image processing now in utils
+        ends the proper prescription and return sampling. most functionality involving image processing now in utils
 
         :return:
         """
@@ -191,7 +191,7 @@ def add_obscurations(wf, M2_frac=0, d_primary=0, d_secondary=0, legs_frac=0.05, 
         if M2_frac > 0 and d_primary > 0:
             proper.prop_circular_obscuration(wf, M2_frac * d_primary)
         elif d_secondary > 0:
-            proper.prop_circular_aperture(wf, d_secondary)
+            proper.prop_circular_obscuration(wf, d_secondary)
         else:
             raise ValueError('must either specify M2_frac and d_primary or d_secondary')
         if legs_frac > 0:
@@ -199,7 +199,7 @@ def add_obscurations(wf, M2_frac=0, d_primary=0, d_secondary=0, legs_frac=0.05, 
             proper.prop_rectangular_obscuration(wf, d_primary*1.3, legs_frac * d_primary, ROTATION=20)
 
 
-def prop_mid_optics(wfo, fl_lens, dist):
+def prop_pass_lens(wfo, fl_lens, dist):
     """
     pass the wavefront through a lens then propagate to the next surface
 
@@ -243,12 +243,12 @@ def offset_companion(wfo):
         for io in range(wfo.wf_array.shape[1]):
             if io > 0:
                 # Shifting the Array
-                xloc = ap.companion_locations[io][0]
-                yloc = ap.companion_locations[io][1]
-                proper.prop_zernikes(wfo.wf_array[iw, io], [2, 3], np.array([xloc, yloc]))
+                xloc = ap.companion_xy[io-1][0]
+                yloc = ap.companion_xy[io-1][1]
+                proper.prop_zernikes(wfo.wf_array[iw, io], [2, 3], np.array([xloc, yloc]))  # zernike[2,3] = x,y tilt
 
                 # Wavelength Scaling the Companion
-                wfo.wf_array[iw, io].wfarr = wfo.wf_array[iw, io].wfarr * np.sqrt(ap.contrast[io] * cont_scaling[iw])
+                # wfo.wf_array[iw, io].wfarr = wfo.wf_array[iw, io].wfarr * np.sqrt(ap.contrast[io-1] * cont_scaling[iw])
 
 
 def check_sampling(tstep, wfo, location, line_info, units=None):
