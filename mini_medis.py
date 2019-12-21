@@ -47,7 +47,7 @@ def run_mmedis():
     # Intialization
     # =======================================================================
     # Check for Existing File
-    check = mmu.check_exists_obs_sequence(False)
+    check = mmu.check_exists_obs_sequence(plot=False)
     if check:
         if iop.obs_seq[-3:] == '.h5':
             obs_sequence = mmu.open_obs_sequence_hdf5(iop.obs_seq)
@@ -112,7 +112,6 @@ def run_mmedis():
     finish = time.time()
     print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
     # print(f"Number of timesteps = {np.shape(cpx_sequence)[0]}")
-    print(f"Focal Plane Sampling = {sampling[0]*1e9:.2f} nm")
 
     # =======================================================================
     # Saving

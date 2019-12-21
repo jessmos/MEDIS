@@ -101,8 +101,6 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     wfo.loop_over_function(atmos.add_atmos, PASSVALUE['iter'], plane_name='atmosphere')
 
     if ap.companion:
-        # offset companion here after running prop_define_enterance (to normalize intensity)
-        #  if you did it in wfo.initialise()
         opx.offset_companion(wfo)
 
     ########################################
@@ -110,7 +108,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     #######################################
     # Defines aperture (baffle-before primary)
     # Obscurations (Secondary and Spiders)
-    wfo.loop_over_function(opx.add_obscurations, d_primary=tp.d_nsmyth, d_secondary=tp.d_secondary, legs_frac=0.01)
+    wfo.loop_over_function(opx.add_obscurations, d_primary=tp.d_nsmyth, d_secondary=tp.d_secondary, legs_frac=0.05)
     wfo.loop_over_function(proper.prop_circular_aperture,
                            **{'radius': tp.enterance_d / 2})  # clear inside, dark outside
     wfo.loop_over_function(proper.prop_define_entrance, plane_name='entrance_pupil')  # normalizes abs intensity
@@ -119,21 +117,21 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # Test Sampling
     # opx.check_sampling(PASSVALUE['iter'], wfo, "initial", getframeinfo(stack()[0][0]), units='mm')
     # Testing Primary Focus (instead of propagating to focal plane)
-    # wfo.loop_over_function(opx.prop_mid_optics, tp.flen_nsmyth, tp.flen_nsmyth)  # test only going to prime focus
+    # wfo.loop_over_function(opx.prop_pass_lens, tp.flen_nsmyth, tp.flen_nsmyth)  # test only going to prime focus
 
     # Effective Primary
     # CPA from Effective Primary
     wfo.loop_over_function(aber.add_aber, tp.enterance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='effective-primary')
     # Zernike Aberrations- Low Order
     # wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
-    wfo.loop_over_function(opx.prop_mid_optics, tp.flen_nsmyth, tp.dist_nsmyth_ao1)
+    wfo.loop_over_function(opx.prop_pass_lens, tp.flen_nsmyth, tp.dist_nsmyth_ao1)
 
     ########################################
     # AO188 Propagation
     ########################################
     # # AO188-OAP1
     wfo.loop_over_function(aber.add_aber, tp.d_ao1, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP1')
-    wfo.loop_over_function(opx.prop_mid_optics, tp.fl_ao1, tp.dist_ao1_dm)
+    wfo.loop_over_function(opx.prop_pass_lens, tp.fl_ao1, tp.dist_ao1_dm)
 
     # AO System
     if tp.use_ao:
@@ -145,7 +143,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # AO188-OAP2
     wfo.loop_over_function(aber.add_aber, tp.d_ao2, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP2')
     # wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)
-    wfo.loop_over_function(opx.prop_mid_optics, tp.fl_ao2, tp.dist_oap2_focus)
+    wfo.loop_over_function(opx.prop_pass_lens, tp.fl_ao2, tp.dist_oap2_focus)
 
     ########################################
     # Focal Plane

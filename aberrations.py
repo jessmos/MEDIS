@@ -47,6 +47,8 @@ def generate_maps(lens_diam, lens_name='lens'):
     dprint('Generating optic aberration maps using Proper')
     iop.aberdata = f"gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
     iop.aberdir = os.path.join(iop.testdir, iop.aberroot, iop.aberdata)
+    if not os.path.isdir(iop.aberdir):
+        os.makedirs(iop.aberdir, exist_ok=True)
     dprint(f"Abberation directory = {iop.aberdir}")
 
     # create blank lens wavefront for proper to add phase to
@@ -107,7 +109,7 @@ def add_aber(wf, d_lens, aber_params, step=0, lens_name=None):
     else:
         # Load in or Generate Aberration Map
         iop.aberdata = f"gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
-        iop.aberdir = os.path.join(iop.testdir, iop.aberroot, iop.f.aberdata)
+        iop.aberdir = os.path.join(iop.testdir, iop.aberroot, iop.aberdata)
         filename = f"{iop.aberdir}/t{step}_{lens_name}.fits"
         if not os.path.isfile(filename):
             generate_maps(d_lens, lens_name)

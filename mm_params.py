@@ -128,7 +128,7 @@ class Astro_params:
         self.companion = False
         self.contrast = []
         self.C_spec = 1.5  # the gradient of the increase in contrast towards shorter wavelengths
-        self.companion_locations = [[-1.0e-6, 1.0e-6]]  # [m] initial location (no rotation)
+        self.companion_xy = [[-1.0e-6, 1.0e-6]]  # [m] initial location (no rotation)
 
         # Wavelength and Wavefront Array Settings
         # In optics_propagate(), proper initially takes N  discreet wavelengths evenly spaced in wvl_range, where N is

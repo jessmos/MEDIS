@@ -12,6 +12,7 @@ import matplotlib.gridspec as gridspec
 
 from mm_params import tp, sp, iop, ap, cdip
 import mm_utils as mmu
+import optics as opx
 import colormaps as cmaps
 
 plt.register_cmap(name='viridis', cmap=cmaps.viridis)
@@ -31,15 +32,15 @@ rcParams['font.family'] = 'DejaVu Sans'
 # rcParams['mathtext.bf'] = 'Bitstream Vera Sans:bold'
 
 
-def quick2D(image, dx=None, title=None, logAmp=False, vlim=(None,None), colormap=None):
+def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=None):
     """
     Looks at a 2D array, has bunch of handles for plot.imshow
 
     :param image: 2D array to plot (data)
     :param dx: sampling of the image in m. Hardcoded to convert to um on axis
     :param title: string--must be set or will error!
-    :param logAmp: flag to set logscale plotting in amplitude maps.
-    :param vlim: tuple of limits on the colorbar axis, otherwise default matplotlib (pass in logscale limits if LogAmp=True)
+    :param logZ: flag to set logscale plotting on z-axis
+    :param vlim: tuple of limits on the colorbar axis, otherwise default matplotlib (pass in logscale limits if logZ=True)
     :param colormap: specify colormap as string
     :return:
     """
@@ -67,7 +68,7 @@ def quick2D(image, dx=None, title=None, logAmp=False, vlim=(None,None), colormap
     vmax = vlim[1]
 
     # Setting Logscale
-    if logAmp:
+    if logZ:
         if np.min(image) <= 0:
             cax = ax.imshow(image, interpolation='none', origin='lower', vmin=vmin, vmax=vmax,
                             norm=LogNorm(),    #norm=SymLogNorm(linthresh=1e-5),
@@ -88,7 +89,7 @@ def quick2D(image, dx=None, title=None, logAmp=False, vlim=(None,None), colormap
     plt.show()
 
 
-def view_spectra(datacube, title=None, show=True, logAmp=False, use_axis=True, vlim=(None,None), subplt_cols=3,
+def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vlim=(None,None), subplt_cols=3,
                   dx=None):
     """
     view plot of intensity in each wavelength bin at a single (last) timestep
@@ -96,7 +97,7 @@ def view_spectra(datacube, title=None, show=True, logAmp=False, use_axis=True, v
     :param datacube: 3D spectral cube (n_wavelengths, nx, ny) at single timestep
     :param title: string, must be set or will error!
     :param show: flag possibly useful for plotting loops of things?
-    :param logAmp: turn logscale plotting on or off
+    :param logZ: turn logscale plotting for Z axis on or off
     :param use_axis: turn on/off using axis ticks, colorbar, etc
     :param vlim: tuple of colorbar axis limits (min,max)
     :param subplt_cols: number of subplots per row
@@ -143,7 +144,7 @@ def view_spectra(datacube, title=None, show=True, logAmp=False, use_axis=True, v
             # dprint(f"sampling = {sampl[w]}")
             tic_spacing = np.linspace(0, sp.maskd_size, 5)  # 5 is just set by hand, arbitrarily chosen
             tic_lables = np.round(
-                np.linspace(-dx[w] * sp.maskd_size / 2, dx[w] * sp.maskd_size / 2, 5)).astype(int)  # nsteps must be same as tic_spacing
+                np.linspace(-dx * sp.maskd_size / 2, dx * sp.maskd_size / 2, 5)).astype(int)  # nsteps must be same as tic_spacing
             tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
             tic_spacing[-1] = tic_spacing[-1] - 1  # hack for edge effects
             plt.xticks(tic_spacing, tic_lables, fontsize=6)
@@ -151,21 +152,21 @@ def view_spectra(datacube, title=None, show=True, logAmp=False, use_axis=True, v
             # plt.xlabel('[um]', fontsize=8)
             # plt.ylabel('[um]', fontsize=8)
         # Z-axis scale
-        if logAmp:
+        if logZ:
             if vmin is not None and vmin <= 0:
                 ax.set_title(r'$\lambda$ = '+f"{w_string[w]} nm")
-                im = ax.imshow(datacube[w], interpolation='none', origin='lower', vmin=vmin, vmax=vmax,
+                im = ax.imshow(opx.extract(datacube[w]), interpolation='none', origin='lower', vmin=vmin, vmax=vmax,
                                norm=SymLogNorm(linthresh=1e-5),
                                cmap="YlGnBu_r")
                 clabel = "Log Normalized Intensity"
             else:
                 ax.set_title(r'$\lambda$ = '+f"{w_string[w]} nm")
-                im = ax.imshow(datacube[w], interpolation='none', origin='lower', vmin=vmin, vmax=vmax, norm=LogNorm(),
+                im = ax.imshow(opx.extract(datacube[w]), interpolation='none', origin='lower', vmin=vmin, vmax=vmax, norm=LogNorm(),
                                cmap="YlGnBu_r")
                 clabel = "Log Normalized Intensity"
         else:
             ax.set_title(r'$\lambda$ = '+f"{w_string[w]} nm")
-            im = ax.imshow(datacube[w], interpolation='none', origin='lower', vmin=vmin, vmax=vmax, cmap="YlGnBu_r")
+            im = ax.imshow(opx.extract(datacube[w]), interpolation='none', origin='lower', vmin=vmin, vmax=vmax, cmap="YlGnBu_r")
             clabel = "Normalized Intensity"
 
         if use_axis == 'anno':
@@ -184,7 +185,7 @@ def view_spectra(datacube, title=None, show=True, logAmp=False, use_axis=True, v
         plt.show(block=True)
 
 
-def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True, vlim =(None,None),
+def view_timeseries(obs_seq, title=None, show=True, logZ=False, use_axis=True, vlim =(None,None),
                     dx=None, subplt_cols=3):
     """
     view white light images in the timeseries
@@ -192,7 +193,7 @@ def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True,
     :param datacube: 3D spectral cube at single timestep
     :param title: string, must be set or will error!
     :param show: flag possibly useful for plotting loops of things?
-    :param logAmp: turn logscale plotting on or off
+    :param logZ: turn logscale plotting for Z-axis on or off
     :param use_axis: turn on/off using axis ticks, colorbar, etc
     :param vlim: tuple of colorbar axis limits (min,max)
     :param subplt_cols: number of subplots per row
@@ -227,23 +228,36 @@ def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True,
     vmin = vlim[0]
     vmax = vlim[1]
 
+    # Converting Sampling Units to Readable numbers
+    if dx[w] < 1e-6:
+        dx[w] *= 1e6  # [convert to um]
+        axlabel = 'um'
+    elif dx[w] < 1e-3:
+        dx[w] *= 1e3  # [convert to mm]
+        axlabel = 'mm'
+    elif dx[w] < 1e-2 and dx[w] > 1e-3:
+        dx[w] *= 1e2  # [convert to cm]
+        axlabel = 'cm'
+    else:
+        axlabel = 'm'
+
     # X,Y lables
     if dx is not None:
-        dx = dx * 1e6  # [convert to um]
-
-    if dx is not None:
-        scale = np.round(
-            np.linspace(-dx * sp.maskd_size / 2, dx * sp.maskd_size / 2, (sp.maskd_size + 1) / 50) * 1e6)
-        tic_spacing = np.linspace(0, sp.maskd_size, sp.maskd_size / 50)
+        # dprint(f"sampling = {sampl[w]}")
+        tic_spacing = np.linspace(0, sp.maskd_size, 5)  # 5 (# of ticks) is just set by hand, arbitrarily chosen
+        tic_lables = np.round(
+            np.linspace(-dx[w] * sp.maskd_size / 2, dx[w] * sp.maskd_size / 2, 5)).astype(
+            int)  # nsteps must be same as tic_spacing
         tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
         tic_spacing[-1] = tic_spacing[-1] - 1  # hack for edge effects
-        plt.xticks(tic_spacing, scale)
-        plt.yticks(tic_spacing, scale)
-        # plt.xlabel('[um]')
+        plt.xticks(tic_spacing, tic_lables, fontsize=6)
+        plt.yticks(tic_spacing, tic_lables, fontsize=6)
+        # plt.xlabel('[um]', fontsize=8)
+        plt.ylabel(axlabel, fontsize=8)
 
     for t in range(n_tsteps):
         ax = fig.add_subplot(gs[t])
-        if logAmp:
+        if logZ:
             if vmin is not None and vmin <= 0:
                 if cdip.use_cdi and not np.isnan(phases[t]):
                     ax.set_title(f"t={t * sp.sample_time}, CDI" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
@@ -285,14 +299,14 @@ def view_timeseries(obs_seq, title=None, show=True, logAmp=False, use_axis=True,
         plt.show(block=True)
 
 
-def plot_planes(cpx_seq, title=None, logAmp=[False], use_axis=True, vlim=(None, None), subplt_cols=3,
+def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, None), subplt_cols=3,
                  dx=None):
     """
     view plot of intensity in each wavelength bin at a single (last) timestep
 
     :param cpx_seq:
     :param title: string, must be set or will error!
-    :param logAmp: turn logscale plotting on or off
+    :param logZ: turn logscale plotting for z-axis on or off
     :param use_axis: turn on/off using axis ticks, colorbar, etc
     :param vlim: tuple of colorbar axis limits (min,max)
     :param subplt_cols: number of subplots per row
@@ -316,8 +330,8 @@ def plot_planes(cpx_seq, title=None, logAmp=[False], use_axis=True, vlim=(None, 
     fig.suptitle(title, fontweight='bold', fontsize=16)
 
     # Small Hack to repeat axis if defaults used
-    if len(logAmp) == 1:
-        logAmp = np.repeat(logAmp,len(sp.save_list))
+    if len(logZ) == 1:
+        logZ = np.repeat(logZ,len(sp.save_list))
     if len(vlim) == 2:
         vlim = (vlim,)*len(sp.save_list)
 
@@ -327,7 +341,8 @@ def plot_planes(cpx_seq, title=None, logAmp=[False], use_axis=True, vlim=(None, 
         # Retreiving Data
         plot_plane = sp.save_list[w]
         plane = mmu.pull_plane(cpx_seq, plot_plane)
-        plane = np.sum(mmu.cpx_to_intensity(plane[sp.numframes-1]), axis=0)  # sums wavelength + converts to intensity
+        plane = mmu.cpx_to_intensity(plane[0,1])
+        # plane = mmu.cpx_to_intensity(np.sum(plane[sp.numframes-1], axis=0))  # sums wavelength + converts to intensity
         plane = mmu.extract(plane)
 
         # Converting Sampling Units to Readable numbers
@@ -348,8 +363,7 @@ def plot_planes(cpx_seq, title=None, logAmp=[False], use_axis=True, vlim=(None, 
             # dprint(f"sampling = {sampl[w]}")
             tic_spacing = np.linspace(0, sp.maskd_size, 5)  # 5 (# of ticks) is just set by hand, arbitrarily chosen
             tic_lables = np.round(
-                np.linspace(-dx[w] * sp.maskd_size / 2, dx[w] * sp.maskd_size / 2, 5)).astype(
-                int)  # nsteps must be same as tic_spacing
+                np.linspace(-dx[w] * sp.maskd_size / 2, dx[w] * sp.maskd_size / 2, 5)).astype(int)  # nsteps must be same as tic_spacing
             tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
             tic_spacing[-1] = tic_spacing[-1] - 1  # hack for edge effects
             plt.xticks(tic_spacing, tic_lables, fontsize=6)
@@ -357,7 +371,7 @@ def plot_planes(cpx_seq, title=None, logAmp=[False], use_axis=True, vlim=(None, 
             # plt.xlabel('[um]', fontsize=8)
             plt.ylabel(axlabel, fontsize=8)
         # Z-axis scale
-        if logAmp[w]:
+        if logZ[w]:
             if vlim[w][0] is not None and vlim[w][0] <= 0:
                 ax.set_title(f"{sp.save_list[w]}")
                 im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[w][0], vmax=vlim[w][1],
@@ -368,14 +382,14 @@ def plot_planes(cpx_seq, title=None, logAmp=[False], use_axis=True, vlim=(None, 
             else:
                 ax.set_title(f"{sp.save_list[w]}")
                 im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[w][0], vmax=vlim[w][1],
-                               norm=LogNorm(), cmap="YlGnBu_r")
+                               norm=LogNorm(), cmap="YlGnBu_r")  #
                 cb = fig.colorbar(im)
                 # clabel = "Log Normalized Intensity"
                 # cb.set_label(clabel)
         else:
             ax.set_title(f"{sp.save_list[w]}")
             im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[w][0], vmax=vlim[w][1],
-                           cmap="YlGnBu_r")
+                           cmap="twilight")  # "YlGnBu_r"
             cb = fig.colorbar(im)  #
             # clabel = "Normalized Intensity"
             # cb.set_label(clabel)
@@ -387,7 +401,7 @@ def plot_planes(cpx_seq, title=None, logAmp=[False], use_axis=True, vlim=(None, 
     plt.show(block=True)
 
 
-# def grid(datacube, nrows=2, logAmp=False, axis=None, width=None, titles=None, ctitles=None, annos=None,
+# def grid(datacube, nrows=2, logZ=False, axis=None, width=None, titles=None, ctitles=None, annos=None,
 #          scale=1, vmins=None, vmaxs=None, show=True):
 #     import matplotlib
 #     # dprint(matplotlib.is_interactive())
@@ -411,7 +425,7 @@ def plot_planes(cpx_seq, title=None, logAmp=[False], use_axis=True, vlim=(None, 
 #     for x in range(width):
 #         for y in range(nrows):
 #
-#             if logAmp:
+#             if logZ:
 #                 if np.min(datacube[m]) <= 0:
 #                     # datacube[m] = np.abs(datacube[m]) + 1e-20
 #                     im = axes[y, x].imshow(datacube[m], interpolation='none', origin='lower', vmin=vmins[m],
@@ -467,7 +481,7 @@ def plot_planes(cpx_seq, title=None, logAmp=[False], use_axis=True, vlim=(None, 
 #         plt.show(block=True)
 #
 #
-# def indep_images(datacube, logAmp=False, axis=None, width=None, titles=None, annos=None, scale=1, vmins=None,
+# def indep_images(datacube, logZ=False, axis=None, width=None, titles=None, annos=None, scale=1, vmins=None,
 #                  vmaxs=None):
 #     MEDIUM_SIZE = 14
 #     plt.rc('font', size=MEDIUM_SIZE)  # controls default text sizes
@@ -483,7 +497,7 @@ def plot_planes(cpx_seq, title=None, logAmp=[False], use_axis=True, vlim=(None, 
 #
 #     labels = ['a', 'b', 'c', 'd', 'e', 'f']
 #     for m, ax in enumerate(axes):
-#         if logAmp:
+#         if logZ:
 #             if np.min(datacube[m]) <= 0:
 #                 # datacube[m] = np.abs(datacube[m]) + 1e-20
 #                 im = ax.imshow(datacube[m], interpolation='none', origin='lower', vmin=vmins[m], vmax=vmaxs[m],
@@ -538,7 +552,7 @@ def plot_planes(cpx_seq, title=None, logAmp=[False], use_axis=True, vlim=(None, 
 #     plt.show()
 #
 #
-# def compare_images(datacube, logAmp=False, axis=None, width=None, title=None, annos=None, scale=1, max_scale=0.05,
+# def compare_images(datacube, logZ=False, axis=None, width=None, title=None, annos=None, scale=1, max_scale=0.05,
 #                    vmin=None, vmax=None):
 #     MEDIUM_SIZE = 14
 #     plt.rc('font', size=MEDIUM_SIZE)  # controls default text sizes
@@ -589,7 +603,7 @@ def plot_planes(cpx_seq, title=None, logAmp=[False], use_axis=True, vlim=(None, 
 #     for m, ax in enumerate(axes):
 #         # ax = fig.add_subplot(1,width,m+1)
 #         # axes.append(ax)
-#         if logAmp:
+#         if logZ:
 #             if np.min(datacube[m]) <= 0.:
 #                 im = ax[m].imshow(datacube[m], interpolation='none', origin='lower', vmin=vmin, vmax=vmax,
 #                                   norm=SymLogNorm(linthresh=1e-7), cmap="YlGnBu_r")
@@ -661,11 +675,11 @@ def plot_planes(cpx_seq, title=None, logAmp=[False], use_axis=True, vlim=(None, 
 #     ax.set_ylabel('Dec (")')
 #
 #
-# def loop_frames(frames, axis=False, circles=None, logAmp=False, vmin=None, vmax=None, show=True):
+# def loop_frames(frames, axis=False, circles=None, logZ=False, vmin=None, vmax=None, show=True):
 #     fig, ax = plt.subplots()
 #     ax.set(title='Click to update the data')
 #     dprint((vmin, vmax))
-#     if logAmp:
+#     if logZ:
 #         if np.min(frames) < 0:
 #             im = ax.imshow(frames[0], norm=SymLogNorm(linthresh=1e-3), origin='lower', vmin=vmin, vmax=vmax)
 #         else:
@@ -675,9 +689,9 @@ def plot_planes(cpx_seq, title=None, logAmp=[False], use_axis=True, vlim=(None, 
 #     if axis:
 #         annotate_axis(im, ax, frames.shape[1])
 #     cbar = plt.colorbar(im)
-#     # if logAmp:
+#     # if logZ:
 #     #     cbar_ticks = np.logspace(np.min(frames), np.max(frames), num=7, endpoint=True)
-#     if not logAmp:
+#     if not logZ:
 #         cbar_ticks = np.linspace(np.min(frames), np.max(frames), num=13, endpoint=True)
 #         cbar.set_ticks(cbar_ticks)
 #
@@ -694,9 +708,9 @@ def plot_planes(cpx_seq, title=None, logAmp=[False], use_axis=True, vlim=(None, 
 #                 im.set_data(frames[self.f])
 #                 # cbar.set_clim(np.min(frames[self.f]), np.max(frames[self.f]))
 #                 # dprint(im.vmax)
-#                 # if logAmp:
+#                 # if logZ:
 #                 #     cbar_ticks = np.logspace(np.min(frames[self.f]), np.max(frames[self.f]), num=7, endpoint=True)
-#                 # if not logAmp:
+#                 # if not logZ:
 #                 #     cbar_ticks = np.linspace(np.min(frames[self.f]), np.max(frames[self.f]), num=7, endpoint=True)
 #                 #     cbar.set_ticks(cbar_ticks)
 #                 self.f += 1
