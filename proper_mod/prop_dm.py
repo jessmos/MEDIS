@@ -236,6 +236,7 @@ def prop_dm(wf, dm_z0, dm_xc, dm_yc, spacing = 0., **kwargs):
 
     # Here is where the resampling onto the wavefront coords happens
     # has two different modes, check these for correct method of resampling (also consider speed here)
+    # prop_cubic_conv is a frontend to a c code installed when you install proper
     if proper.use_cubic_conv:
         # print(f"proper_mod Proper 3.1.1-DM using cubic conv")
         grid = proper.prop_cubic_conv(dm_grid.T, xdm, ydm, GRID=False)

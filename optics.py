@@ -8,6 +8,7 @@ object used in most prescriptions.
 import numpy as np
 import proper
 import copy
+from scipy.interpolate import interp1d
 
 from mm_params import ap, tp, sp
 from mm_utils import dprint
@@ -169,10 +170,69 @@ class Wavefronts():
         return cpx_planes, sampling
 
 
+####################################################################################################
+# Functions Relating to Processing Complex Cubes
+####################################################################################################
+def interp_wavelength(data_in, ax):
+    """
+    Interpolating spectral cube from ap.n_wvl_init discreet wavelengths to ap.n_wvl_final
+
+    :param data_in array where one axis contains the wavelength of the data
+    :param ax  axis of wavelength
+    :return data_out array that has been interpolated over axis=ax
+    """
+    # Interpolating spectral cube from ap.n_wvl_init discreet wavelengths to ap.n_wvl_final
+    if ap.interp_wvl and 1 < ap.n_wvl_init < ap.n_wvl_final:
+        wave_samps = np.linspace(0, 1, ap.n_wvl_init)
+        f_out = interp1d(wave_samps, data_in, axis=ax)
+        new_heights = np.linspace(0, 1, ap.n_wvl_final)
+        data_out = f_out(new_heights)
+
+    return data_out
+
+
+def pull_plane(data_in, plane_name):
+    """
+    pull out the specified plane of the detector from complex array
+
+    here we assume that the data_in has the specific format of:
+    [timestep, plane, wavelength, x, y]
+    Code will return invalid results if data_in is not in this format
+
+    :param data_in: the 5D wavefront array of shape  [timestep, plane, wavelength, x, y]
+    :param plane_name: the name of a plane you want to pull out, must match the plane name given in sp.plane_list
+
+    """
+    ip = sp.save_list.index(plane_name)
+    return data_in[:, ip, :, :, :]  # [tsteps, #planes, #wavelengths, x, y]
+
+
+def cpx_to_intensity(data_in):
+    """
+    converts complex data to units of intensity
+    """
+    return np.abs(data_in)**2
+
+
+def extract(slice):
+    """
+    extracts [sp.maskd_size, sp.maskd_size] from [sp.grid_size, sp.grid_size] data
+    code modified from the EXTRACT flag in prop_end
+
+    :param slice: [sp.grid_size, sp.grid_size] array
+    :returns: array with size [sp.maskd_size, sp.maskd_size]
+    """
+    smaller_slice = np.zeros((sp.maskd_size, sp.maskd_size))
+    EXTRACT = sp.maskd_size
+    nx,ny = slice.shape
+    smaller_slice = slice[int(ny/2-EXTRACT/2):int(ny/2+EXTRACT/2),
+                    int(nx/2-EXTRACT/2):int(nx/2+EXTRACT/2)]
+    return smaller_slice
+
+
 ################################################################################################################
 # Optics in Proper
 ################################################################################################################
-
 def add_obscurations(wf, M2_frac=0, d_primary=0, d_secondary=0, legs_frac=0.05, plane_name=None):
     """
     adds central obscuration (secondary shadow) and/or spider legs as spatial mask to the wavefront

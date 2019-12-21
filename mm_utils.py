@@ -1,10 +1,8 @@
 
-import numpy as np
 from inspect import getframeinfo, stack
 import pickle
 import tables as pt
 import astropy.io.fits as afits
-from scipy.interpolate import interp1d
 
 from mm_params import sp, ap, tp, iop
 
@@ -21,66 +19,6 @@ def phase_cal(wavelengths):
     """Wavelength in nm"""
     phase = tp.wavecal_coeffs[0] * wavelengths + tp.wavecal_coeffs[1]
     return phase
-
-
-####################################################################################################
-# Functions Relating to Processing Complex Cubes
-####################################################################################################
-def interp_wavelength(data_in, ax):
-    """
-    Interpolating spectral cube from ap.n_wvl_init discreet wavelengths to ap.n_wvl_final
-
-    :param data_in array where one axis contains the wavelength of the data
-    :param ax  axis of wavelength
-    :return data_out array that has been interpolated over axis=ax
-    """
-    # Interpolating spectral cube from ap.n_wvl_init discreet wavelengths to ap.n_wvl_final
-    if ap.interp_wvl and 1 < ap.n_wvl_init < ap.n_wvl_final:
-        wave_samps = np.linspace(0, 1, ap.n_wvl_init)
-        f_out = interp1d(wave_samps, data_in, axis=ax)
-        new_heights = np.linspace(0, 1, ap.n_wvl_final)
-        data_out = f_out(new_heights)
-
-    return data_out
-
-
-def pull_plane(data_in, plane_name):
-    """
-    pull out the specified plane of the detector from complex array
-
-    here we assume that the data_in has the specific format of:
-    [timestep, plane, wavelength, x, y]
-    Code will return invalid results if data_in is not in this format
-
-    :param data_in: the 5D wavefront array of shape  [timestep, plane, wavelength, x, y]
-    :param plane_name: the name of a plane you want to pull from the array, must match the plane name given in sp.plane_list
-
-    """
-    ip = sp.save_list.index(plane_name)
-    return data_in[:, ip, :, :, :]  # [tsteps, #planes, #wavelengths, x, y]
-
-
-def cpx_to_intensity(data_in):
-    """
-    converts complex data to units of intensity
-    """
-    return np.abs(data_in)**2
-
-
-def extract(slice):
-    """
-    extracts [sp.maskd_size, sp.maskd_size] from [sp.grid_size, sp.grid_size] data
-    code modified from the EXTRACT flag in prop_end
-
-    :param slice: [sp.grid_size, sp.grid_size] array
-    :returns: array with size [sp.maskd_size, sp.maskd_size]
-    """
-    smaller_slice = np.zeros((sp.maskd_size, sp.maskd_size))
-    EXTRACT = sp.maskd_size
-    nx,ny = slice.shape
-    smaller_slice = slice[int(ny/2-EXTRACT/2):int(ny/2+EXTRACT/2),
-                    int(nx/2-EXTRACT/2):int(nx/2+EXTRACT/2)]
-    return smaller_slice
 
 
 ####################################################################################################
@@ -144,7 +82,7 @@ def open_obs_sequence_hdf5(obs_seq_file='hyper.h5'):
 ####################################################################################################
 # Functions Relating to Reading, Loading, and Saving Images #
 ####################################################################################################
-def saveFITS(image, name):
+def saveFITS(image, name='test.fit'):
     header = afits.Header()
     header["PIXSIZE"] = (0.16, " spacing in meters")
 
@@ -152,7 +90,7 @@ def saveFITS(image, name):
     hdu.writeto(name)
 
 
-def readFITS(filename='dummy1.fits'):
+def readFITS(filename):
     """
     reads a fits file and returns data fields only
 
@@ -162,25 +100,6 @@ def readFITS(filename='dummy1.fits'):
     header = hdulist[0].header
     scidata = hdulist[0].data
 
-    # xnum = np.shape(scidata)[0]
-    # ynum = np.shape(scidata)[1]
-
     return scidata
 
-# def make_datacube(cube, size):
-#     # print 'Making an xyw cube'
-#     datacube = np.zeros((size[2], size[1], size[0]))
-#     phase_band = phase_cal(ap.wvl_range)
-#     bins = np.linspace(phase_band[0], phase_band[1], size[2 ] +1)
-#
-#     for x in range(size[1]):
-#         for y in range(size[0]):
-#             if cube[x][y] == []:
-#                 datacube[:, x, y] = np.zeros((size[2]))
-#             else:
-#                 datacube[:, x, y] = np.histogram(np.array(cube[x][y])[:, 1], bins=bins)[0]  # [::-1]
-#                 datacube[0, x, y] += len(np.where(np.array(cube[x][y])[:, 1] < phase_band[0])[0])
-#                 datacube[-1, x, y] += len(np.where(np.array(cube[x][y])[:, 1] > phase_band[1])[0])
-#
-#     return datacube
 
