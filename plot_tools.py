@@ -155,18 +155,18 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
         if logZ:
             if vmin is not None and vmin <= 0:
                 ax.set_title(r'$\lambda$ = '+f"{w_string[w]} nm")
-                im = ax.imshow(opx.extract(datacube[w]), interpolation='none', origin='lower', vmin=vmin, vmax=vmax,
+                im = ax.imshow(opx.extract_center(datacube[w]), interpolation='none', origin='lower', vmin=vmin, vmax=vmax,
                                norm=SymLogNorm(linthresh=1e-5),
                                cmap="YlGnBu_r")
                 clabel = "Log Normalized Intensity"
             else:
                 ax.set_title(r'$\lambda$ = '+f"{w_string[w]} nm")
-                im = ax.imshow(opx.extract(datacube[w]), interpolation='none', origin='lower', vmin=vmin, vmax=vmax, norm=LogNorm(),
+                im = ax.imshow(opx.extract_center(datacube[w]), interpolation='none', origin='lower', vmin=vmin, vmax=vmax, norm=LogNorm(),
                                cmap="YlGnBu_r")
                 clabel = "Log Normalized Intensity"
         else:
             ax.set_title(r'$\lambda$ = '+f"{w_string[w]} nm")
-            im = ax.imshow(opx.extract(datacube[w]), interpolation='none', origin='lower', vmin=vmin, vmax=vmax, cmap="YlGnBu_r")
+            im = ax.imshow(opx.extract_center(datacube[w]), interpolation='none', origin='lower', vmin=vmin, vmax=vmax, cmap="YlGnBu_r")
             clabel = "Normalized Intensity"
 
         if use_axis == 'anno':
@@ -340,10 +340,10 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
 
         # Retreiving Data
         plot_plane = sp.save_list[w]
-        plane = mmu.pull_plane(cpx_seq, plot_plane)
-        plane = mmu.cpx_to_intensity(plane[0,1])
+        plane = opx.extract_plane(cpx_seq, plot_plane)
+        plane = opx.cpx_to_intensity(plane[0,1])
         # plane = mmu.cpx_to_intensity(np.sum(plane[sp.numframes-1], axis=0))  # sums wavelength + converts to intensity
-        plane = mmu.extract(plane)
+        plane = opx.extract_center(plane)
 
         # Converting Sampling Units to Readable numbers
         if dx[w] < 1e-6:

@@ -191,7 +191,7 @@ def interp_wavelength(data_in, ax):
     return data_out
 
 
-def pull_plane(data_in, plane_name):
+def extract_plane(data_in, plane_name):
     """
     pull out the specified plane of the detector from complex array
 
@@ -214,9 +214,10 @@ def cpx_to_intensity(data_in):
     return np.abs(data_in)**2
 
 
-def extract(slice):
+def extract_center(slice):
     """
     extracts [sp.maskd_size, sp.maskd_size] from [sp.grid_size, sp.grid_size] data
+    fp~focal plane
     code modified from the EXTRACT flag in prop_end
 
     :param slice: [sp.grid_size, sp.grid_size] array
