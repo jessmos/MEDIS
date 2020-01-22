@@ -10,8 +10,8 @@ import proper
 import copy
 from scipy.interpolate import interp1d
 
-from medis.mm_params import ap, tp, sp
-from medis.mm_utils import dprint
+from medis.params import ap, tp, sp
+from medis.utils import dprint
 
 
 ############################
@@ -298,7 +298,7 @@ def abs_zeros(wf_array):
 def offset_companion(wfo):
     """
     offsets the companion wavefront using the 2nd and 3rd order Zernike Polynomials (X,Y tilt)
-    companion(s) contrast and location(s) set in mm_params
+    companion(s) contrast and location(s) set in params
 
     Wavelength/contrast scaling scales the contrast ratio between the star and planet as a function of wavelength.
     This ratio is given by ap.C_spec, and the scale ranges from 1/ap.C_spec to 1 as a funtion of ap.n_wvl_init. The

@@ -12,8 +12,8 @@ import hcipy
 import proper
 from skimage.restoration import unwrap_phase
 
-from medis.mm_params import iop, ap, tp, sp, atmp
-from medis.mm_utils import dprint
+from medis.params import iop, ap, tp, sp, atmp
+from medis.utils import dprint
 import medis.optics as opx
 
 

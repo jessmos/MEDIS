@@ -10,8 +10,8 @@ from matplotlib.colors import LogNorm, SymLogNorm
 import matplotlib.ticker as ticker
 import matplotlib.gridspec as gridspec
 
-from medis.mm_params import tp, sp, iop, ap, cdip
-import medis.mm_utils as mmu
+from medis.params import tp, sp, iop, ap, cdip
+import medis.utils as mmu
 import medis.optics as opx
 import medis.colormaps as cmaps
 

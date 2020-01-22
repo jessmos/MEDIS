@@ -9,8 +9,8 @@ import numpy as np
 import warnings
 import proper
 
-from medis.mm_params import tp, ap, sp, cdip
-from medis.mm_utils import dprint
+from medis.params import tp, ap, sp, cdip
+from medis.utils import dprint
 from medis.plot_tools import quick2D
 
 

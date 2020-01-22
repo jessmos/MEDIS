@@ -14,8 +14,8 @@ import proper
 import os
 import pickle
 
-from medis.mm_params import tp, iop, ap, sp
-from medis.mm_utils import *
+from medis.params import tp, iop, ap, sp
+from medis.utils import *
 
 ################################################################################################################
 # Aberrations

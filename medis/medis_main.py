@@ -17,11 +17,11 @@ import time
 import traceback
 import glob
 
-from medis.mm_params import iop, ap, tp, sp, cdip
+from medis.params import iop, ap, tp, sp, cdip
 import proper
 import medis.atmosphere as atmos
 import medis.CDI as cdi
-import medis.mm_utils as mmu
+import medis.utils as mmu
 
 ################################################################################################################
 ################################################################################################################
