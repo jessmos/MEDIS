@@ -28,7 +28,7 @@ class IO_params:
         self.datadir = '/home/captainkay/mazinlab/MKIDSim/CDIsim_data/'
 
         # Unprocessed Science Data
-        self.sciroot = 'mini_medis'
+        self.sciroot = 'medis_main'
         self.scidir = os.path.join(self.datadir, self.sciroot)  # self.savedata
         self.testname = testname  # set this up in the definition line, but can update it with iop.update('newname')
         self.testdir = os.path.join(self.scidir,

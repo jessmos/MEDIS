@@ -5,9 +5,9 @@ Dec 9 2019
 
 This is the starting point to run the Subaru_frontend prescription. From here, you can turn on/off toggles, change AO
 settings, view different planes, and make other changes to running the prescription without changing the base
-prescription or the default mm_params themselves.
+prescription or the default params themselves.
 
-This file is meant to 'cleanup' a lot of the functionality between having defaults saved in the mm_params file and
+This file is meant to 'cleanup' a lot of the functionality between having defaults saved in the params file and
 the prescription. Most changes necessary to run multiple instances of the base prescription will be made here. This is
 the same layot/format as the Example files that Rupert was using in v1.0. These are now meant to be paired with a more
 specific prescription than the original optics_propagate, which had more toggles and less sophisiticated optical train.
@@ -15,11 +15,11 @@ specific prescription than the original optics_propagate, which had more toggles
 """
 import numpy as np
 
-from mm_params import iop, sp, ap, tp, cdip
-from mm_utils import dprint
-import optics as opx
-from plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
-import mini_medis as mm
+from medis.params import iop, sp, ap, tp, cdip
+from medis.utils import dprint
+import medis.optics as opx
+from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
+import medis.medis_main as mm
 
 #################################################################################################
 #################################################################################################
@@ -69,7 +69,7 @@ if __name__ == '__main__':
     # =======================================================================
     # Run it!!!!!!!!!!!!!!!!!
     # =======================================================================
-    cpx_sequence, sampling = mm.run_mmedis()
+    cpx_sequence, sampling = mm.run_medis()
 
     # =======================================================================
     # Focal Plane Processing

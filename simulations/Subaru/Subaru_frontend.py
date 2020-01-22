@@ -21,12 +21,12 @@ import numpy as np
 from inspect import getframeinfo, stack
 import proper
 
-from mm_params import ap, tp, sp
-from mm_utils import dprint
-import optics as opx
-import aberrations as aber
-import adaptive as ao
-import atmosphere as atmos
+from medis.params import ap, tp, sp
+from medis.utils import dprint
+import medis.optics as opx
+import medis.aberrations as aber
+import medis.adaptive as ao
+import medis.atmosphere as atmos
 
 
 #################################################################################################
@@ -54,7 +54,7 @@ tp.dist_nsmyth_ao1 = tp.flen_nsmyth + 1.14  # m distance secondary to M1 of AO18
 tp.d_secondary = 1.265  # m diameter secondary, used for central obscuration
 # tp.fn_secondary = 12.6
 
-# Re-writing mm_params terms in Subaru-units
+# Re-writing params terms in Subaru-units
 # need this to accurately make atmospheric and aberration maps
 tp.enterance_d = tp.d_nsmyth
 tp.flen_primary = tp.flen_nsmyth

@@ -1,5 +1,5 @@
 """
-check the params entered to mm_params for given telescope settings for correct sampling
+check the params entered to params for given telescope settings for correct sampling
 KD 8/13/19
 
 According to the Proper manual:
@@ -16,7 +16,7 @@ The sampling of the beam is defined by
 
 """
 import numpy as np
-from mm_params import tp, sp
+from medis.params import tp, sp
 
 def check_sampling():
     #######################################

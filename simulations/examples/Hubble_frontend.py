@@ -10,12 +10,12 @@ import numpy as np
 import proper
 from scipy.interpolate import interp1d
 
-from mm_params import iop, ap, tp, sp
-from mm_utils import dprint
-import optics as opx
-import aberrations as aber
-import adaptive as ao
-import atmosphere as atmos
+from medis.params import iop, ap, tp, sp
+from medis.utils import dprint
+import medis.optics as opx
+import medis.aberrations as aber
+import medis.adaptive as ao
+import medis.atmosphere as atmos
 
 #################################################################################################
 #################################################################################################
