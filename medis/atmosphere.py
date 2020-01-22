@@ -12,9 +12,9 @@ import hcipy
 import proper
 from skimage.restoration import unwrap_phase
 
-from mm_params import iop, ap, tp, sp, atmp
-from mm_utils import dprint
-import optics as opx
+from medis.mm_params import iop, ap, tp, sp, atmp
+from medis.mm_utils import dprint
+import medis.optics as opx
 
 
 def gen_atmos(plot=False):

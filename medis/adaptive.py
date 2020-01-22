@@ -16,11 +16,10 @@ from scipy import interpolate, ndimage
 from inspect import getframeinfo, stack
 import proper
 
-from mm_params import sp, tp, ap, cdip
-from proper_mod import prop_dm
-import CDI as cdi
-from optics import check_sampling
-from mm_utils import dprint
+from medis.mm_params import sp, tp, ap, cdip
+import medis.CDI as cdi
+from medis.optics import check_sampling
+from medis.mm_utils import dprint
 
 
 ################################################################################
@@ -95,7 +94,7 @@ def deformable_mirror(wfo, WFS_map, theta, plane_name=None):
             #########################
             # proper.prop_dm
             #########################
-            prop_dm(wfo.wf_array[iw, io], dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
+            proper.prop_dm(wfo.wf_array[iw, io], dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
             # proper.prop_dm(wfo, dm_map, dm_xc, dm_yc, N_ACT_ACROSS_PUPIL=nact, FIT=True)  #
 
     # check_sampling(0, wfo, "E-Field after DM", getframeinfo(stack()[0][0]), units='um')  # check sampling in optics.py

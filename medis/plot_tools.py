@@ -10,10 +10,10 @@ from matplotlib.colors import LogNorm, SymLogNorm
 import matplotlib.ticker as ticker
 import matplotlib.gridspec as gridspec
 
-from mm_params import tp, sp, iop, ap, cdip
-import mm_utils as mmu
-import optics as opx
-import colormaps as cmaps
+from medis.mm_params import tp, sp, iop, ap, cdip
+import medis.mm_utils as mmu
+import medis.optics as opx
+import medis.colormaps as cmaps
 
 plt.register_cmap(name='viridis', cmap=cmaps.viridis)
 plt.register_cmap(name='plasma', cmap=cmaps.plasma)

@@ -15,13 +15,13 @@ import numpy as np
 import multiprocessing
 import time
 import traceback
-import proper_mod as pm
 import glob
 
-from mm_params import iop, ap, tp, sp, cdip
-import atmosphere as atmos
-import CDI as cdi
-import mm_utils as mmu
+from medis.mm_params import iop, ap, tp, sp, cdip
+import proper
+import medis.atmosphere as atmos
+import medis.CDI as cdi
+import medis.mm_utils as mmu
 
 ################################################################################################################
 ################################################################################################################
@@ -156,7 +156,7 @@ def gen_timeseries(inqueue, out_queue):  # conf_obj_tuple
 
         for it, t in enumerate(iter(inqueue.get, sentinel)):
             kwargs = {'iter': t, 'params': [ap, tp, iop, sp], 'theta': theta_series[t]}
-            cpx_seq, sampling = pm.prop_run(tp.prescription, 1, sp.grid_size, PASSVALUE=kwargs,
+            cpx_seq, sampling = proper.prop_run(tp.prescription, 1, sp.grid_size, PASSVALUE=kwargs,
                                                  VERBOSE=False, TABLE=True)  # 1 is dummy wavelength
 
             cpx_seq = np.array(cpx_seq)

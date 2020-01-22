@@ -4,7 +4,7 @@ import pickle
 import tables as pt
 import astropy.io.fits as afits
 
-from mm_params import sp, ap, tp, iop
+from medis.mm_params import sp, ap, tp, iop
 
 
 def dprint(message):

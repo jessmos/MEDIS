@@ -11,8 +11,8 @@ of occulter to the module to take care of different types of coronagraphs
 import numpy as np
 import proper
 
-from mm_params import tp
-from mm_utils import dprint
+from medis.mm_params import tp
+from medis.mm_utils import dprint
 
 
 class Occulter():

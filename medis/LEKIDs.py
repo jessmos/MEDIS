@@ -1,7 +1,7 @@
 
 
 import numpy as np
-from mm_params import ap, tp
+from medis.mm_params import ap, tp
 
 
 ################################################################################

@@ -10,8 +10,8 @@ import proper
 import copy
 from scipy.interpolate import interp1d
 
-from mm_params import ap, tp, sp
-from mm_utils import dprint
+from medis.mm_params import ap, tp, sp
+from medis.mm_utils import dprint
 
 
 ############################
