@@ -2,18 +2,19 @@
 model the Subaru optics system
 
 This is a code modified from Rupert's original optics_propagate.py. This code adds more optics to the system,
-as well as puts the AO, coronagraphs, etc in order for Subaru.
+as well as puts the AO, chronographs, etc in order for Subaru.
 
 Here, we will add the basic functionality of the Subaru Telescope, including the primary, secondary, and AO188.
 The SCExAO system sits behind the AO188 instrument of Subaru, which is a 188-element AO system located at the
-Nasmyth focus (IR) of the telescope. This routine simulates an idealized detector at the 0188 focus.
+Nasmyth focus (IR) of the telescope. AO188 is a basic 4f-type optical system with a 188 element DM (not perfectly
+represented here. Proper will only simulate 2D square DM's, so we use a 14x14 square) inserted in the middle of the
+collimated beam. This routine simulates an idealized detector at the A0188 focus.
 
 AO188 uses laser guide-star technology. More info here:
 https://subarutelescope.org/Introduction/instrument/AO188.html
 
-We then will use just a basic focal lens and coronagraph in this example. A more detailed model of SCExAO will
-be modelled in a SCExAO_optics.py code. However, this routine is designed for simple simulations that need to
-optimize runtime but still have relevance to the Subaru Telescope.
+A more detailed model of SCExAO will be modelled in a SCExAO_optics.py code. However, this routine is designed for
+simple simulations that need to optimize runtime but still have relevance to the Subaru Telescope.
 
 This script is meant to override any Subaru/SCExAO-specific parameters specified in the user's params.py
 """

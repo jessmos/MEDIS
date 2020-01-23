@@ -47,7 +47,7 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     wfo.initialize_proper()
 
     ###################################################
-    # Aperture, Atmosphere, and Secondary Obscurations
+    # Aperture, Atmosphere, and Secondary Obscuration
     ###################################################
     # Defines aperture (baffle-before primary)
     wfo.loop_over_function(proper.prop_circular_aperture, **{'radius': tp.enterance_d/2})
@@ -65,7 +65,6 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     #  phase offset at a particular frequency.
     # quicklook_wf(wfo.wf_array[0,0])
     if tp.use_atmos:
-        # TODO is this supposed to be in the for loop over w?
         wfo.loop_over_function(atmos.add_atmos, PASSVALUE['iter'], plane_name='atmosphere')
         # quicklook_wf(wfo.wf_array[0, 0])
 
