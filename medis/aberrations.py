@@ -20,7 +20,7 @@ from medis.utils import *
 ################################################################################################################
 # Aberrations
 ################################################################################################################
-def generate_maps(lens_diam, lens_name='lens'):
+def generate_maps(aber_vals, lens_diam, lens_name='lens'):
     """
     generate PSD-defined aberration maps for a lens(mirror) using Proper
 
@@ -37,8 +37,10 @@ def generate_maps(lens_diam, lens_name='lens'):
     Note: Functionality related to OOPP (out of pupil plane) optics has been removed. There is only one surface
     simulated for each optical surface
 
+    :param aber_vals: dictionary? of values to use in the equation that generates the aberration map. The dictionary
+        should contain 3 entries that get sent to proper.prop_psd_errormap. More information can be found on Proper
+        Manual pg 56
     :param lens_diam: diameter of the lens/mirror to generate an aberration map for
-    #:param Loc: either CPA or NCPA, depending on where the optic is relative to the DM/AO system
     :param lens_name: name of the lens, for file naming
     :return: will create a FITs file in the folder specified by iop.quasi for each optic (and  timestep in the case
      of quasi-static aberrations)
@@ -56,9 +58,9 @@ def generate_maps(lens_diam, lens_name='lens'):
     aber_cube = np.zeros((sp.numframes, sp.grid_size, sp.grid_size   ))
 
     # Randomly select a value from the range of values for each constant
-    rms_error = np.random.normal(tp.aber_vals['a'][0], tp.aber_vals['a'][1])
-    c_freq = np.random.normal(tp.aber_vals['b'][0], tp.aber_vals['b'][1])  # correlation frequency (cycles/meter)
-    high_power = np.random.normal(tp.aber_vals['c'][0], tp.aber_vals['c'][1])  # high frequency falloff (r^-high_power)
+    rms_error = np.random.normal(aber_vals['a'][0], aber_vals['a'][1])
+    c_freq = np.random.normal(aber_vals['b'][0], aber_vals['b'][1])  # correlation frequency (cycles/meter)
+    high_power = np.random.normal(aber_vals['c'][0], aber_vals['c'][1])  # high frequency falloff (r^-high_power)
 
     perms = np.random.rand(sp.numframes, sp.grid_size, sp.grid_size)-0.5
     perms *= 1e-7

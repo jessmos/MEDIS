@@ -221,7 +221,7 @@ def cpx_to_intensity(data_in):
     """
     converts complex data to units of intensity
 
-    WARNING: if you sum the data sequence over object or wavelenth with simple case of np.sum(), must be doe AFTER
+    WARNING: if you sum the data sequence over object or wavelength with simple case of np.sum(), must be done AFTER
     converting to intensity, else results are invalid
     """
     return np.abs(data_in)**2
@@ -302,8 +302,10 @@ def abs_zeros(wf_array):
 
     return wf_array
 
+
 def rotate_sky(wfo, it):
     raise NotImplementedError
+
 
 def offset_companion(wfo):
     """
@@ -311,7 +313,7 @@ def offset_companion(wfo):
     companion(s) contrast and location(s) set in params
 
     Wavelength/contrast scaling scales the contrast ratio between the star and planet as a function of wavelength.
-    This ratio is given by ap.C_spec, and the scale ranges from 1/ap.C_spec to 1 as a funtion of ap.n_wvl_init. The
+    This ratio is given by ap.C_spec, and the scale ranges from 1/ap.C_spec to 1 as a function of ap.n_wvl_init. The
         gradient ap.C_spec should be chosen carefully to consider the number of wavelengths and spectral type of the
         star and planet in the simulation.
 

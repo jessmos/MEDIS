@@ -61,6 +61,11 @@ tp.d_secondary = 1.265  # m diameter secondary, used for central obscuration
 tp.enterance_d = tp.d_nsmyth
 tp.flen_primary = tp.flen_nsmyth
 
+# Effective Primary Aberrations
+primary_aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4)
+                     'b': [0.8, 0.2],  # correlation length (b/2pi defines knee)
+                     'c': [3.1, 0.5],  #
+                     'a_amp': [0.05, 0.01]}
 # ----------------------------
 # AO188 OAP1
 # Paramaters taken from "Design of the Subaru laser guide star adaptive optics module"
@@ -68,12 +73,21 @@ tp.flen_primary = tp.flen_nsmyth
 tp.d_ao1 = 0.20  # m  diamater of AO1
 tp.fl_ao1 = 1.201  # m  focal length OAP1
 tp.dist_ao1_dm = 1.345  # m distance OAP1 to DM
+OAP1_aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4)
+                  'b': [0.8, 0.2],  # correlation length (b/2pi defines knee)
+                  'c': [3.1, 0.5],  #
+                  'a_amp': [0.05, 0.01]}
+
 # ----------------------------
 # AO188 OAP2
 tp.dist_dm_ao2 = 2.511-tp.dist_ao1_dm  # m distance DM to OAP2
 tp.d_ao2 = 0.2  # m  diamater of AO2
 tp.fl_ao2 = 1.201  # m  focal length AO2
 tp.dist_oap2_focus = 1.261
+OAP2_aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4)
+                  'b': [0.8, 0.2],  # correlation length (b/2pi defines knee)
+                  'c': [3.1, 0.5],  #
+                  'a_amp': [0.05, 0.01]}
 
 #################################################################################################
 #################################################################################################
