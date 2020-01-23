@@ -103,6 +103,8 @@ class Wavefronts():
         """
         if 'plane_name' in kwargs:
             plane_name = kwargs.pop('plane_name')  # remove plane_name from **kwargs
+        elif func.__name__ in sp.save_list:
+            plane_name = func.__name__
         else:
             plane_name = None
         shape = self.wf_array.shape
@@ -154,6 +156,13 @@ class Wavefronts():
         if sp.save_fields and 'detector' in sp.save_list:  # save before prop_end so unaffected by EXTRACT flag and
             self.save_plane(location='detector')           # shifting, etc already done in save_plane function
 
+        unseen_funcs = list(set(self.saved_planes).symmetric_difference(set(list(sp.save_list))))
+        if len(unseen_funcs) > 0:
+            for func in unseen_funcs:
+                print('Function %s not used' % func)
+            print('Check your sp.save_locs match the optics set by telescope parameters (tp)')
+            raise AssertionError
+
         # Proper prop_end
         for iw in range(shape[0]):
             for io in range(shape[1]):
@@ -168,7 +177,6 @@ class Wavefronts():
         #     datacube = np.roll(np.roll(datacube, tp.pix_shift[0], 1), tp.pix_shift[1], 2)
 
         return cpx_planes, sampling
-
 
 ####################################################################################################
 # Functions Relating to Processing Complex Cubes
@@ -294,6 +302,8 @@ def abs_zeros(wf_array):
 
     return wf_array
 
+def rotate_sky(wfo, it):
+    raise NotImplementedError
 
 def offset_companion(wfo):
     """
