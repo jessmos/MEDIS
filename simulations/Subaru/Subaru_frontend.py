@@ -6,13 +6,14 @@ as well as puts the AO, coronagraphs, etc in order for Subaru.
 
 Here, we will add the basic functionality of the Subaru Telescope, including the primary, secondary, and AO188.
 The SCExAO system sits behind the AO188 instrument of Subaru, which is a 188-element AO system located at the
-Nasmyth focus (IR) of the telescope. AO188 uses laser guide-star technology. More info here:
+Nasmyth focus (IR) of the telescope. This routine simulates an idealized detector at the 0188 focus.
+
+AO188 uses laser guide-star technology. More info here:
 https://subarutelescope.org/Introduction/instrument/AO188.html
+
 We then will use just a basic focal lens and coronagraph in this example. A more detailed model of SCExAO will
 be modelled in a SCExAO_optics.py code. However, this routine is designed for simple simulations that need to
 optimize runtime but still have relevance to the Subaru Telescope.
-
-Here, we do not include the final micro-lens array of MEC or any other device.
 
 This script is meant to override any Subaru/SCExAO-specific parameters specified in the user's params.py
 """
