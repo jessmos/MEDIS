@@ -1,9 +1,9 @@
 """
-coronography.py
+coronagraphy.py
 Kristina Davis
 Nov 2019
 
-This script adds functionality related to coronography of the telescope system. I have decided to add a class
+This script adds functionality related to coronagraphy of the telescope system. I have decided to add a class
 of occulter to the module to take care of different types of coronagraphs
 
 
@@ -80,5 +80,12 @@ def coronagraph(wfo):
     :return:
     """
     pass
+
+def apodization(wfo):
+    raise NotImplementedError
+
+def vortex(wfo):
+    raise NotImplementedError
+
 
 
