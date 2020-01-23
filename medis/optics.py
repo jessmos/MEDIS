@@ -206,7 +206,7 @@ def extract_plane(data_in, plane_name):
     :return sequence of data with format [tstep, obj, wavelength, x, y] (remove plane dimension)
     """
     ip = sp.save_list.index(plane_name)
-    return np.squeeze(data_in[:, ip, :, :, :, :])  # [tsteps, #wavelengths, x, y]
+    return data_in[:, ip, :, :, :, :]  # [tsteps, #wavelengths, x, y]--it automatically squeezes the plane axis
 
 
 def cpx_to_intensity(data_in):

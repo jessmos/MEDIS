@@ -109,7 +109,8 @@ def deformable_mirror(wfo, WFS_map, theta, plane_name=None):
 ################################################################################
 def quick_ao(wfo, WFS_map):
     """
-    calculate the offset map to send to the DM from the WFS map
+    calculate the offset map to send to the DM from the WFS mals
+
 
     The main idea is to apply the DM only to the region of the wavefront that contains the beam. The phase map from
     the wfs saved the whole wavefront, so that must be cropped. During the wavefront initialization in

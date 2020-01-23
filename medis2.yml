@@ -1,4 +1,4 @@
-name: mmedis
+name: medis2
 channels:
   - defaults
 dependencies:

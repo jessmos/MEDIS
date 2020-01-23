@@ -11,7 +11,7 @@ import matplotlib.ticker as ticker
 import matplotlib.gridspec as gridspec
 
 from medis.params import tp, sp, iop, ap, cdip
-import medis.utils as mmu
+import medis.utils as mu
 import medis.optics as opx
 import medis.colormaps as cmaps
 
@@ -195,7 +195,7 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
 
     # Recreate CDI phase stream for plot titles
     if cdip.use_cdi:
-        from CDI import gen_CDI_phase_stream
+        from medis.CDI import gen_CDI_phase_stream
         phases = gen_CDI_phase_stream()
 
     # Create figure & adjust subplot number, layout, size, whitespace
@@ -330,10 +330,9 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
         # Retreiving Data
         plot_plane = sp.save_list[w]
         plane = opx.extract_plane(cpx_seq, plot_plane)
-        mmu.dprint(f"shape of plane is {plane.shape}")
-        plane = np.sum(np.sum(opx.cpx_to_intensity(plane), axis=1), axis=0)
+        mu.dprint(f"shape of plane in plot_plane is {plane.shape}")
+        plane = np.sum(opx.cpx_to_intensity(plane[0]), axis=(0,1))
             # converts to intensity THEN sums over object, then sums over wavelength
-        mmu.dprint(f"shape of plane after summing is {plane.shape}")
         plane = opx.extract_center(plane)
 
         # Converting Sampling Units to Readable numbers
