@@ -8,6 +8,9 @@ Generally, the optical perscription will call the deformable_mirror function, wh
 run sequentially all functions related to creating the adaptive optic correction (main AO functionality, relating to
 atmospheric and common-path aberrations) as well as using or not CDI probes, DM corrections or errors, etc
 
+TODO
+    Add astrogrid pattern functionality from MEDIS0
+
 """
 
 import numpy as np

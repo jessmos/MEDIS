@@ -7,6 +7,9 @@ Unless otherwise specified, units shall be given in:
 distance: meters
 time: seconds
 
+TODO
+    * Add all possible initial SP attributes here so the user knows what the possible options are. Consider adding other param types too
+    * add user_params.py too so we don't have to keep changing rootdir and datadir when pushing?
 """
 
 import numpy as np
@@ -26,6 +29,8 @@ class IO_params:
                                               # for example 'BetaPic' or 'simple_telescope'
         self.rootdir = '/home/captainkay/mazinlab/MKIDSim/miniMEDIS/'
         self.datadir = '/home/captainkay/mazinlab/MKIDSim/CDIsim_data/'
+        # self.rootdir = '/Users/dodkins/mazinlab/MKIDSim/miniMEDIS/'
+        # self.datadir = '/Users/dodkins/mazinlab/MKIDSim/CDIsim_data/'
 
         # Unprocessed Science Data
         self.sciroot = 'medis_main'
@@ -108,6 +113,7 @@ class Simulation_params:
         # Reading/Saving Params
         self.save_obs = False  # Saves observation sequence (timestep, wavelength, x, y)
         self.save_list = ['detector']  # list of locations in optics train to save
+        self.save_fields = True  # toggle to turn saving uniformly on/off
 
     def __iter__(self):
         for attr, value in self.__dict__.items():
