@@ -1,5 +1,5 @@
 """
-run_mini_medis
+run_medis_main
 Kristina Davis, Rupert Dodkins
 
 This is code that K.Davis exported from the full MEDIS simulator written by Rupert Dodkins. It is the basic
@@ -15,13 +15,13 @@ import numpy as np
 import multiprocessing
 import time
 import traceback
-import proper_mod as pm
 import glob
 
-from mm_params import iop, ap, tp, sp, cdip
-import atmosphere as atmos
-import CDI as cdi
-import mm_utils as mmu
+from medis.params import iop, ap, tp, sp, cdip
+import proper
+import medis.atmosphere as atmos
+import medis.CDI as cdi
+import medis.utils as mmu
 
 ################################################################################################################
 ################################################################################################################
@@ -29,7 +29,7 @@ import mm_utils as mmu
 sentinel = None
 
 
-def run_mmedis():
+def run_medis():
     """
     main script to organize calls to various aspects of the simulation
 
@@ -39,7 +39,7 @@ def run_mmedis():
 
     :return: obs_sequence
     """
-    print('Beginning Simulation on Mini-MEDIS')
+    print('Beginning Simulation on MEDIS')
     print('***************************************')
     start = time.time()
 
@@ -107,7 +107,7 @@ def run_mmedis():
         p.join()  # Send the sentinel to tell Simulation to end?
     out_queue.put(None)
 
-    print('mini-MEDIS Data Run Completed')
+    print('MEDIS Data Run Completed')
     print('**************************************')
     finish = time.time()
     print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
@@ -156,12 +156,12 @@ def gen_timeseries(inqueue, out_queue):  # conf_obj_tuple
 
         for it, t in enumerate(iter(inqueue.get, sentinel)):
             kwargs = {'iter': t, 'params': [ap, tp, iop, sp], 'theta': theta_series[t]}
-            cpx_seq, sampling = pm.prop_run(tp.prescription, 1, sp.grid_size, PASSVALUE=kwargs,
+            cpx_seq, sampling = proper.prop_run(tp.prescription, 1, sp.grid_size, PASSVALUE=kwargs,
                                                  VERBOSE=False, TABLE=True)  # 1 is dummy wavelength
 
             cpx_seq = np.array(cpx_seq)
 
-            # Returning variables to run_mmedis
+            # Returning variables to run_medis
             out_queue.put((t, cpx_seq, sampling))
 
         now = time.time()
@@ -182,4 +182,4 @@ if __name__ == '__main__':
     testname = 'Subaru-test1'
     iop.update(testname)
     iop.makedir()
-    run_mmedis()
+    run_medis()

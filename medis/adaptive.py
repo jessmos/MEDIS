@@ -8,6 +8,9 @@ Generally, the optical perscription will call the deformable_mirror function, wh
 run sequentially all functions related to creating the adaptive optic correction (main AO functionality, relating to
 atmospheric and common-path aberrations) as well as using or not CDI probes, DM corrections or errors, etc
 
+TODO
+    Add astrogrid pattern functionality from MEDIS0
+
 """
 
 import numpy as np
@@ -16,11 +19,10 @@ from scipy import interpolate, ndimage
 from inspect import getframeinfo, stack
 import proper
 
-from mm_params import sp, tp, ap, cdip
-from proper_mod import prop_dm
-import CDI as cdi
-from optics import check_sampling
-from mm_utils import dprint
+from medis.params import sp, tp, ap, cdip
+import medis.CDI as cdi
+from medis.optics import check_sampling
+from medis.utils import dprint
 
 
 ################################################################################
@@ -31,7 +33,7 @@ def deformable_mirror(wfo, WFS_map, theta, plane_name=None):
     combine different DM actuator commands into single map to send to prop_dm
 
     prop_dm needs an input map of n_actuators x n_actuators in units of actuator command height. quick_ao will handle
-    the conversion to actuator command height, and the CDI probe must be scaled in cdip.probe_amp in mm_params in
+    the conversion to actuator command height, and the CDI probe must be scaled in cdip.probe_amp in params in
     units of m. Each subroutine is also responsible for creating a map of n_actuators x n_actuators spacing. prop_dm
     handles the resampling of this map onto the wavefront, including the influence function. Its some wizardry that
     happens in c, and presumably it is taken care of so you don't have to worry about it.
@@ -95,7 +97,7 @@ def deformable_mirror(wfo, WFS_map, theta, plane_name=None):
             #########################
             # proper.prop_dm
             #########################
-            prop_dm(wfo.wf_array[iw, io], dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
+            proper.prop_dm(wfo.wf_array[iw, io], dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
             # proper.prop_dm(wfo, dm_map, dm_xc, dm_yc, N_ACT_ACROSS_PUPIL=nact, FIT=True)  #
 
     # check_sampling(0, wfo, "E-Field after DM", getframeinfo(stack()[0][0]), units='um')  # check sampling in optics.py
@@ -110,13 +112,14 @@ def deformable_mirror(wfo, WFS_map, theta, plane_name=None):
 ################################################################################
 def quick_ao(wfo, WFS_map):
     """
-    calculate the offset map to send to the DM from the WFS map
+    calculate the offset map to send to the DM from the WFS mals
+
 
     The main idea is to apply the DM only to the region of the wavefront that contains the beam. The phase map from
     the wfs saved the whole wavefront, so that must be cropped. During the wavefront initialization in
     wavefront.initialize_proper, the beam ratio set in sp.beam_ratio is scaled per wavelength (to achieve constant
     sampling sto create white light images), so the cropped value must also be scaled by wavelength. Note, beam ratio
-    is scaled differently depending on if sp.focused_sys is True or not. See mm_params-->sp.focused_sys and Proper
+    is scaled differently depending on if sp.focused_sys is True or not. See params-->sp.focused_sys and Proper
     manual pg 36 for more info.
 
     Then, we interpolate the cropped beam onto a grid of (n_actuators,n_actuators), such that the DM can apply a

@@ -5,9 +5,9 @@ Dec 9 2019
 
 This is the starting point to run the Subaru_frontend prescription. From here, you can turn on/off toggles, change AO
 settings, view different planes, and make other changes to running the prescription without changing the base
-prescription or the default mm_params themselves.
+prescription or the default params themselves.
 
-This file is meant to 'cleanup' a lot of the functionality between having defaults saved in the mm_params file and
+This file is meant to 'cleanup' a lot of the functionality between having defaults saved in the params file and
 the prescription. Most changes necessary to run multiple instances of the base prescription will be made here. This is
 the same layot/format as the Example files that Rupert was using in v1.0. These are now meant to be paired with a more
 specific prescription than the original optics_propagate, which had more toggles and less sophisiticated optical train.
@@ -15,11 +15,11 @@ specific prescription than the original optics_propagate, which had more toggles
 """
 import numpy as np
 
-from mm_params import iop, sp, ap, tp, cdip
-from mm_utils import dprint
-import optics as opx
-from plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
-import mini_medis as mm
+from medis.params import iop, sp, ap, tp, cdip
+from medis.utils import dprint
+import medis.optics as opx
+from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
+import medis.medis_main as mm
 
 #################################################################################################
 #################################################################################################
@@ -32,6 +32,7 @@ ap.companion_xy = [[15, -15]]  # units of this still confuse me
 tp.prescription = 'Subaru_frontend'
 tp.enterance_d = 7.9716
 tp.flen_primary = tp.enterance_d * 13.612
+sp.numframes = 1
 
 sp.focused_sys = True
 sp.beam_ratio = 0.14  # parameter dealing with the sampling of the beam in the pupil/focal plane
@@ -69,7 +70,7 @@ if __name__ == '__main__':
     # =======================================================================
     # Run it!!!!!!!!!!!!!!!!!
     # =======================================================================
-    cpx_sequence, sampling = mm.run_mmedis()
+    cpx_sequence, sampling = mm.run_medis()
 
     # =======================================================================
     # Focal Plane Processing
@@ -78,8 +79,10 @@ if __name__ == '__main__':
     # (n_timesteps ,n_planes, n_waves_init, n_objects, nx ,ny)
     # cpx_sequence = mmu.interp_wavelength(cpx_sequence, 2)  # interpolate over wavelength
     focal_plane = opx.extract_plane(cpx_sequence, 'detector')
-    focal_plane = np.sum(opx.cpx_to_intensity(focal_plane), axis=1)  # convert to intensity THEN sum over object
-    dprint(f"focal plane shape is {focal_plane.shape}")
+    dprint(f"shape of focal plane after extracting plane is {focal_plane.shape}")
+    # convert to intensity THEN sum over object, keeping the dimension of tstep even if it's one
+    focal_plane = np.sum(opx.cpx_to_intensity(focal_plane), axis=2)
+    dprint(f"focal plane shape after sum objects is {focal_plane.shape}")
 
     # =======================================================================
     # Plotting
@@ -87,9 +90,8 @@ if __name__ == '__main__':
     # White Light, Last Timestep
     if sp.show_wframe:
         # vlim = (np.min(spectralcube) * 10, np.max(spectralcube))  # setting z-axis limits
-        # img = np.sum(focal_plane[sp.numframes - 1], axis=0)  # extract last tstep, sum over wavelength
-        # dprint(f"shape of img is {img.shape}")
-        quick2D(opx.extract_center(focal_plane[sp.numframes-1]),
+        img = np.sum(focal_plane[sp.numframes-1], axis=0)  # sum over wavelength
+        quick2D(opx.extract_center(img), #focal_plane[sp.numframes-1]),
                 title=f"White light image at timestep {sp.numframes} \n"  # img
                            f"AO={tp.use_ao}, CDI={cdip.use_cdi} ",
                            # f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio} ",

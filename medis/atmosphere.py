@@ -12,9 +12,9 @@ import hcipy
 import proper
 from skimage.restoration import unwrap_phase
 
-from mm_params import iop, ap, tp, sp, atmp
-from mm_utils import dprint
-import optics as opx
+from medis.params import iop, ap, tp, sp, atmp
+from medis.utils import dprint
+import medis.optics as opx
 
 
 def gen_atmos(plot=False):
@@ -24,7 +24,7 @@ def gen_atmos(plot=False):
     read more on HCIpy here: https://hcipy.readthedocs.io/en/latest/index.html
     In hcipy, the atmosphere evolves as a function of time, specified by the user. User can thus specify the
     timescale of evolution through both velocity of layer and time per step in the obs_sequence, in loop for
-    mini_medis.gen_timeseries().
+    medis_main.gen_timeseries().
 
     :param plot: turn plotting on or off
     :return:
@@ -88,7 +88,7 @@ def add_atmos(wf, it):
     meters via the wavelength/np.pi
 
     :param wf: a single (2D) wfo.wf_array[iw,io] at one wavelength and object
-    :param it: timestep# in obs_sequence. Comes from mini_medis.gen_timeseries()
+    :param it: timestep# in obs_sequence. Comes from medis_main.gen_timeseries()
     :return: nothing returned, wfo is modified with proper.prop_add_phase
     """
     if tp.use_atmos is False:

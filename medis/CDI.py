@@ -9,9 +9,9 @@ import numpy as np
 import warnings
 import proper
 
-from mm_params import tp, ap, sp, cdip
-from mm_utils import dprint
-from plot_tools import quick2D
+from medis.params import tp, ap, sp, cdip
+from medis.utils import dprint
+from medis.plot_tools import quick2D
 
 
 def CDIprobe(theta, iw):
