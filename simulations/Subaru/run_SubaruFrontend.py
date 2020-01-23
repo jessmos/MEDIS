@@ -42,7 +42,7 @@ sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifac
 # Toggles for Aberrations and Control
 tp.obscure = False
 tp.use_atmos = False
-tp.use_aber = False
+tp.use_aber = True
 tp.use_ao = True
 tp.ao_act = 14
 cdip.use_cdi = False
