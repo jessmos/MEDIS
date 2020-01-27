@@ -88,7 +88,7 @@ if __name__ == '__main__':
     # Run it!!!!!!!!!!!!!!!!!
     # =======================================================================
     cpx_sequence, sampling = mm.run_medis()
-    dprint(cpx_sequence.shape)
-    for o in range(len(ap.contrast)):
+    for o in range(len(ap.contrast)+1):
         datacube = np.sum(np.abs(cpx_sequence)**2, axis=(0,1))[:,o]
-        view_spectra(datacube, logZ=True)
+        print(o)
+        view_spectra(datacube, logZ=True, title='lol')
