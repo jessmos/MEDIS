@@ -13,7 +13,7 @@ import numpy as np
 from medis.params import iop, sp, ap, tp, cdip
 from medis.utils import dprint
 # import medis.optics as opx
-# from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
+from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
 import medis.medis_main as mm
 
 tp.prescription = 'general_telescope'
@@ -88,3 +88,7 @@ if __name__ == '__main__':
     # Run it!!!!!!!!!!!!!!!!!
     # =======================================================================
     cpx_sequence, sampling = mm.run_medis()
+    dprint(cpx_sequence.shape)
+    for o in range(len(ap.contrast)):
+        datacube = np.sum(np.abs(cpx_sequence)**2, axis=(0,1))[:,o]
+        view_spectra(datacube, logZ=True)

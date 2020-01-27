@@ -86,8 +86,8 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     #######################################
     # Abberations before AO
     if tp.aber_params['CPA']:
-        wfo.loop_over_function(aber.add_aber, tp.enterance_d, tp.aber_params, step=PASSVALUE['iter'],
-                               lens_name='effective-primary')
+        wfo.loop_over_function(aber.add_aber, tp.enterance_d, tp.aber_params, tp.aber_vals,
+                               step=PASSVALUE['iter'], lens_name='effective-primary')
     # wfo.loop_over_function(proper.prop_circular_aperture, **{'radius': tp.enterance_d / 2})
         # wfo.wf_array = aber.abs_zeros(wfo.wf_array)
 
@@ -117,7 +117,7 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     # #######################################
     # Abberations after the AO Loop
     if tp.aber_params['NCPA']:
-        aber.add_aber(wfo, tp.f_lens, tp.aber_params, PASSVALUE['iter'], lens_name='NCPA')
+        aber.add_aber(wfo, tp.f_lens, tp.aber_params, tp.aber_vals, PASSVALUE['iter'], lens_name='NCPA')
         wfo.loop_over_function(proper.prop_circular_aperture, **{'radius': tp.enterance_d / 2})
         # TODO does this need to be here?
         # wfo.loop_over_function(opx.add_obscurations, tp.enterance_d/4, legs=False)
@@ -131,7 +131,7 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
         wfo.loop_over_function(apodization, True)
 
     # First Focusing Optics
-    wfo.loop_over_function(opx.prop_pass_lens, tp.flen, tp.flen)
+    wfo.loop_over_function(opx.prop_pass_lens, tp.f_lens, tp.f_lens)
 
     ########################################
     # Coronagraph
