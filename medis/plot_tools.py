@@ -112,7 +112,6 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
 
     # Title
     if title is None:
-        raise NameError("Plots without titles: Don't Do It!")
         title = input("Please Enter Title: ")
         pass
     fig.suptitle(title, fontweight='bold', fontsize=16)
