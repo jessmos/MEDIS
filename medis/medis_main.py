@@ -269,6 +269,7 @@ class Timeseries():
 
         :return:
         """
+        raise NotImplementedError
 
         np.save(iop.fields+np.str(sampling), fields)
 
