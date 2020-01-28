@@ -126,7 +126,7 @@ def run_medis():
     # print(f"Number of timesteps = {np.shape(cpx_sequence)[0]}")
 
     if sp.return_fields:
-        return cpx_sequence, series.sampling
+        return cpx_sequence, samplings
 
 def display_sequence_shape(cpx_sequence):
     """
