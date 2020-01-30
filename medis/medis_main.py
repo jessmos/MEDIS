@@ -157,7 +157,7 @@ def gen_timeseries(inqueue, out_queue):  # conf_obj_tuple
         for it, t in enumerate(iter(inqueue.get, sentinel)):
             kwargs = {'iter': t, 'params': [ap, tp, iop, sp], 'theta': theta_series[t]}
             cpx_seq, sampling = proper.prop_run(tp.prescription, 1, sp.grid_size, PASSVALUE=kwargs,
-                                                 VERBOSE=False, TABLE=True)  # 1 is dummy wavelength
+                                                 VERBOSE=False, TABLE=False)  # 1 is dummy wavelength
 
             cpx_seq = np.array(cpx_seq)
 

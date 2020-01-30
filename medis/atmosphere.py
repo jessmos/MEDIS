@@ -70,7 +70,7 @@ def gen_atmos(plot=False):
 
             if plot and iw == 0:
                 import matplotlib.pyplot as plt
-                from twilight_colormaps import sunlight
+                from medis.twilight_colormaps import sunlight
                 plt.figure()
                 plt.title(f"Atmosphere Phase Map t={t} lambda={eformat(wsamples[iw], 3, 2)}")
                 hcipy.imshow_field(wf2.phase, cmap=sunlight)

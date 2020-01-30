@@ -9,6 +9,7 @@ import numpy as np
 import proper
 import copy
 from scipy.interpolate import interp1d
+from inspect import getframeinfo, stack
 
 from medis.params import ap, tp, sp
 from medis.utils import dprint
@@ -67,6 +68,7 @@ class Wavefronts():
             else:
                 self.beam_ratios[iw] = sp.beam_ratio * ap.wvl_range[0] / w
                 # dprint(f"iw={iw}, w={w}, beam ratio is {self.beam_ratios[iw]}")
+
             # Initialize the wavefront at entrance pupil
             wfp = proper.prop_begin(tp.enterance_d, w, sp.grid_size, self.beam_ratios[iw])
 
@@ -155,13 +157,14 @@ class Wavefronts():
         # Saving Complex Data via save_plane
         if sp.save_fields and 'detector' in sp.save_list:  # save before prop_end so unaffected by EXTRACT flag and
             self.save_plane(location='detector')           # shifting, etc already done in save_plane function
-
-        unseen_funcs = list(set(self.saved_planes).symmetric_difference(set(list(sp.save_list))))
-        if len(unseen_funcs) > 0:
-            for func in unseen_funcs:
-                print('Function %s not used' % func)
-            print('Check your sp.save_locs match the optics set by telescope parameters (tp)')
-            raise AssertionError
+        #
+        #
+        # unseen_funcs = list(set(self.saved_planes).symmetric_difference(set(list(sp.save_list))))
+        # if len(unseen_funcs) > 0:
+        #     for func in unseen_funcs:
+        #         print('Function %s not used' % func)
+        #     print('Check your sp.save_locs match the optics set by telescope parameters (tp)')
+        #     raise AssertionError
 
         # Proper prop_end
         for iw in range(shape[0]):
@@ -224,7 +227,7 @@ def cpx_to_intensity(data_in):
     WARNING: if you sum the data sequence over object or wavelength with simple case of np.sum(), must be done AFTER
     converting to intensity, else results are invalid
     """
-    return np.abs(data_in)**2
+    return np.abs(data_in)
 
 
 def extract_center(slice):
@@ -312,13 +315,21 @@ def offset_companion(wfo):
     offsets the companion wavefront using the 2nd and 3rd order Zernike Polynomials (X,Y tilt)
     companion(s) contrast and location(s) set in params
 
+    Important: this function must be called AFTER any calls to proper.prop_define_entrance, which normalizes the
+    intensity, because we scale the intensity of the planet relative to the star via the user-parameter ap.contrast.
+
+    If you have an un-focused system, and do not scale the grid sampling of the system by wavelength, then you need to
+    correct for that here. This is because we initiate the companion by proper.prop_zernikes, which ultimately scales
+    the x/y tilt (zernike orders 2 and 3) by wavelength, accounting for the expected resampling based on wavelength.
+
     Wavelength/contrast scaling scales the contrast ratio between the star and planet as a function of wavelength.
     This ratio is given by ap.C_spec, and the scale ranges from 1/ap.C_spec to 1 as a function of ap.n_wvl_init. The
         gradient ap.C_spec should be chosen carefully to consider the number of wavelengths and spectral type of the
         star and planet in the simulation.
 
     :param wfo: wavefront object, shape=(n_wavelengths, n_astro_objects, grid_sz, grid_sz)
-    :return:
+    :return: nothing implicitly returned but the given wfo initiated in Wavefronts class has been altered to give the
+        appropriate wavefront for a planet in the focal plane
     """
     if ap.companion is True:
         cont_scaling = np.linspace(1. / ap.C_spec, 1, ap.n_wvl_init)
@@ -326,12 +337,24 @@ def offset_companion(wfo):
         for iw in range(wfo.wf_array.shape[0]):
             for io in range(1, wfo.wf_array.shape[1]):
                 # Shifting the Array
-                xloc = ap.companion_xy[io-1][0]
-                yloc = ap.companion_xy[io-1][1]
+                if sp.focused_sys:
+                    # Scaling into lambda/D AND scaling by wavelength
+                    xloc = ap.companion_xy[io-1][0] * wfo.wf_array[iw,io].lamda / tp.enterance_d \
+                           * ap.wvl_range[0] / wfo.wf_array[iw,io].lamda # * (-1)**(iw%2)
+                    yloc = ap.companion_xy[io-1][1] * wfo.wf_array[iw,io].lamda / tp.enterance_d \
+                            *  ap.wvl_range[0] / wfo.wf_array[iw,io].lamda  # / (2*np.pi)   * (-1)**(iw%2)
+                else:
+                    # Scaling Happens Naturally!
+                    xloc = ap.companion_xy[io-1][0]
+                    yloc = ap.companion_xy[io-1][1]
                 proper.prop_zernikes(wfo.wf_array[iw, io], [2, 3], np.array([xloc, yloc]))  # zernike[2,3] = x,y tilt
 
+                ##############################################
                 # Wavelength/Contrast  Scaling the Companion
+                ##############################################
                 wfo.wf_array[iw, io].wfarr *= np.sqrt(ap.contrast[io-1])
+
+                # Wavelength-dependent scaling by cont_scaling
                 # wfo.wf_array[iw, io].wfarr = wfo.wf_array[iw, io].wfarr * np.sqrt(ap.contrast[io-1] * cont_scaling[iw])
 
 
@@ -343,8 +366,10 @@ def check_sampling(tstep, wfo, location, line_info, units=None):
     :param wfo: wavefront object
     :param location: string that identifies where call is being made
     :param line_info: info on the line number and function name from where check_sampling was called
+        example: getframeinfo(stack()[0][0])
+        via: from inspect import getframeinfo, stack
     :param units: desired units of returned print statement; options are 'mm,'um','nm','arcsec','rad'
-    :return:
+    :return: prints sampling to the command line
     """
     if tstep == 0:
         print(f"From {line_info.filename}:{line_info.lineno}\n Sampling at {location}")

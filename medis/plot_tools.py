@@ -9,9 +9,10 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm, SymLogNorm
 import matplotlib.ticker as ticker
 import matplotlib.gridspec as gridspec
+import warnings
 
 from medis.params import tp, sp, iop, ap, cdip
-import medis.utils as mu
+from medis.utils import dprint
 import medis.optics as opx
 import medis.colormaps as cmaps
 
@@ -30,6 +31,7 @@ rcParams['font.family'] = 'DejaVu Sans'
 # rcParams['mathtext.fontset'] = 'stix'
 # rcParams['mathtext.rm'] = 'Bitstream Vera Sans'
 # rcParams['mathtext.bf'] = 'Bitstream Vera Sans:bold'
+
 
 
 def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=None):
@@ -108,7 +110,7 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
     n_colors = len(datacube)
     n_rows = int(np.ceil(n_colors / float(subplt_cols))+1)
     plt.axis('off')
-    gs = gridspec.GridSpec(n_rows, subplt_cols, wspace=0.08, top=0.9, bottom=0.2)
+    gs = gridspec.GridSpec(n_rows, subplt_cols, wspace=0.08, top=0.9)
 
     # Title
     if title is None:
@@ -128,7 +130,7 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
         # X,Y lables
         if dx is not None:
             # dprint(f"sampling = {sampl[w]}")
-            tic_spacing = np.linspace(0, sp.maskd_size, 5)  # 5 is just set by hand, arbitrarily chosen
+            tic_spacing = np.linspace(0, sp.maskd_size, 5)  # 5 (number of ticks) is set by hand, arbitrarily chosen
             tic_lables = np.round(
                 np.linspace(-dx * sp.maskd_size / 2, dx * sp.maskd_size / 2, 5)).astype(int)  # nsteps must be same as tic_spacing
             tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
@@ -141,6 +143,7 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
         # Z-axis scale
         if logZ:
             if vlim[0] is not None and vlim[0] <= 0:
+                warnings.simplefilter("ignore", UserWarning)
                 ax.set_title(r'$\lambda$ = '+f"{w_string[w]} nm")
                 im = ax.imshow(opx.extract_center(datacube[w]), interpolation='none', origin='lower',
                                vmin=vlim[0], vmax=vlim[1],
@@ -148,28 +151,30 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
                                cmap="YlGnBu_r")
                 clabel = "Log Normalized Intensity"
             else:
+                warnings.simplefilter("ignore", UserWarning)
                 ax.set_title(r'$\lambda$ = '+f"{w_string[w]} nm")
                 im = ax.imshow(opx.extract_center(datacube[w]), interpolation='none', origin='lower',
                                vmin=vlim[0], vmax=vlim[1], norm=LogNorm(),
                                cmap="YlGnBu_r")
                 clabel = "Log Normalized Intensity"
         else:
+            warnings.simplefilter("ignore", category=UserWarning)
             ax.set_title(r'$\lambda$ = '+f"{w_string[w]} nm")
             im = ax.imshow(opx.extract_center(datacube[w]),
                            interpolation='none', origin='lower', vmin=vlim[0], vmax=vlim[1], cmap="YlGnBu_r")
             clabel = "Normalized Intensity"
 
         if use_axis == 'anno':
-            annotate_axis(im, ax, datacube.shape[1])
+            ax.annotate_axis(im, ax, datacube.shape[1])
         if use_axis is None:
             plt.axis('off')
 
     if use_axis:
-        gs.tight_layout(fig, pad=0.08, rect=(0, 0, 1, 0.85))  # rect = (left, bottom, right, top)
+        gs.tight_layout(fig, pad=1.08, rect=(0, 0, 1, 0.85))  # rect = (left, bottom, right, top)
         # fig.tight_layout(pad=50)
-        cbar_ax = fig.add_axes([0.55, 0.1, 0.2, 0.05])  # Add axes for colorbar @ position [left,bottom,width,height]
-        cb = fig.colorbar(im, cax=cbar_ax, orientation='horizontal')  #
-        cb.set_label(clabel)
+        # cbar_ax = fig.add_axes([0.55, 0.1, 0.2, 0.05])  # Add axes for colorbar @ position [left,bottom,width,height]
+        # cb = fig.colorbar(im, cax=cbar_ax, orientation='horizontal')  #
+        # cb.set_label(clabel)
 
     if show is True:
         plt.show(block=True)
@@ -202,7 +207,7 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
     n_tsteps = len(img_tseries)
     n_rows = int(np.ceil(n_tsteps / float(subplt_cols))+1)
     plt.axis('off')
-    gs = gridspec.GridSpec(n_rows, subplt_cols, wspace=0.08, top=0.9, bottom=0.2)
+    gs = gridspec.GridSpec(n_rows, subplt_cols, wspace=0.08, top=0.9, bottom=0.02)
 
     # Title
     if title is None:
@@ -243,6 +248,7 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
         if logZ:
             if vlim[0] is not None and vlim[0] <= 0:
                 if cdip.use_cdi and not np.isnan(phases[t]):
+                    warnings.simplefilter("ignore", UserWarning)
                     ax.set_title(f"t={t * sp.sample_time}, CDI" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
                 else:
                     ax.set_title(f"t={t*sp.sample_time}")
@@ -252,6 +258,7 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
                 clabel = "Log Normalized Intensity"
             else:
                 if cdip.use_cdi and not np.isnan(phases[t]):
+                    warnings.simplefilter("ignore", UserWarning)
                     ax.set_title(f"t={t * sp.sample_time}, CDI" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
                 else:
                     ax.set_title(f"t={t * sp.sample_time}")
@@ -261,6 +268,7 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
                 clabel = "Log Normalized Intensity"
         else:
             if cdip.use_cdi and not np.isnan(phases[t]):
+                warnings.simplefilter("ignore", UserWarning)
                 ax.set_title(f"t={t * sp.sample_time}, CDI" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
             else:
                 ax.set_title(f"t={t * sp.sample_time}")
@@ -275,7 +283,7 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
             plt.axis('off')
 
     if use_axis:
-        gs.tight_layout(fig, pad=0.08, rect=(0, 0, 1, 0.85))  # rect = (left, bottom, right, top)
+        gs.tight_layout(fig, pad=1.08, rect=(0, 0.02, 1, 0.85))  # rect = (left, bottom, right, top)
         # fig.tight_layout(pad=50)
         cbar_ax = fig.add_axes([0.55, 0.1, 0.2, 0.05])  # Add axes for colorbar @ position [left,bottom,width,height]
         cb = fig.colorbar(im, cax=cbar_ax, orientation='horizontal')  #
@@ -306,13 +314,13 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
     # Create figure & adjust subplot number, layout, size, whitespace
     fig = plt.figure()
     n_planes = len(sp.save_list)
-    n_rows = int(np.ceil(n_planes / float(subplt_cols)) + 1)
+    n_rows = int(np.ceil(n_planes / float(subplt_cols)) )
     plt.axis('off')
-    gs = gridspec.GridSpec(n_rows, subplt_cols, wspace=0.08, top=0.9, bottom=0.2)
+    gs = gridspec.GridSpec(n_rows, subplt_cols, wspace=0.08)
 
     # Main Title
     if title is None:
-        raise NameError("Plots without titles: Don't Do It!")
+        # raise NameError("Plots without titles: Don't Do It!")
         title = input("Please Enter Title: ")
         pass
     fig.suptitle(title, fontweight='bold', fontsize=16)
@@ -326,13 +334,23 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
     for w in range(n_planes):
         ax = fig.add_subplot(gs[w])
 
+        ###################
         # Retreiving Data
+        ##################
+        # Standard-Way
+        # [timestep, plane, wavelength, object, x, y]
         plot_plane = sp.save_list[w]
         plane = opx.extract_plane(cpx_seq, plot_plane)
-        mu.dprint(f"shape of plane in plot_plane is {plane.shape}")
-        plane = np.sum(opx.cpx_to_intensity(plane[0]), axis=(0,1))
-            # converts to intensity THEN sums over object, then sums over wavelength
+        # converts to intensity of last timestep, THEN sums over wavelength, then sums over object
+        plane = np.sum(opx.cpx_to_intensity(plane[-1]), axis=(0,1))
         plane = opx.extract_center(plane)
+        ### Retreiving Data- Custom selection of plane ###
+        # plot_plane = sp.save_list[w]
+        # plane = opx.extract_plane(cpx_seq, plot_plane)
+        # # plane = opx.cpx_to_intensity(plane[-1])
+        # dprint(f"plane shape is {plane.shape}")
+        # plane = opx.extract_center(np.angle(plane[0,1,1]))  # wavelengths, objects
+        # dprint(f"plane shape is {plane.shape}")
 
         # Converting Sampling Units to Readable numbers
         if dx[w] < 1e-6:
@@ -372,20 +390,20 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
             else:
                 ax.set_title(f"{sp.save_list[w]}")
                 im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[w][0], vmax=vlim[w][1],
-                               norm=LogNorm(), cmap="YlGnBu_r")  #
+                               norm=LogNorm(), cmap="YlGnBu_r")  #(1e-6,1e-3)
                 cb = fig.colorbar(im)
                 # clabel = "Log Normalized Intensity"
                 # cb.set_label(clabel)
         else:
             ax.set_title(f"{sp.save_list[w]}")
             im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[w][0], vmax=vlim[w][1],
-                           cmap="twilight")  # "YlGnBu_r"
+                           cmap="YlGnBu_r")  #  "twilight"
             cb = fig.colorbar(im)  #
             # clabel = "Normalized Intensity"
             # cb.set_label(clabel)
 
     if use_axis:
-        gs.tight_layout(fig, pad=0.08, rect=(0, 0, 1, 0.85))  # rect = (left, bottom, right, top)
+        gs.tight_layout(fig, pad=1.08, rect=(0, 0.02, 1, 0.9))  # rect = (left, bottom, right, top)
         # fig.tight_layout(pad=50)
 
     plt.show(block=True)

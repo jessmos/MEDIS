@@ -66,13 +66,11 @@ sp.save_obs = False  # save obs_sequence (timestep, wavelength, x, y)
 sp.save_fields = True  # toggle to turn saving uniformly on/off
 sp.save_list = ['detector']  # list of locations in optics train to save
 
-tp.aber_params = {'CPA': True,
-                    'NCPA': True,
-                    'QuasiStatic': False,  # or 'Static'
-                    'Phase': True,
-                    'Amp': False,
-                    'n_surfs': 2,
-                    'OOPP': [8, 4]}  # fraction of a focal length where mirror(s) is located
+tp.aber_params = {'QuasiStatic': False,  # or 'Static'
+                            'Phase': True,
+                            'Amp': False}
+                            # Coefficients used to calcuate PSD errormap in Proper (see pg 56 in manual)
+                            # only change these if making new aberration maps
 tp.aber_vals = {'a': [7.2e-17, 3e-17],
                   'b': [0.8, 0.2],
                   'c': [3.1, 0.5],

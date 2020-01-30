@@ -42,7 +42,7 @@ sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifac
 # Toggles for Aberrations and Control
 tp.obscure = False
 tp.use_atmos = False
-tp.use_aber = True
+tp.use_aber = False
 tp.use_ao = True
 tp.ao_act = 14
 cdip.use_cdi = False
@@ -78,11 +78,9 @@ if __name__ == '__main__':
     # obs_sequence = np.array(obs_sequence)  # obs sequence is returned by gen_timeseries (called above)
     # (n_timesteps ,n_planes, n_waves_init, n_objects, nx ,ny)
     # cpx_sequence = mmu.interp_wavelength(cpx_sequence, 2)  # interpolate over wavelength
-    focal_plane = opx.extract_plane(cpx_sequence, 'detector')
-    dprint(f"shape of focal plane after extracting plane is {focal_plane.shape}")
+    focal_plane = opx.extract_plane(cpx_sequence, 'detector')  # eliminates object axis
     # convert to intensity THEN sum over object, keeping the dimension of tstep even if it's one
     focal_plane = np.sum(opx.cpx_to_intensity(focal_plane), axis=2)
-    dprint(f"focal plane shape after sum objects is {focal_plane.shape}")
 
     # =======================================================================
     # Plotting
@@ -98,7 +96,7 @@ if __name__ == '__main__':
                            # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
                 logZ=True,
                 dx=sampling[-1],
-                vlim=(1e-6, 1e-3))
+                vlim=(1e-5, 1e-2))
 
     # Plotting Spectra at last tstep
     if sp.show_spectra:
@@ -109,7 +107,7 @@ if __name__ == '__main__':
                             f"Beam Ratio = {sp.beam_ratio:.4f}",#  sampling = {sampling*1e6:.4f} [um/gridpt]",
                       logZ=True,
                       subplt_cols=sp.spectra_cols,
-                      vlim=(1e-8, 1e-3),
+                      vlim=(1e-5, 1e-2),
                       dx=sampling[-1])
 
     # Plotting Timeseries in White Light
@@ -125,7 +123,7 @@ if __name__ == '__main__':
     # Plotting Selected Plane
     if sp.show_planes:
         # vlim = ((None, None), (None, None), (None, None), (None, None), (None, None))
-        vlim = ((None,None), (None,None), (None,None),  (1e-7,1e-3))  # (7e-4, 6e-4)
+        vlim = ((None,None), (None,None), (None,None),  (1e-5,1e-2))  # (7e-4, 6e-4)
         logZ = (True, False, False,  True)
         if sp.save_list:
             plot_planes(cpx_sequence,
