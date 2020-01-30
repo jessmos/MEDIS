@@ -25,7 +25,7 @@ tp.obscure = True
 # Companion
 ap.companion = True
 ap.contrast = [1e-5]
-ap.companion_xy = [[15, -15]]  # units of this still confuse me
+ap.companion_xy = [[15, -15]]  # units of this are in lambda/tp.entrance_d
 
 tp.enterance_d = 8
 sp.numframes = 1

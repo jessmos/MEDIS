@@ -24,20 +24,22 @@ import medis.medis_main as mm
 #################################################################################################
 #################################################################################################
 #################################################################################################
-# Companion
-ap.companion = True
-ap.contrast = [1e-5]
-ap.companion_xy = [[15, -15]]  # units of this still confuse me
-
+# Telescope
 tp.prescription = 'Subaru_frontend'
 tp.enterance_d = 7.9716
 tp.flen_primary = tp.enterance_d * 13.612
 sp.numframes = 1
 
+# Grid Parameters
 sp.focused_sys = True
 sp.beam_ratio = 0.14  # parameter dealing with the sampling of the beam in the pupil/focal plane
 sp.grid_size = 512  # creates a nxn array of samples of the wavefront
 sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
+
+# Companion
+ap.companion = True
+ap.contrast = [1e-1]
+ap.companion_xy = [[5, -5]]  # units of this are lambda/tp.enterance_d
 
 # Toggles for Aberrations and Control
 tp.obscure = False
@@ -82,6 +84,24 @@ if __name__ == '__main__':
     # convert to intensity THEN sum over object, keeping the dimension of tstep even if it's one
     focal_plane = np.sum(opx.cpx_to_intensity(focal_plane), axis=2)
 
+    # focal_plane = opx.cpx_to_intensity(focal_plane)
+    # # dprint(f"intensity of star is {focal_plane[0,0,0,256,256]:.4f} intensity of planet is {focal_plane[0,0,1,256,256]:.4f}")
+    # focal_plane[:,:,1,:,:] *= ap.contrast
+    # focal_plane = np.sum(focal_plane, axis=2)
+
+    # # focal_plane = np.sum(focal_plane, axis=2)
+    # import matplotlib.pyplot as plt
+    # dprint(f"focal plane star is {focal_plane[0,0,0,230,230]}")
+    # # dprint(f"focal plane planet is {cpx_sequence[0,-1,0,1,230,230]}")
+    # fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
+    # ax1.imshow(np.abs(focal_plane[0,0,0,:,:]))
+    # ax2.imshow(np.abs(focal_plane[0,0,1,:,:]))
+    # plt.show()
+
+    # focal_plane = opx.cpx_to_intensity(focal_plane)
+    # # focal_plane[:,:,1,:,:] *= ap.contrast
+
+
     # =======================================================================
     # Plotting
     # =======================================================================
@@ -96,18 +116,18 @@ if __name__ == '__main__':
                            # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
                 logZ=True,
                 dx=sampling[-1],
-                vlim=(1e-5, 1e-2))
+                vlim=(1e-3, 1e-1))
 
     # Plotting Spectra at last tstep
     if sp.show_spectra:
         tstep = sp.numframes-1
         view_spectra(focal_plane[sp.numframes-1],
                       title=f"Intensity per Spectral Bin at Timestep {tstep} \n"
-                            f" AO={tp.use_ao}, CDI={cdip.use_cdi}"
-                            f"Beam Ratio = {sp.beam_ratio:.4f}",#  sampling = {sampling*1e6:.4f} [um/gridpt]",
+                            f" AO={tp.use_ao}, CDI={cdip.use_cdi}",
+                            # f"Beam Ratio = {sp.beam_ratio:.4f}",#  sampling = {sampling*1e6:.4f} [um/gridpt]",
                       logZ=True,
                       subplt_cols=sp.spectra_cols,
-                      vlim=(1e-5, 1e-2),
+                      vlim=(1e-4, 1e-1),
                       dx=sampling[-1])
 
     # Plotting Timeseries in White Light
@@ -123,8 +143,8 @@ if __name__ == '__main__':
     # Plotting Selected Plane
     if sp.show_planes:
         # vlim = ((None, None), (None, None), (None, None), (None, None), (None, None))
-        vlim = ((None,None), (None,None), (None,None),  (1e-5,1e-2))  # (7e-4, 6e-4)
-        logZ = (True, False, False,  True)
+        vlim = ((None,None), (None,None), (None,None), (1e-3,1e-1))  # (7e-4, 6e-4)
+        logZ = ( True, False, False, True)
         if sp.save_list:
             plot_planes(cpx_sequence,
                         title=f"White Light through Optical System",
