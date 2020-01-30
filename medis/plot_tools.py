@@ -85,7 +85,7 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=N
     plt.title(title, fontweight='bold', fontsize=16)
     cb = plt.colorbar(cax)
     cb.set_label(clabel)
-    plt.show()
+    plt.show(block=True)
 
 
 def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vlim=(None,None), subplt_cols=3,

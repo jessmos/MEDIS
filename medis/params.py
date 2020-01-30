@@ -10,6 +10,7 @@ time: seconds
 TODO
     * Add all possible initial SP attributes here so the user knows what the possible options are. Consider adding other param types too
     * add user_params.py too so we don't have to keep changing rootdir and datadir when pushing?
+    * Possibly remove one of save_fields and save_obs
 """
 
 import numpy as np
@@ -114,6 +115,12 @@ class Simulation_params:
         self.save_obs = False  # Saves observation sequence (timestep, wavelength, x, y)
         self.save_list = ['detector']  # list of locations in optics train to save
         self.save_fields = True  # toggle to turn saving uniformly on/off
+        self.memory_limit = 10e9  # number of bytes for sixcube of complex fields before chunking happens
+        self.checkpointing = None  # int or None number of timesteps before complex fields sixcube is saved
+                                 # minimum of this and max allowed steps for memory reasons takes priority
+        self.return_fields = True  # If false the full complex six cube is not generated and passed. Saving memory
+        self.verbose = True
+        self.debug = False
 
     def __iter__(self):
         for attr, value in self.__dict__.items():
