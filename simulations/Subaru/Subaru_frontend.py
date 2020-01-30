@@ -2,17 +2,19 @@
 model the Subaru optics system
 
 This is a code modified from Rupert's original optics_propagate.py. This code adds more optics to the system,
-as well as puts the AO, coronagraphs, etc in order for Subaru.
+as well as puts the AO, chronographs, etc in order for Subaru.
 
 Here, we will add the basic functionality of the Subaru Telescope, including the primary, secondary, and AO188.
 The SCExAO system sits behind the AO188 instrument of Subaru, which is a 188-element AO system located at the
-Nasmyth focus (IR) of the telescope. AO188 uses laser guide-star technology. More info here:
-https://subarutelescope.org/Introduction/instrument/AO188.html
-We then will use just a basic focal lens and coronagraph in this example. A more detailed model of SCExAO will
-be modelled in a SCExAO_optics.py code. However, this routine is designed for simple simulations that need to
-optimize runtime but still have relevance to the Subaru Telescope.
+Nasmyth focus (IR) of the telescope. AO188 is a basic 4f-type optical system with a 188 element DM (not perfectly
+represented here. Proper will only simulate 2D square DM's, so we use a 14x14 square) inserted in the middle of the
+collimated beam. This routine simulates an idealized detector at the A0188 focus.
 
-Here, we do not include the final micro-lens array of MEC or any other device.
+AO188 uses laser guide-star technology. More info here:
+https://subarutelescope.org/Introduction/instrument/AO188.html
+
+A more detailed model of SCExAO will be modelled in a SCExAO_optics.py code. However, this routine is designed for
+simple simulations that need to optimize runtime but still have relevance to the Subaru Telescope.
 
 This script is meant to override any Subaru/SCExAO-specific parameters specified in the user's params.py
 """
@@ -59,6 +61,11 @@ tp.d_secondary = 1.265  # m diameter secondary, used for central obscuration
 tp.enterance_d = tp.d_nsmyth
 tp.flen_primary = tp.flen_nsmyth
 
+# Effective Primary Aberrations
+primary_aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4)
+                     'b': [0.8, 0.2],  # correlation length (b/2pi defines knee)
+                     'c': [3.1, 0.5],  #
+                     'a_amp': [0.05, 0.01]}
 # ----------------------------
 # AO188 OAP1
 # Paramaters taken from "Design of the Subaru laser guide star adaptive optics module"
@@ -66,12 +73,21 @@ tp.flen_primary = tp.flen_nsmyth
 tp.d_ao1 = 0.20  # m  diamater of AO1
 tp.fl_ao1 = 1.201  # m  focal length OAP1
 tp.dist_ao1_dm = 1.345  # m distance OAP1 to DM
+OAP1_aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4)
+                  'b': [0.8, 0.2],  # correlation length (b/2pi defines knee)
+                  'c': [3.1, 0.5],  #
+                  'a_amp': [0.05, 0.01]}
+
 # ----------------------------
 # AO188 OAP2
 tp.dist_dm_ao2 = 2.511-tp.dist_ao1_dm  # m distance DM to OAP2
 tp.d_ao2 = 0.2  # m  diamater of AO2
 tp.fl_ao2 = 1.201  # m  focal length AO2
 tp.dist_oap2_focus = 1.261
+OAP2_aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4)
+                  'b': [0.8, 0.2],  # correlation length (b/2pi defines knee)
+                  'c': [3.1, 0.5],  #
+                  'a_amp': [0.05, 0.01]}
 
 #################################################################################################
 #################################################################################################
@@ -121,7 +137,8 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
 
     # Effective Primary
     # CPA from Effective Primary
-    wfo.loop_over_function(aber.add_aber, tp.enterance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='effective-primary')
+    wfo.loop_over_function(aber.add_aber, tp.enterance_d, tp.aber_params, primary_aber_vals,
+                           step=PASSVALUE['iter'], lens_name='effective-primary')
     # Zernike Aberrations- Low Order
     # wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
     wfo.loop_over_function(opx.prop_pass_lens, tp.flen_nsmyth, tp.dist_nsmyth_ao1)
@@ -130,7 +147,8 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # AO188 Propagation
     ########################################
     # # AO188-OAP1
-    wfo.loop_over_function(aber.add_aber, tp.d_ao1, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP1')
+    wfo.loop_over_function(aber.add_aber, tp.d_ao1, tp.aber_params, OAP1_aber_vals,
+                           step=PASSVALUE['iter'], lens_name='ao188-OAP1')
     wfo.loop_over_function(opx.prop_pass_lens, tp.fl_ao1, tp.dist_ao1_dm)
 
     # AO System
@@ -141,7 +159,8 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     wfo.loop_over_function(proper.prop_propagate, tp.dist_dm_ao2)
 
     # AO188-OAP2
-    wfo.loop_over_function(aber.add_aber, tp.d_ao2, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP2')
+    wfo.loop_over_function(aber.add_aber, tp.d_ao2, tp.aber_params, OAP2_aber_vals,
+                           step=PASSVALUE['iter'], lens_name='ao188-OAP2')
     # wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)
     wfo.loop_over_function(opx.prop_pass_lens, tp.fl_ao2, tp.dist_oap2_focus)
 
