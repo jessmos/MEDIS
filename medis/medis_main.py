@@ -22,7 +22,7 @@ import proper
 import medis.atmosphere as atmos
 from medis.plot_tools import view_spectra
 import medis.CDI as cdi
-import medis.utils as mmu
+import medis.utils as mu
 
 ################################################################################################################
 ################################################################################################################
@@ -40,7 +40,7 @@ def run_medis():
 
     :return: obs_sequence
     """
-    print('Beginning Simulation on MEDIS')
+    print('Beginning Telescope Simulation with MEDIS')
     print('***************************************')
     start = time.time()
 
@@ -51,12 +51,12 @@ def run_medis():
 
     #todo update this automatic load if exists functionality
 
-    # check = mmu.check_exists_obs_sequence(plot=False)
+    # check = mu.check_exists_obs_sequence(plot=False)
     # if check:
     #     if iop.obs_seq[-3:] == '.h5':
-    #         obs_sequence = mmu.open_obs_sequence_hdf5(iop.obs_seq)
+    #         obs_sequence = mu.open_obs_sequence_hdf5(iop.obs_seq)
     #     else:
-    #         obs_sequence = mmu.open_obs_sequence(iop.obs_seq)
+    #         obs_sequence = mu.open_obs_sequence(iop.obs_seq)
     #
     #     return obs_sequence
 
@@ -113,7 +113,7 @@ def run_medis():
             # size is (sp.numframes, len(sp.save_list), ap.n_wavl_init, 1+len(ap.contrast), sp.grid_size, sp.grid_size)
 
         if sp.verbose:
-            print(display_sequence_shape(cpx_sequence))
+            mu.display_sequence_shape(cpx_sequence)
 
     # # Ending the gen_timeseries loop via multiprocessing protocol
     for i, p in enumerate(jobs):
@@ -128,15 +128,6 @@ def run_medis():
     if sp.return_fields:
         return cpx_sequence, samplings
 
-def display_sequence_shape(cpx_sequence):
-    """
-
-    :param cpx_sequence: sixcube to get shape for
-    :return: nicely parsed string of sixcube shape
-    """
-    samps = ['timesteps', 'save planes', 'wavelengths', 'num obj', 'x', 'y']
-    delim = ', '
-    return f"Shape of cpx_sequence = {delim.join([samp + ':' + str(length) for samp, length in zip(samps, cpx_sequence.shape)])}"
 
 class Timeseries():
     """

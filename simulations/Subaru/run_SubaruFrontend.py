@@ -84,24 +84,6 @@ if __name__ == '__main__':
     # convert to intensity THEN sum over object, keeping the dimension of tstep even if it's one
     focal_plane = np.sum(opx.cpx_to_intensity(focal_plane), axis=2)
 
-    # focal_plane = opx.cpx_to_intensity(focal_plane)
-    # # dprint(f"intensity of star is {focal_plane[0,0,0,256,256]:.4f} intensity of planet is {focal_plane[0,0,1,256,256]:.4f}")
-    # focal_plane[:,:,1,:,:] *= ap.contrast
-    # focal_plane = np.sum(focal_plane, axis=2)
-
-    # # focal_plane = np.sum(focal_plane, axis=2)
-    # import matplotlib.pyplot as plt
-    # dprint(f"focal plane star is {focal_plane[0,0,0,230,230]}")
-    # # dprint(f"focal plane planet is {cpx_sequence[0,-1,0,1,230,230]}")
-    # fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
-    # ax1.imshow(np.abs(focal_plane[0,0,0,:,:]))
-    # ax2.imshow(np.abs(focal_plane[0,0,1,:,:]))
-    # plt.show()
-
-    # focal_plane = opx.cpx_to_intensity(focal_plane)
-    # # focal_plane[:,:,1,:,:] *= ap.contrast
-
-
     # =======================================================================
     # Plotting
     # =======================================================================
