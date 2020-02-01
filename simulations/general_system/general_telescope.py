@@ -19,6 +19,7 @@ import medis.aberrations as aber
 import medis.optics as opx
 from medis.coronagraphy import coronagraph, vortex, apodization
 
+
 def general_telescope(empty_lamda, grid_size, PASSVALUE):
     """
     #TODO pass complex datacube for photon phases
@@ -85,9 +86,9 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     # Telescope Primary-ish Aberrations
     #######################################
     # Abberations before AO
-    if tp.aber_params['CPA']:
+    if tp.use_CPA:
         wfo.loop_over_function(aber.add_aber, tp.enterance_d, tp.aber_params, tp.aber_vals,
-                               step=PASSVALUE['iter'], lens_name='effective-primary')
+                               step=PASSVALUE['iter'], lens_name='CPA')
     # wfo.loop_over_function(proper.prop_circular_aperture, **{'radius': tp.enterance_d / 2})
         # wfo.wf_array = aber.abs_zeros(wfo.wf_array)
 
@@ -99,6 +100,9 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
             WFS_map = ao.ideal_wfs(wfo)
             # tiptilt = np.zeros((sp.grid_size,sp.grid_size))
         else:
+            #TODO Rupert-CPA maps are no longer generated. Not sure what you want to do here. The CPA map is stored
+            # as a fits file at f"{iop.aberdir}/t{iter}_CPA.fits"
+            #
             WFS_map = PASSVALUE['CPA_maps']
             # tiptilt = PASSVALUE['tiptilt']
 
@@ -116,7 +120,7 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     # Post-AO Telescope Distortions
     # #######################################
     # Abberations after the AO Loop
-    if tp.aber_params['NCPA']:
+    if tp.use_NCPA:
         aber.add_aber(wfo, tp.f_lens, tp.aber_params, tp.aber_vals, PASSVALUE['iter'], lens_name='NCPA')
         wfo.loop_over_function(proper.prop_circular_aperture, **{'radius': tp.enterance_d / 2})
         # TODO does this need to be here?

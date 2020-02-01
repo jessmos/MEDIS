@@ -66,6 +66,8 @@ sp.save_obs = False  # save obs_sequence (timestep, wavelength, x, y)
 sp.save_fields = True  # toggle to turn saving uniformly on/off
 sp.save_list = ['detector']  # list of locations in optics train to save
 
+tp.use_CPA = False
+tp.use_NCPA = False
 tp.aber_params = {'QuasiStatic': False,  # or 'Static'
                             'Phase': True,
                             'Amp': False}
