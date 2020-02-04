@@ -3,7 +3,7 @@ check the params entered to params for given telescope settings for correct samp
 KD 8/13/19
 
 According to the Proper manual:
-    sp.beam_ratio = tp.enterance_d/ init_grid_width
+    sp.beam_ratio = tp.entrance_d/ init_grid_width
     where init_grid_width is the initial grid width (diameter) in meters
 Thus
     init_grid_width = tp.enterence_d / sp.beam_ratio
@@ -23,7 +23,7 @@ def check_sampling():
     # Definitions from inside mini-medis
     #######################################
     # Basics-not imported
-    # tp.enterance_d = 0.1  # [m]
+    # tp.entrance_d = 0.1  # [m]
     # sp.beam_ratio = .3  # [unitless]
     # sp.grid_size = 512  # [pix]
 
@@ -33,16 +33,16 @@ def check_sampling():
     #######################
     # Initial Sampling
     ######################
-    init_grid_width = tp.enterance_d / sp.beam_ratio  # [m]
+    init_grid_width = tp.entrance_d / sp.beam_ratio  # [m]
     init_sampling = init_grid_width / sp.grid_size  # [m/pix]
-    init_npix_on_beam = tp.enterance_d / init_sampling  # [pix]
+    init_npix_on_beam = tp.entrance_d / init_sampling  # [pix]
     print(f"Initial Grid Width = {init_grid_width:.2f} m")
     print(f"Initial number of pixels across beam = {sp.beam_ratio*sp.grid_size}")
 
     #################################
     # Checking Sampling of Spiders
     ################################
-    spider_width = tp.enterance_d * legs_frac  # [m]
+    spider_width = tp.entrance_d * legs_frac  # [m]
     npix_on_spiders = spider_width / init_sampling  # [pix]
     print(f"Number of pixels across the spiders = {npix_on_spiders}")
     print("********************************")
@@ -64,18 +64,18 @@ def ideal_sampling():
     # Hard-Coded Parameters
     Fnum = 12.6  # focal ratio of the beam as it approaches the focus
     lmbda = 800e-9  # [m]  wavelength of interest
-    grid_width = tp.enterance_d/sp.beam_ratio  # [m]
+    grid_width = tp.entrance_d/sp.beam_ratio  # [m]
 
     # Sampling
-    samp_good = Fnum*lmbda*tp.enterance_d / grid_width
+    samp_good = Fnum*lmbda*tp.entrance_d / grid_width
     samp_nyq = Fnum*lmbda/2
     print(f"In the pupil plane at lambda={lmbda*1e6:.3f} um:\n"
           f" Ideal Sampling is {samp_good:.6f} m/pix \n"
           f"Nyquist Sampling is {samp_nyq:.6f} m/pix ")
 
     # selecting beam ratio
-    br_good = tp.enterance_d/(samp_good*sp.grid_size)
-    br_nyq = tp.enterance_d/samp_nyq/sp.grid_size
+    br_good = tp.entrance_d/(samp_good*sp.grid_size)
+    br_nyq = tp.entrance_d/samp_nyq/sp.grid_size
     print(f"Good starter beam ratio is {br_good} \n"
           f"Nyquist beam ratio is {br_nyq}")
 

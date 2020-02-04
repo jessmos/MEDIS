@@ -24,7 +24,7 @@ import medis.atmosphere as atmos
 
 # Defining Hubble parameters
 # ----------------------------
-tp.enterance_d = 2.4  # m
+tp.entrance_d = 2.4  # m
 tp.flen_primary = 5.52085  # m
 tp.dist_pri_second = 4.907028205  # m distance primary -> secondary
 
@@ -85,9 +85,9 @@ def Hubble_frontend(empty_lamda, grid_size, PASSVALUE):
     # Hubble Propagation
     #######################################
     # Defines aperture (baffle-before primary)
-    wfo.loop_over_function(proper.prop_circular_aperture, **{'radius': tp.enterance_d / 2})  # clear inside, dark outside
+    wfo.loop_over_function(proper.prop_circular_aperture, **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
     # Obscurations
-    wfo.loop_over_function(opx.add_obscurations, d_primary=tp.enterance_d, d_secondary=tp.d_secondary, legs_frac=0.01)
+    wfo.loop_over_function(opx.add_obscurations, d_primary=tp.entrance_d, d_secondary=tp.d_secondary, legs_frac=0.01)
     wfo.loop_over_function(proper.prop_define_entrance)  # normalizes the intensity
 
     # Test Sampling
@@ -97,7 +97,7 @@ def Hubble_frontend(empty_lamda, grid_size, PASSVALUE):
 
     # Primary
     # CPA from Effective Primary
-    # aber.add_aber(wfo.wf_array, tp.enterance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='primary')
+    # aber.add_aber(wfo.wf_array, tp.entrance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='primary')
 
     # wfo.loop_over_function(opx.prop_pass_lens, tp.flen_primary, tp.flen_primary)
     wfo.loop_over_function(opx.prop_pass_lens, tp.flen_primary, tp.dist_pri_second)

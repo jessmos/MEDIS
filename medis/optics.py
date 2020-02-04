@@ -50,6 +50,7 @@ class Wavefronts():
                                            np.shape(self.wf_array)[1],    # specified locations of the optical train
                                            sp.grid_size,
                                            sp.grid_size), dtype=np.complex64)
+        # self.plane_sampling = np.empty((len(sp.save_list), ap.n_wvl_init))
         self.plane_sampling = []
 
     def initialize_proper(self):
@@ -70,7 +71,7 @@ class Wavefronts():
                 # dprint(f"iw={iw}, w={w}, beam ratio is {self.beam_ratios[iw]}")
 
             # Initialize the wavefront at entrance pupil
-            wfp = proper.prop_begin(tp.enterance_d, w, sp.grid_size, self.beam_ratios[iw])
+            wfp = proper.prop_begin(tp.entrance_d, w, sp.grid_size, self.beam_ratios[iw])
 
             wfs = [wfp]
             names = ['star']
@@ -78,7 +79,7 @@ class Wavefronts():
             # Initiate wavefronts for companion(s)
             if ap.companion:
                 for ix in range(len(ap.contrast)):
-                    wfc = proper.prop_begin(tp.enterance_d, w, sp.grid_size, self.beam_ratios[iw])
+                    wfc = proper.prop_begin(tp.entrance_d, w, sp.grid_size, self.beam_ratios[iw])
                     wfs.append(wfc)
                     names.append('companion_%i' % ix)
 
@@ -134,15 +135,18 @@ class Wavefronts():
                                        np.shape(self.wf_array)[1],
                                        sp.grid_size,
                                        sp.grid_size), dtype=np.complex64)
+            samp_lambda = np.zeros(ap.n_wvl_init)
             for iw in range(shape[0]):
                 for io in range(shape[1]):
                     wf = proper.prop_shift_center(self.wf_array[iw, io].wfarr)
                     E_field[0, iw, io] = copy.copy(wf)
+                    samp_lambda[iw] = proper.prop_get_sampling(self.wf_array[iw, 0])
+                    # self.plane_sampling.append(proper.prop_get_sampling(self.wf_array[iw,0]))
 
             dprint(f"saving plane at {location}")
             self.Efield_planes = np.vstack((self.Efield_planes, E_field))
             self.saved_planes.append(location)
-            self.plane_sampling.append(proper.prop_get_sampling(self.wf_array[0][0]))
+            self.plane_sampling.append(samp_lambda)
 
     def focal_plane(self):
         """
@@ -150,36 +154,20 @@ class Wavefronts():
 
         :return:
         """
-
-        sampling = np.zeros(ap.n_wvl_init)
-        shape = self.wf_array.shape
-
         # Saving Complex Data via save_plane
         if sp.save_fields and 'detector' in sp.save_list:  # save before prop_end so unaffected by EXTRACT flag and
             self.save_plane(location='detector')           # shifting, etc already done in save_plane function
-        #
-        #
-        # unseen_funcs = list(set(self.saved_planes).symmetric_difference(set(list(sp.save_list))))
-        # if len(unseen_funcs) > 0:
-        #     for func in unseen_funcs:
-        #         print('Function %s not used' % func)
-        #     print('Check your sp.save_locs match the optics set by telescope parameters (tp)')
-        #     raise AssertionError
-
-        # Proper prop_end
-        for iw in range(shape[0]):
-            for io in range(shape[1]):
-                (wframe, w_sampling) = proper.prop_end(self.wf_array[iw, io])  # Sampling returned by proper is in [m]
-            sampling[iw] = w_sampling
-
-        sampling = np.linspace(sampling[0], sampling[-1], ap.n_wvl_final)
 
         cpx_planes = np.array(self.Efield_planes)
+        sampling = np.array(self.plane_sampling)
+        dprint(f"sampling array shape is {sampling.shape}")
+
         # Conex Mirror-- cirshift array for off-axis observing
         # if tp.pix_shift is not [0, 0]:
         #     datacube = np.roll(np.roll(datacube, tp.pix_shift[0], 1), tp.pix_shift[1], 2)
 
         return cpx_planes, sampling
+
 
 ####################################################################################################
 # Functions Relating to Processing Complex Cubes
@@ -339,9 +327,9 @@ def offset_companion(wfo):
                 # Shifting the Array
                 if sp.focused_sys:
                     # Scaling into lambda/D AND scaling by wavelength
-                    xloc = ap.companion_xy[io-1][0] * wfo.wf_array[iw,io].lamda / tp.enterance_d \
+                    xloc = ap.companion_xy[io-1][0] * wfo.wf_array[iw,io].lamda / tp.entrance_d \
                            * ap.wvl_range[0] / wfo.wf_array[iw,io].lamda # * (-1)**(iw%2)
-                    yloc = ap.companion_xy[io-1][1] * wfo.wf_array[iw,io].lamda / tp.enterance_d \
+                    yloc = ap.companion_xy[io-1][1] * wfo.wf_array[iw,io].lamda / tp.entrance_d \
                             *  ap.wvl_range[0] / wfo.wf_array[iw,io].lamda  # / (2*np.pi)   * (-1)**(iw%2)
                 else:
                     # Scaling Happens Naturally!

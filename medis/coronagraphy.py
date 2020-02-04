@@ -43,7 +43,7 @@ class Occulter():
         dx_rad = proper.prop_get_sampling_radians(wfo)
 
         if size_in_lambda_d is not 0:
-            occrad_rad = size_in_lambda_d * lamda / tp.enterance_d  # occulter radius in radians
+            occrad_rad = size_in_lambda_d * lamda / tp.entrance_d  # occulter radius in radians
             self.size = occrad_rad * dx_m / dx_rad  # occulter radius in meters
         elif size_in_m is not 0:
             self.size = size_in_m

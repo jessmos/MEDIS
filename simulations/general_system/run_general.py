@@ -27,7 +27,7 @@ ap.companion = True
 ap.contrast = [1e-5]
 ap.companion_xy = [[15, -15]]  # units of this are in lambda/tp.entrance_d
 
-tp.enterance_d = 8
+tp.entrance_d = 8
 sp.numframes = 1
 
 sp.focused_sys = True
@@ -43,7 +43,7 @@ tp.use_ao = True
 tp.ao_act = 14
 tp.rotate_atmos = False
 tp.rotate_sky = False
-tp.f_lens = 200.0 * tp.enterance_d
+tp.f_lens = 200.0 * tp.entrance_d
 tp.open_ao = True
 tp.include_tiptilt = False
 tp.include_dm = True

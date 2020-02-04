@@ -2,13 +2,17 @@
 model the Subaru optics system
 
 This is a code modified from Rupert's original optics_propagate.py. This code adds more optics to the system,
-as well as puts the AO, chronographs, etc in order for Subaru.
+as well as puts the AO, etc in order for Subaru.
 
 Here, we will add the basic functionality of the Subaru Telescope, including the primary, secondary, and AO188.
 The SCExAO system sits behind the AO188 instrument of Subaru, which is a 188-element AO system located at the
 Nasmyth focus (IR) of the telescope. AO188 is a basic 4f-type optical system with a 188 element DM (not perfectly
 represented here. Proper will only simulate 2D square DM's, so we use a 14x14 square) inserted in the middle of the
 collimated beam. This routine simulates an idealized detector at the A0188 focus.
+
+If you want to scale the intensity of the companion, you can't then normalize the intensity
+(prop_define_entrance) since the normalization is per wavefront, so the companion will normalize to itself
+rather than to the star. Doing it this way may cause confusion, but better than re-writing things in proper
 
 AO188 uses laser guide-star technology. More info here:
 https://subarutelescope.org/Introduction/instrument/AO188.html
@@ -58,7 +62,7 @@ tp.d_secondary = 1.265  # m diameter secondary, used for central obscuration
 
 # Re-writing params terms in Subaru-units
 # need this to accurately make atmospheric and aberration maps
-tp.enterance_d = tp.d_nsmyth
+tp.entrance_d = tp.d_nsmyth
 tp.flen_primary = tp.flen_nsmyth
 
 # Effective Primary Aberrations
@@ -120,17 +124,14 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # Obscurations (Secondary and Spiders)
     wfo.loop_over_function(opx.add_obscurations, d_primary=tp.d_nsmyth, d_secondary=tp.d_secondary, legs_frac=0.05)
     wfo.loop_over_function(proper.prop_circular_aperture,
-                           **{'radius': tp.enterance_d / 2})  # clear inside, dark outside
+                           **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
     wfo.loop_over_function(proper.prop_define_entrance, plane_name='entrance_pupil')  # normalizes abs intensity
 
     if ap.companion:
         # Must do this after all calls to prop_define_entrance
-        #  If you want to scale the intensity of the companion, you can't then normalize the intensity
-        #  (prop_define_entrance) since the normalization is per wavefront, so the companion will normalize to itself
-        #  rather than to the star. Doing it this way may cause confusion, but better than re-writing things in proper
         opx.offset_companion(wfo)
         wfo.loop_over_function(proper.prop_circular_aperture,
-                               **{'radius': tp.enterance_d / 2})  # clear inside, dark outside
+                               **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
 
     # Test Sampling
     # opx.check_sampling(PASSVALUE['iter'], wfo, "initial", getframeinfo(stack()[0][0]), units='mm')
@@ -142,7 +143,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     #######################################
     # Effective Primary
     # CPA from Effective Primary
-    wfo.loop_over_function(aber.add_aber, tp.enterance_d, tp.aber_params, primary_aber_vals,
+    wfo.loop_over_function(aber.add_aber, tp.entrance_d, tp.aber_params, primary_aber_vals,
                            step=PASSVALUE['iter'], lens_name='effective-primary')
     # Zernike Aberrations- Low Order
     # wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
@@ -181,5 +182,5 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
 
     print(f"Finished datacube at timestep = {PASSVALUE['iter']}")
 
-    return cpx_planes, wfo.plane_sampling
+    return cpx_planes, sampling
 

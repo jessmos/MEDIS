@@ -41,7 +41,7 @@ def gen_atmos(plot=False):
     ##################################
     # Initiate HCIpy Atmosphere Type
     ##################################
-    pupil_grid = hcipy.make_pupil_grid(sp.grid_size, tp.enterance_d)
+    pupil_grid = hcipy.make_pupil_grid(sp.grid_size, tp.entrance_d)
     if atmp.model == 'single':
         layers = [hcipy.InfiniteAtmosphericLayer(pupil_grid, atmp.cn_sq, atmp.L0, atmp.vel, atmp.h, 2)]
     elif atmp.model == 'hcipy_standard':
@@ -65,7 +65,7 @@ def gen_atmos(plot=False):
             filename = get_filename(it, wsamples[iw])
             dprint(f"atmos file = {filename}")
             hdu = fits.ImageHDU(wf2.phase.reshape(sp.grid_size, sp.grid_size))
-            hdu.header['PIXSIZE'] = tp.enterance_d/sp.grid_size
+            hdu.header['PIXSIZE'] = tp.entrance_d/sp.grid_size
             hdu.writeto(filename, overwrite=True)
 
             if plot and iw == 0:
@@ -95,7 +95,6 @@ def add_atmos(wf, it):
         pass  # don't do anything. Putting this type of check here allows universal toggling on/off rather than
                 # commenting/uncommenting in the proper perscription
     else:
-
         wavelength = wf.lamda  # the .lamda comes from proper, not from Wavefronts class
 
         # Check for Existing File

@@ -28,16 +28,14 @@ class IO_params:
 
     def __init__(self, testname='Subaru-test1'):  # testname should be the name of the particular example you are running,
                                               # for example 'BetaPic' or 'simple_telescope'
-        self.rootdir = '/home/captainkay/mazinlab/MKIDSim/miniMEDIS/'
+        self.rootdir = '/home/captainkay/mazinlab/MKIDSim/'
         self.datadir = '/home/captainkay/mazinlab/MKIDSim/CDIsim_data/'
         # self.rootdir = '/Users/dodkins/mazinlab/MKIDSim/miniMEDIS/'
         # self.datadir = '/Users/dodkins/mazinlab/MKIDSim/CDIsim_data/'
 
         # Unprocessed Science Data
-        self.sciroot = 'medis_main'
-        self.scidir = os.path.join(self.datadir, self.sciroot)  # self.savedata
         self.testname = testname  # set this up in the definition line, but can update it with iop.update('newname')
-        self.testdir = os.path.join(self.scidir,
+        self.testdir = os.path.join(self.datadir,
                                   self.testname)  # Save results in new sub-directory
         self.obs_seq = os.path.join(self.testdir,
                                   'ObsSeq.h5')  # a x/y/t/w cube of data
@@ -50,9 +48,6 @@ class IO_params:
         self.aberdata = f"gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
         # self.aberdir = os.path.join(self.testdir, self.aberroot, self.aberdata)
 
-        # Atmosphere Metadata
-        # self.atmosroot = f"atmos/gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
-        # self.atmosdir = os.path.join(self.testdir, self.atmosroot)  # full path to FITS files
 
     def update(self, new_name='example1'):
         self.__init__(testname=new_name)
@@ -63,8 +58,6 @@ class IO_params:
             os.makedirs(self.datadir, exist_ok=True)
         if not os.path.isdir(self.testdir):
             os.makedirs(self.testdir, exist_ok=True)
-        if not os.path.isdir(self.scidir):
-            os.makedirs(self.scidir, exist_ok=True)
         # if not os.path.isdir(self.aberdir):
         #     os.makedirs(self.aberdir, exist_ok=True)
 
@@ -100,6 +93,7 @@ class Simulation_params:
                         # see Proper manual pg 36 for more info
 
         # Timing Params
+        self.closed_loop = True  # if false (open loop), then initiate multiprocessing for individual timesteps
         self.sample_time = 0.01  # [s] seconds per timestep/frame. used in atmosphere evolution, etc
         self.startframe = 0  # useful for things like RDI
         self.numframes = 1  # number of timesteps in the simulation
@@ -168,7 +162,7 @@ class Telescope_params:
     def __init__(self):
         # Optics + Detector
         self.prescription = 'Hubble_frontend'
-        self.enterance_d = 5  # 7.971  # [m] telescope enterence pupil diameter in meters
+        self.entrance_d = 5  # 7.971  # [m] telescope enterence pupil diameter in meters
         self.fnum_primary = 12  # f-number of primary
         self.flen_primary = 25  # [m] focal length of primary
 

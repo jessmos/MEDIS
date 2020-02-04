@@ -33,7 +33,6 @@ rcParams['font.family'] = 'DejaVu Sans'
 # rcParams['mathtext.bf'] = 'Bitstream Vera Sans:bold'
 
 
-
 def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=None):
     """
     Looks at a 2D array, has bunch of handles for plot.imshow
@@ -121,18 +120,16 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
     # Wavelength Strings for Subplot Titles
     w_string = np.array(np.linspace(ap.wvl_range[0] * 1e9, ap.wvl_range[1] * 1e9, ap.n_wvl_final, dtype=int), dtype=str)
 
-    if dx is not None:
-        dx = dx * 1e6  # [convert to um]
-
     for w in range(n_colors):
         ax = fig.add_subplot(gs[w])
 
         # X,Y lables
-        if dx is not None:
+        if dx[w] is not None:
+            dx[w] = dx[w] * 1e6  # [convert to um]
             # dprint(f"sampling = {sampl[w]}")
             tic_spacing = np.linspace(0, sp.maskd_size, 5)  # 5 (number of ticks) is set by hand, arbitrarily chosen
             tic_lables = np.round(
-                np.linspace(-dx * sp.maskd_size / 2, dx * sp.maskd_size / 2, 5)).astype(int)  # nsteps must be same as tic_spacing
+                np.linspace(-dx[w] * sp.maskd_size / 2, dx[w] * sp.maskd_size / 2, 5)).astype(int)  # nsteps must be same as tic_spacing
             tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
             tic_spacing[-1] = tic_spacing[-1] - 1  # hack for edge effects
             plt.xticks(tic_spacing, tic_lables, fontsize=6)
@@ -331,15 +328,15 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
     if len(vlim) == 2:
         vlim = (vlim,)*len(sp.save_list)
 
-    for w in range(n_planes):
-        ax = fig.add_subplot(gs[w])
+    for p in range(n_planes):
+        ax = fig.add_subplot(gs[p])
 
         ###################
         # Retreiving Data
         ##################
         # Standard-Way
         # [timestep, plane, wavelength, object, x, y]
-        plot_plane = sp.save_list[w]
+        plot_plane = sp.save_list[p]
         plane = opx.extract_plane(cpx_seq, plot_plane)
         # converts to intensity of last timestep, THEN sums over wavelength, then sums over object
         plane = np.sum(opx.cpx_to_intensity(plane[-1]), axis=(0,1))
@@ -353,14 +350,14 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
         # dprint(f"plane shape is {plane.shape}")
 
         # Converting Sampling Units to Readable numbers
-        if dx[w] < 1e-6:
-            dx[w] *= 1e6  # [convert to um]
+        if dx[p,0] < 1e-6:
+            dx[p,:] *= 1e6  # [convert to um]
             axlabel = 'um'
-        elif dx[w] < 1e-3:
-            dx[w] *= 1e3  # [convert to mm]
+        elif dx[p,0] < 1e-3:
+            dx[p,:] *= 1e3  # [convert to mm]
             axlabel = 'mm'
-        elif 1e-2 > dx[w] > 1e-3:
-            dx[w] *= 1e2  # [convert to cm]
+        elif 1e-2 > dx[p,0] > 1e-3:
+            dx[p,:] *= 1e2  # [convert to cm]
             axlabel = 'cm'
         else:
             axlabel = 'm'
@@ -370,7 +367,7 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
             # dprint(f"sampling = {sampl[w]}")
             tic_spacing = np.linspace(0, sp.maskd_size, 5)  # 5 (# of ticks) is just set by hand, arbitrarily chosen
             tic_lables = np.round(
-                np.linspace(-dx[w] * sp.maskd_size / 2, dx[w] * sp.maskd_size / 2, 5)).astype(int)  # nsteps must be same as tic_spacing
+                np.linspace(-dx[p,0] * sp.maskd_size / 2, dx[p,0] * sp.maskd_size / 2, 5)).astype(int)  # nsteps must be same as tic_spacing
             tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
             tic_spacing[-1] = tic_spacing[-1] - 1  # hack for edge effects
             plt.xticks(tic_spacing, tic_lables, fontsize=6)
@@ -379,24 +376,24 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
             plt.ylabel(axlabel, fontsize=8)
 
         # Z-axis scale
-        if logZ[w]:
-            if vlim[w][0] is not None and vlim[w][0] <= 0:
-                ax.set_title(f"{sp.save_list[w]}")
-                im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[w][0], vmax=vlim[w][1],
+        if logZ[p]:
+            if vlim[p][0] is not None and vlim[p][0] <= 0:
+                ax.set_title(f"{sp.save_list[p]}")
+                im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[p][0], vmax=vlim[p][1],
                                norm=SymLogNorm(linthresh=1e-5),
                                cmap="YlGnBu_r")
                 cb = fig.colorbar(im)
                 # clabel = "Log Normalized Intensity"
             else:
-                ax.set_title(f"{sp.save_list[w]}")
-                im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[w][0], vmax=vlim[w][1],
+                ax.set_title(f"{sp.save_list[p]}")
+                im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[p][0], vmax=vlim[p][1],
                                norm=LogNorm(), cmap="YlGnBu_r")  #(1e-6,1e-3)
                 cb = fig.colorbar(im)
                 # clabel = "Log Normalized Intensity"
                 # cb.set_label(clabel)
         else:
-            ax.set_title(f"{sp.save_list[w]}")
-            im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[w][0], vmax=vlim[w][1],
+            ax.set_title(f"{sp.save_list[p]}")
+            im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[p][0], vmax=vlim[p][1],
                            cmap="YlGnBu_r")  #  "twilight"
             cb = fig.colorbar(im)  #
             # clabel = "Normalized Intensity"
