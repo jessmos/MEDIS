@@ -125,7 +125,7 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
         ax = fig.add_subplot(gs[w])
 
         # X,Y lables
-        if dx[w] is not None:
+        if dx is not None:
             dx[w] = dx[w] * 1e6  # [convert to um]
             # dprint(f"sampling = {sampl[w]}")
             tic_spacing = np.linspace(0, sp.maskd_size, 5)  # 5 (number of ticks) is set by hand, arbitrarily chosen
