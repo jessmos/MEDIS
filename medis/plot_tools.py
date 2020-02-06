@@ -51,7 +51,7 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=N
 
     # Title
     while title is None:
-        print("Plots without titles: Don't Do It!")
+        warnings.warn("Plots without titles: Don't Do It!")
         title = input("Please Enter Title: ")
 
     # X,Y lables
@@ -113,6 +113,7 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
 
     # Title
     if title is None:
+        warnings.warn("Plots without titles: Don't Do It!")
         title = input("Please Enter Title: ")
         pass
     fig.suptitle(title, fontweight='bold', fontsize=16)
@@ -140,7 +141,6 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
         # Z-axis scale
         if logZ:
             if vlim[0] is not None and vlim[0] <= 0:
-                warnings.simplefilter("ignore", UserWarning)
                 ax.set_title(r'$\lambda$ = '+f"{w_string[w]} nm")
                 im = ax.imshow(opx.extract_center(datacube[w]), interpolation='none', origin='lower',
                                vmin=vlim[0], vmax=vlim[1],
@@ -148,14 +148,12 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
                                cmap="YlGnBu_r")
                 clabel = "Log Normalized Intensity"
             else:
-                warnings.simplefilter("ignore", UserWarning)
                 ax.set_title(r'$\lambda$ = '+f"{w_string[w]} nm")
                 im = ax.imshow(opx.extract_center(datacube[w]), interpolation='none', origin='lower',
                                vmin=vlim[0], vmax=vlim[1], norm=LogNorm(),
                                cmap="YlGnBu_r")
                 clabel = "Log Normalized Intensity"
         else:
-            warnings.simplefilter("ignore", category=UserWarning)
             ax.set_title(r'$\lambda$ = '+f"{w_string[w]} nm")
             im = ax.imshow(opx.extract_center(datacube[w]),
                            interpolation='none', origin='lower', vmin=vlim[0], vmax=vlim[1], cmap="YlGnBu_r")
@@ -167,6 +165,7 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
             plt.axis('off')
 
     if use_axis:
+        warnings.simplefilter("ignore", category=UserWarning)
         gs.tight_layout(fig, pad=1.08, rect=(0, 0, 1, 0.85))  # rect = (left, bottom, right, top)
         # fig.tight_layout(pad=50)
         # cbar_ax = fig.add_axes([0.55, 0.1, 0.2, 0.05])  # Add axes for colorbar @ position [left,bottom,width,height]
@@ -208,7 +207,7 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
 
     # Title
     if title is None:
-        raise NameError("Plots without titles: Don't Do It!")
+        warnings.warn("Plots without titles: Don't Do It!")
         title = input("Please Enter Title: ")
         pass
     fig.suptitle(title, fontweight='bold', fontsize=16)
@@ -245,7 +244,6 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
         if logZ:
             if vlim[0] is not None and vlim[0] <= 0:
                 if cdip.use_cdi and not np.isnan(phases[t]):
-                    warnings.simplefilter("ignore", UserWarning)
                     ax.set_title(f"t={t * sp.sample_time}, CDI" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
                 else:
                     ax.set_title(f"t={t*sp.sample_time}")
@@ -255,7 +253,6 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
                 clabel = "Log Normalized Intensity"
             else:
                 if cdip.use_cdi and not np.isnan(phases[t]):
-                    warnings.simplefilter("ignore", UserWarning)
                     ax.set_title(f"t={t * sp.sample_time}, CDI" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
                 else:
                     ax.set_title(f"t={t * sp.sample_time}")
@@ -265,7 +262,6 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
                 clabel = "Log Normalized Intensity"
         else:
             if cdip.use_cdi and not np.isnan(phases[t]):
-                warnings.simplefilter("ignore", UserWarning)
                 ax.set_title(f"t={t * sp.sample_time}, CDI" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
             else:
                 ax.set_title(f"t={t * sp.sample_time}")
@@ -280,6 +276,7 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
             plt.axis('off')
 
     if use_axis:
+        warnings.simplefilter("ignore", category=UserWarning)
         gs.tight_layout(fig, pad=1.08, rect=(0, 0.02, 1, 0.85))  # rect = (left, bottom, right, top)
         # fig.tight_layout(pad=50)
         cbar_ax = fig.add_axes([0.55, 0.1, 0.2, 0.05])  # Add axes for colorbar @ position [left,bottom,width,height]
@@ -317,7 +314,7 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
 
     # Main Title
     if title is None:
-        # raise NameError("Plots without titles: Don't Do It!")
+        warnings.warn("Plots without titles: Don't Do It!")
         title = input("Please Enter Title: ")
         pass
     fig.suptitle(title, fontweight='bold', fontsize=16)
@@ -339,7 +336,14 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
         plot_plane = sp.save_list[p]
         plane = opx.extract_plane(cpx_seq, plot_plane)
         # converts to intensity of last timestep, THEN sums over wavelength, then sums over object
-        plane = np.sum(opx.cpx_to_intensity(plane[-1]), axis=(0,1))
+        if plot_plane == "atmosphere" or plot_plane == "entrance_pupil":
+            plane = np.sum(np.angle(plane[-1]), axis=(0,1))
+            logZ[p] = False
+            vlim[p] = (None,None)
+            phs = " Phase"
+        else:
+            plane = np.sum(opx.cpx_to_intensity(plane[-1]), axis=(0,1))
+            phs = ""
         plane = opx.extract_center(plane)
         ### Retreiving Data- Custom selection of plane ###
         # plot_plane = sp.save_list[w]
@@ -378,21 +382,21 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
         # Z-axis scale
         if logZ[p]:
             if vlim[p][0] is not None and vlim[p][0] <= 0:
-                ax.set_title(f"{sp.save_list[p]}")
+                ax.set_title(f"{sp.save_list[p]}"+phs)
                 im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[p][0], vmax=vlim[p][1],
                                norm=SymLogNorm(linthresh=1e-5),
                                cmap="YlGnBu_r")
                 cb = fig.colorbar(im)
                 # clabel = "Log Normalized Intensity"
             else:
-                ax.set_title(f"{sp.save_list[p]}")
+                ax.set_title(f"{sp.save_list[p]}"+phs)
                 im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[p][0], vmax=vlim[p][1],
                                norm=LogNorm(), cmap="YlGnBu_r")  #(1e-6,1e-3)
                 cb = fig.colorbar(im)
                 # clabel = "Log Normalized Intensity"
                 # cb.set_label(clabel)
         else:
-            ax.set_title(f"{sp.save_list[p]}")
+            ax.set_title(f"{sp.save_list[p]}"+phs)
             im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[p][0], vmax=vlim[p][1],
                            cmap="YlGnBu_r")  #  "twilight"
             cb = fig.colorbar(im)  #
@@ -400,6 +404,7 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
             # cb.set_label(clabel)
 
     if use_axis:
+        warnings.simplefilter("ignore", category=UserWarning)
         gs.tight_layout(fig, pad=1.08, rect=(0, 0.02, 1, 0.9))  # rect = (left, bottom, right, top)
         # fig.tight_layout(pad=50)
 

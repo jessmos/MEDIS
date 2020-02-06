@@ -35,7 +35,7 @@ sp.closed_loop = True
 
 # Grid Parameters
 sp.focused_sys = True
-sp.beam_ratio = 0.14  # parameter dealing with the sampling of the beam in the pupil/focal plane
+sp.beam_ratio = 0.15  # parameter dealing with the sampling of the beam in the pupil/focal plane
 sp.grid_size = 512  # creates a nxn array of samples of the wavefront
 sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
 
@@ -47,14 +47,14 @@ ap.companion_xy = [[5, -5]]  # units of this are lambda/tp.entrance_d
 # Toggles for Aberrations and Control
 tp.obscure = False
 tp.use_atmos = True
-tp.use_aber = False
+tp.use_aber = True
 tp.use_ao = True
 tp.ao_act = 14
 cdip.use_cdi = False
 
 # Plotting
 sp.show_wframe = False  # Plot white light image frame
-sp.show_spectra = True  # Plot spectral cube at single timestep
+sp.show_spectra = False  # Plot spectral cube at single timestep
 sp.spectra_cols = 3  # number of subplots per row in view_datacube
 sp.show_tseries = False  # Plot full timeseries of white light frames
 sp.tseries_cols = 5  # number of subplots per row in view_timeseries
@@ -68,15 +68,14 @@ sp.save_list = ['atmosphere', 'entrance_pupil', 'woofer', 'detector']  # list of
 
 if __name__ == '__main__':
     # testname = input("Please enter test name: ")
-    testname = 'Subaru-test1'
+    testname = 'Subaru-test2'
     iop.update(testname)
     iop.makedir()
 
     # =======================================================================
     # Run it!!!!!!!!!!!!!!!!!
     # =======================================================================
-    sub1 = mm.RunMedis
-    cpx_sequence, sampling = mm.RunMedis.telescope(sub1)
+    cpx_sequence, sampling = mm.RunMedis().telescope()
 
     # =======================================================================
     # Focal Plane Processing
@@ -130,8 +129,8 @@ if __name__ == '__main__':
     # Plotting Selected Plane
     if sp.show_planes:
         # vlim = ((None, None), (None, None), (None, None), (None, None), (None, None))
-        vlim = ((None,None), (None,None), (None,None), (1e-3,1e-1))  # (7e-4, 6e-4)
-        logZ = (True, False, False, True)
+        vlim = [(None,None), (None,None), (None,None), (1e-3,1e-1)]  # (7e-4, 6e-4)
+        logZ = [True, False, False, True]
         if sp.save_list:
             plot_planes(cpx_sequence,
                         title=f"White Light through Optical System",
