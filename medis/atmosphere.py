@@ -16,6 +16,33 @@ from medis.params import iop, ap, tp, sp, atmp
 from medis.utils import dprint
 import medis.optics as opx
 
+class Atmosphere():
+    """
+    Class responsible for getting atmosphere phase maps
+
+    """
+    def __init__(self):
+        if self.can_load():
+            self.data = self.load()
+        else:
+            self.data = self.generate()
+            if sp.usecache:
+                self.save()
+
+        if sp.debug:
+            self.view()
+
+    def generate(self):
+        pass
+
+    def save(self):
+        pass
+
+    def load(self):
+        pass
+
+    def view(self):
+        pass
 
 def gen_atmos(plot=False):
     """
