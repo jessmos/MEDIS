@@ -64,18 +64,18 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     #  a single phase mask. The phase mask is a real-valued delay lengths across
     #  the array from infinity. The delay length thus corresponds to a different
     #  phase offset at a particular frequency.
-    # quicklook_wf(wfo.wf_array[0,0])
+    # quicklook_wf(wfo.wf_collection[0,0])
     if tp.use_atmos:
         wfo.loop_over_function(atmos.add_atmos, PASSVALUE['iter'], plane_name='atmosphere')
-        # quicklook_wf(wfo.wf_array[0, 0])
+        # quicklook_wf(wfo.wf_collection[0, 0])
 
-    # quicklook_wf(wfo.wf_array[0,0])
+    # quicklook_wf(wfo.wf_collection[0,0])
     #TODO rotate atmos not yet implementid in 2.0
     # if tp.rotate_atmos:
     #     wfo.loop_over_function(aber.rotate_atmos, *(PASSVALUE['iter']))
 
     # Both offsets and scales the companion wavefront
-    if wfo.wf_array.shape[1] > 1:
+    if wfo.wf_collection.shape[1] > 1:
         opx.offset_companion(wfo)
 
     # TODO rotate atmos not yet implementid in 2.0
@@ -90,7 +90,7 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
         wfo.loop_over_function(aber.add_aber, tp.entrance_d, tp.aber_params, tp.aber_vals,
                                step=PASSVALUE['iter'], lens_name='CPA')
     # wfo.loop_over_function(proper.prop_circular_aperture, **{'radius': tp.entrance_d / 2})
-        # wfo.wf_array = aber.abs_zeros(wfo.wf_array)
+        # wfo.wf_collection = aber.abs_zeros(wfo.wf_collection)
 
     #######################################
     # AO
@@ -114,7 +114,7 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
 
         # if not tp.open_ao:
         #     PASSVALUE['WFS_map'] = ao.closedloop_wfs(wfo, WFS_map)
-        # ao.flat_outside(wfo.wf_array)
+        # ao.flat_outside(wfo.wf_collection)
 
     ########################################
     # Post-AO Telescope Distortions
@@ -125,7 +125,7 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
         wfo.loop_over_function(proper.prop_circular_aperture, **{'radius': tp.entrance_d / 2})
         # TODO does this need to be here?
         # wfo.loop_over_function(opx.add_obscurations, tp.entrance_d/4, legs=False)
-        # wfo.wf_array = aber.abs_zeros(wfo.wf_array)
+        # wfo.wf_collection = aber.abs_zeros(wfo.wf_collection)
 
     # Low-order aberrations
     if tp.use_zern_ab:

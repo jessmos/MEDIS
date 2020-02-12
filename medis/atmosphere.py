@@ -114,7 +114,7 @@ def add_atmos(wf, it):
     wavelength. prop_add_phase wants the phase delay to be in units of meters for each wavelength, so we convert to
     meters via the wavelength/np.pi
 
-    :param wf: a single (2D) wfo.wf_array[iw,io] at one wavelength and object
+    :param wf: a single (2D) wfo.wf_collection[iw,io] at one wavelength and object
     :param it: timestep# in obs_sequence. Comes from medis_main.gen_timeseries()
     :return: nothing returned, wfo is modified with proper.prop_add_phase
     """
@@ -165,7 +165,7 @@ def get_filename(it, lamda):
     example output:
 
     :param it: time index
-    :param lamda: wavelength, comes from metadata in proper wavefront object (ie wfo.wf_array.lamda)
+    :param lamda: wavelength, comes from metadata in proper wavefront object (ie wfo.wf_collection.lamda)
     :return:
     """
     wave = eformat(lamda, 3, 2)

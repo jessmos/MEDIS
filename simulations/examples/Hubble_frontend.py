@@ -92,18 +92,18 @@ def Hubble_frontend(empty_lamda, grid_size, PASSVALUE):
 
     # Test Sampling
     if PASSVALUE['iter'] == 1:
-        initial_sampling = proper.prop_get_sampling(wfo.wf_array[0,0])
+        initial_sampling = proper.prop_get_sampling(wfo.wf_collection[0,0])
         dprint(f"initial sampling is {initial_sampling:.4f}")
 
     # Primary
     # CPA from Effective Primary
-    # aber.add_aber(wfo.wf_array, tp.entrance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='primary')
+    # aber.add_aber(wfo.wf_collection, tp.entrance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='primary')
 
     # wfo.loop_over_function(opx.prop_pass_lens, tp.flen_primary, tp.flen_primary)
     wfo.loop_over_function(opx.prop_pass_lens, tp.flen_primary, tp.dist_pri_second)
 
     # Secondary
-    # aber.add_aber(wfo.wf_array, tp.d_secondary, tp.aber_params, step=PASSVALUE['iter'], lens_name='second')
+    # aber.add_aber(wfo.wf_collection, tp.d_secondary, tp.aber_params, step=PASSVALUE['iter'], lens_name='second')
     # # Zernike Aberrations- Low Order
     # wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, tp.zernike_vals)
     wfo.loop_over_function(opx.prop_pass_lens, tp.flen_secondary, tp.dist_second_focus)
@@ -115,15 +115,15 @@ def Hubble_frontend(empty_lamda, grid_size, PASSVALUE):
     #  wavefront array is now (number_wavelengths x number_astro_objects x sp.grid_size x sp.grid_size)
     #  prop_end moves center of the wavefront from lower left corner (Fourier space) back to the center
     #    ^      also takes square modulus of complex values, so gives units as intensity not field
-    shape = wfo.wf_array.shape
+    shape = wfo.wf_collection.shape
     for iw in range(shape[0]):
         for io in range(shape[1]):
             if sp.maskd_size != sp.grid_size:
                 wframes = np.zeros((sp.maskd_size, sp.maskd_size))
-                (wframe, sampling) = proper.prop_end(wfo.wf_array[iw, io], EXTRACT=np.int(sp.maskd_size))
+                (wframe, sampling) = proper.prop_end(wfo.wf_collection[iw, io], EXTRACT=np.int(sp.maskd_size))
             else:
                 wframes = np.zeros((sp.grid_size, sp.grid_size))
-                (wframe, sampling) = proper.prop_end(wfo.wf_array[iw, io])  # Sampling returned by proper is in m
+                (wframe, sampling) = proper.prop_end(wfo.wf_collection[iw, io])  # Sampling returned by proper is in m
             wframes += wframe  # adds 2D wavefront from all astro_objects together into single wavefront, per wavelength
         # dprint(f"sampling in focal plane at wavelength={iw} is {sampling} m")
         datacube.append(wframes)  # puts each wavlength's wavefront into an array

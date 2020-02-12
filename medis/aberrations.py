@@ -96,7 +96,7 @@ def add_aber(wf, d_lens, aber_params, aber_vals, step=0, lens_name=None):
     loads a phase error map and adds aberrations using proper.prop_add_phase
     if no aberration file exists, creates one for specific lens using generate_maps
 
-    :param wf: a single (2D) wfo.wf_array[iw,io] at one wavelength and object
+    :param wf: a single (2D) wfo.wf_collection[iw,io] at one wavelength and object
     :param d_lens: diameter (in m) of lens (only used when generating new aberrations maps)
     :param aber_params: parameters specified by tp.aber_params
     :param step: is the step number for quasistatic aberrations

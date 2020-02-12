@@ -25,7 +25,11 @@ class Wavefronts():
     :params
 
     :returns
-    self.wf_array: a matrix of proper wavefront objects after all optic modifications have been applied
+    self.wf_collection: a 2D array, where each element is its own 2D proper wavefront object structured as
+     self.wf_collection[iw,io]. Here, iw, io is each wavefront and object, respectively
+        ...meaning its an array of arrays.
+        thus, self.wf_collection[iw,io] is itself a 2D array of complex data. Its size is [sp.grid_size, sp.grid_size]
+        we will call each instance of the collection a single wavefront wf
     self.save_E_fields: a matrix of E fields (proper.WaveFront.wfarr) at specified locations in the chain
     """
     def __init__(self):
@@ -33,21 +37,21 @@ class Wavefronts():
         # Using Proper to propagate wavefront from primary through optical system, loop over wavelength
         self.wsamples = np.linspace(ap.wvl_range[0], ap.wvl_range[1], ap.n_wvl_init)  # units set in params (should be m)
 
-        # wf_array is an array of arrays; the wf_array is (number_wavelengths x number_astro_objects)
-        # each 2D field in the wf_array is the 2D array of complex E-field values at that wavelength, per object
+        # wf_collection is an array of arrays; the wf_collection is (number_wavelengths x number_astro_objects)
+        # each 2D field in the wf_collection is the 2D array of complex E-field values at that wavelength, per object
         # the E-field size is given by (sp.grid_size x sp.grid_size)
         if ap.companion:
-            self.wf_array = np.empty((ap.n_wvl_init, 1 + len(ap.contrast)), dtype=object)
+            self.wf_collection = np.empty((ap.n_wvl_init, 1 + len(ap.contrast)), dtype=object)
         else:
-            self.wf_array = np.empty((ap.n_wvl_init, 1), dtype=object)
+            self.wf_collection = np.empty((ap.n_wvl_init, 1), dtype=object)
 
         # Init Beam Ratios
         self.beam_ratios = np.zeros_like(self.wsamples)
 
         # Init Locations of saved E-field
         self.saved_planes = []  # string of locations where fields have been saved (should match sp.save_list after run is completed)
-        self.Efield_planes = np.empty((0, np.shape(self.wf_array)[0],  # array of saved complex field data at
-                                           np.shape(self.wf_array)[1],    # specified locations of the optical train
+        self.Efield_planes = np.empty((0, np.shape(self.wf_collection)[0],  # array of saved complex field data at
+                                           np.shape(self.wf_collection)[1],    # specified locations of the optical train
                                            sp.grid_size,
                                            sp.grid_size), dtype=np.complex64)
         # self.plane_sampling = np.empty((len(sp.save_list), ap.n_wvl_init))
@@ -84,7 +88,7 @@ class Wavefronts():
                     names.append('companion_%i' % ix)
 
             for io, (iwf, wf) in enumerate(zip(names, wfs)):
-                self.wf_array[iw, io] = wf
+                self.wf_collection[iw, io] = wf
 
     def loop_over_function(self, func, *args, **kwargs):
         """
@@ -110,10 +114,10 @@ class Wavefronts():
             plane_name = func.__name__
         else:
             plane_name = None
-        shape = self.wf_array.shape
+        shape = self.wf_collection.shape
         for iw in range(shape[0]):
             for io in range(shape[1]):
-                func(self.wf_array[iw, io], *args, **kwargs)
+                func(self.wf_collection[iw, io], *args, **kwargs)
 
         # Saving complex field data
         if sp.save_fields and plane_name is not None:
@@ -130,18 +134,18 @@ class Wavefronts():
         :return: self.save_E_fields
         """
         if location is not None and location in sp.save_list:
-            shape = self.wf_array.shape
-            E_field = np.zeros((1, np.shape(self.wf_array)[0],
-                                       np.shape(self.wf_array)[1],
+            shape = self.wf_collection.shape
+            E_field = np.zeros((1, np.shape(self.wf_collection)[0],
+                                       np.shape(self.wf_collection)[1],
                                        sp.grid_size,
                                        sp.grid_size), dtype=np.complex64)
             samp_lambda = np.zeros(ap.n_wvl_init)
             for iw in range(shape[0]):
                 for io in range(shape[1]):
-                    wf = proper.prop_shift_center(self.wf_array[iw, io].wfarr)
+                    wf = proper.prop_shift_center(self.wf_collection[iw, io].wfarr)
                     E_field[0, iw, io] = copy.copy(wf)
-                    samp_lambda[iw] = proper.prop_get_sampling(self.wf_array[iw, 0])
-                    # self.plane_sampling.append(proper.prop_get_sampling(self.wf_array[iw,0]))
+                    samp_lambda[iw] = proper.prop_get_sampling(self.wf_collection[iw, 0])
+                    # self.plane_sampling.append(proper.prop_get_sampling(self.wf_collection[iw,0]))
 
             if sp.verbose: dprint(f"saving plane at {location}")
             self.Efield_planes = np.vstack((self.Efield_planes, E_field))
@@ -215,24 +219,24 @@ def cpx_to_intensity(data_in):
     WARNING: if you sum the data sequence over object or wavelength with simple case of np.sum(), must be done AFTER
     converting to intensity, else results are invalid
     """
-    return np.abs(data_in)
+    return np.abs(data_in)**2
 
 
-def extract_center(slice):
+def extract_center(wf):
     """
     extracts [sp.maskd_size, sp.maskd_size] from [sp.grid_size, sp.grid_size] data
     fp~focal plane
     code modified from the EXTRACT flag in prop_end
 
-    :param slice: [sp.grid_size, sp.grid_size] array
+    :param wf: [sp.grid_size, sp.grid_size] array
     :returns: array with size [sp.maskd_size, sp.maskd_size]
     """
-    smaller_slice = np.zeros((sp.maskd_size, sp.maskd_size))
+    smaller_wf = np.zeros((sp.maskd_size, sp.maskd_size))
     EXTRACT = sp.maskd_size
-    nx,ny = slice.shape
-    smaller_slice = slice[int(ny/2-EXTRACT/2):int(ny/2+EXTRACT/2),
+    nx,ny = wf.shape
+    smaller_wf = wf[int(ny/2-EXTRACT/2):int(ny/2+EXTRACT/2),
                     int(nx/2-EXTRACT/2):int(nx/2+EXTRACT/2)]
-    return smaller_slice
+    return smaller_wf
 
 
 ################################################################################################################
@@ -264,19 +268,19 @@ def add_obscurations(wf, M2_frac=0, d_primary=0, d_secondary=0, legs_frac=0.05, 
             proper.prop_rectangular_obscuration(wf, d_primary*1.3, legs_frac * d_primary, ROTATION=20)
 
 
-def prop_pass_lens(wfo, fl_lens, dist):
+def prop_pass_lens(wf, fl_lens, dist):
     """
     pass the wavefront through a lens then propagate to the next surface
 
-    :param wfo: wavefront object, shape=(n_wavelengths, n_astro_objects, grid_sz, grid_sz)
+    :param wf: single wavefront of shape=(sp.grid_sz, sp.grid_sz)
     :param fl_lens: focal length in m
     :param dist: distance in m
     """
-    proper.prop_lens(wfo, fl_lens)
-    proper.prop_propagate(wfo, dist)
+    proper.prop_lens(wf, fl_lens)
+    proper.prop_propagate(wf, dist)
 
 
-def abs_zeros(wf_array):
+def abs_zeros(wf):
     """
     zeros everything outside the pupil
 
@@ -284,17 +288,14 @@ def abs_zeros(wf_array):
      or imaginary part of the complex-valued E-field is zero at a gridpoint. If so, it sets the full cpmplex
      value to zero, so 0+0j
     """
-    shape = wf_array.shape
-    for iw in range(shape[0]):
-        for io in range(shape[1]):
-            bad_locs = np.logical_or(np.real(wf_array[iw,io].wfarr) == -0,
-                                     np.imag(wf_array[iw,io].wfarr) == -0)
-            wf_array[iw,io].wfarr[bad_locs] = 0 + 0j
 
-    return wf_array
+    bad_locs = np.logical_or(np.real(wf) == -0, np.imag(wf) == -0)
+    wf[bad_locs] = 0 + 0j
+
+    return wf
 
 
-def rotate_sky(wfo, it):
+def rotate_sky(wf, it):
     raise NotImplementedError
 
 
@@ -303,12 +304,16 @@ def offset_companion(wfo):
     offsets the companion wavefront using the 2nd and 3rd order Zernike Polynomials (X,Y tilt)
     companion(s) contrast and location(s) set in params
 
+    We don't call this function via wfo.loop_over_function because we need to know which object (io) we are on, which
+    is not supported in the current format. This is the only acception to applying loop_over_function
+
     Important: this function must be called AFTER any calls to proper.prop_define_entrance, which normalizes the
     intensity, because we scale the intensity of the planet relative to the star via the user-parameter ap.contrast.
 
-    If you have an un-focused system, and do not scale the grid sampling of the system by wavelength, then you need to
-    correct for that here. This is because we initiate the companion by proper.prop_zernikes, which ultimately scales
-    the x/y tilt (zernike orders 2 and 3) by wavelength, accounting for the expected resampling based on wavelength.
+    If you have a focused system, and do not scale the grid sampling of the system by wavelength, we account
+    for that here (thus the if/else statements). This is because we shift the companion's location in the focal plane
+    by proper.prop_zernikes, which scales the x/y tilt (zernike orders 2 and 3) by wavelength to account for the
+    presumed resampling based on wavelength. We thus counteract that in the case of sp.focused_sys=True
 
     Wavelength/contrast scaling scales the contrast ratio between the star and planet as a function of wavelength.
     This ratio is given by ap.C_spec, and the scale ranges from 1/ap.C_spec to 1 as a function of ap.n_wvl_init. The
@@ -322,28 +327,28 @@ def offset_companion(wfo):
     if ap.companion is True:
         cont_scaling = np.linspace(1. / ap.C_spec, 1, ap.n_wvl_init)
 
-        for iw in range(wfo.wf_array.shape[0]):
-            for io in range(1, wfo.wf_array.shape[1]):
+        for iw in range(wfo.wf_collection.shape[0]):
+            for io in range(1, wfo.wf_collection.shape[1]):
                 # Shifting the Array
                 if sp.focused_sys:
                     # Scaling into lambda/D AND scaling by wavelength
-                    xloc = ap.companion_xy[io-1][0] * wfo.wf_array[iw,io].lamda / tp.entrance_d \
-                           * ap.wvl_range[0] / wfo.wf_array[iw,io].lamda # * (-1)**(iw%2)
-                    yloc = ap.companion_xy[io-1][1] * wfo.wf_array[iw,io].lamda / tp.entrance_d \
-                            *  ap.wvl_range[0] / wfo.wf_array[iw,io].lamda  # / (2*np.pi)   * (-1)**(iw%2)
+                    xloc = ap.companion_xy[io-1][0] * wfo.wf_collection[iw,io].lamda / tp.entrance_d \
+                           * ap.wvl_range[0] / wfo.wf_collection[iw,io].lamda # * (-1)**(iw%2)
+                    yloc = ap.companion_xy[io-1][1] * wfo.wf_collection[iw,io].lamda / tp.entrance_d \
+                            *  ap.wvl_range[0] / wfo.wf_collection[iw,io].lamda  # / (2*np.pi)   * (-1)**(iw%2)
                 else:
                     # Scaling Happens Naturally!
                     xloc = ap.companion_xy[io-1][0]
                     yloc = ap.companion_xy[io-1][1]
-                proper.prop_zernikes(wfo.wf_array[iw, io], [2, 3], np.array([xloc, yloc]))  # zernike[2,3] = x,y tilt
+                proper.prop_zernikes(wfo.wf_collection[iw, io], [2, 3], np.array([xloc, yloc]))  # zernike[2,3] = x,y tilt
 
                 ##############################################
                 # Wavelength/Contrast  Scaling the Companion
                 ##############################################
-                wfo.wf_array[iw, io].wfarr *= np.sqrt(ap.contrast[io-1])
+                wfo.wf_collection[iw, io].wfarr *= np.sqrt(ap.contrast[io-1])
 
                 # Wavelength-dependent scaling by cont_scaling
-                # wfo.wf_array[iw, io].wfarr = wfo.wf_array[iw, io].wfarr * np.sqrt(ap.contrast[io-1] * cont_scaling[iw])
+                # wfo.wf_collection[iw, io].wfarr = wfo.wf_collection[iw, io].wfarr * np.sqrt(ap.contrast[io-1] * cont_scaling[iw])
 
 
 def check_sampling(tstep, wfo, location, line_info, units=None):
@@ -361,8 +366,8 @@ def check_sampling(tstep, wfo, location, line_info, units=None):
     """
     if tstep == 0:
         print(f"From {line_info.filename}:{line_info.lineno}\n Sampling at {location}")
-        for w in range(wfo.wf_array.shape[0]):
-            check_sampling = proper.prop_get_sampling(wfo.wf_array[w,0])
+        for w in range(wfo.wf_collection.shape[0]):
+            check_sampling = proper.prop_get_sampling(wfo.wf_collection[w,0])
             if units == 'mm':
                 print(f"sampling at wavelength={wfo.wsamples[w]*1e9:.0f}nm is {check_sampling:.4f} m")
             elif units == 'um':
@@ -370,10 +375,10 @@ def check_sampling(tstep, wfo, location, line_info, units=None):
             elif units == 'nm':
                 print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling*1e9:.1f} nm")
             elif units == 'arcsec':
-                check_sampling = proper.prop_get_sampling_arcsec(wfo.wf_array[w, 0])
+                check_sampling = proper.prop_get_sampling_arcsec(wfo.wf_collection[w, 0])
                 print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling*1e3:.2f} mas")
             elif units == 'rad':
-                check_sampling = proper.prop_get_sampling_radians(wfo.wf_array[w, 0])
+                check_sampling = proper.prop_get_sampling_radians(wfo.wf_collection[w, 0])
                 print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling:.3f} rad")
             else:
                 print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling} m")

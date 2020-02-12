@@ -66,11 +66,11 @@ def deformable_mirror(wfo, WFS_map, theta, plane_name=None):
     ############################
     # Creating DM Surface Map
     ############################
-    for iw in range(wfo.wf_array.shape[0]):
-        for io in range(wfo.wf_array.shape[1]):
-            d_beam = 2 * proper.prop_get_beamradius(wfo.wf_array[iw, io])  # beam diameter
+    for iw in range(wfo.wf_collection.shape[0]):
+        for io in range(wfo.wf_collection.shape[1]):
+            d_beam = 2 * proper.prop_get_beamradius(wfo.wf_collection[iw, io])  # beam diameter
             act_spacing = d_beam / nact_across_pupil  # actuator spacing [m]
-            # map_spacing = proper.prop_get_sampling(wfo.wf_array[iw,0])
+            # map_spacing = proper.prop_get_sampling(wfo.wf_collection[iw,0])
 
             #######
             # AO
@@ -97,7 +97,7 @@ def deformable_mirror(wfo, WFS_map, theta, plane_name=None):
             #########################
             # proper.prop_dm
             #########################
-            proper.prop_dm(wfo.wf_array[iw, io], dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
+            proper.prop_dm(wfo.wf_collection[iw, io], dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
             # proper.prop_dm(wfo, dm_map, dm_xc, dm_yc, N_ACT_ACROSS_PUPIL=nact, FIT=True)  #
 
     # check_sampling(0, wfo, "E-Field after DM", getframeinfo(stack()[0][0]), units='um')  # check sampling in optics.py
@@ -143,7 +143,7 @@ def quick_ao(wfo, WFS_map):
     :return: ao_map: map of DM actuator command heights in units of m
     """
     beam_ratios = wfo.beam_ratios
-    shape = wfo.wf_array.shape  # [n_wavelengths, n_astro_objects]
+    shape = wfo.wf_collection.shape  # [n_wavelengths, n_astro_objects]
 
     nact = tp.ao_act                    # number of DM actuators along one axis
     nact_across_pupil = nact-2          # number of full DM actuators across pupil (oversizing DM extent)
@@ -154,9 +154,9 @@ def quick_ao(wfo, WFS_map):
     ############################
     for iw in range(shape[0]):
         for io in range(shape[1]):
-            d_beam = 2 * proper.prop_get_beamradius(wfo.wf_array[iw,io])  # beam diameter
+            d_beam = 2 * proper.prop_get_beamradius(wfo.wf_collection[iw,io])  # beam diameter
             act_spacing = d_beam / nact_across_pupil  # actuator spacing [m]
-            # map_spacing = proper.prop_get_sampling(wfo.wf_array[iw,0])
+            # map_spacing = proper.prop_get_sampling(wfo.wf_collection[iw,0])
 
             ###################################
             # Cropping the Beam from WFS map
@@ -187,7 +187,7 @@ def quick_ao(wfo, WFS_map):
             # Converting phase delay to DM actuator height
             ################################################
             # Apply the inverse of the WFS image to the DM, so use -dm_map (dm_map is in phase units, divide by k=2pi/lambda)
-            surf_height = proper.prop_get_wavelength(wfo.wf_array[iw, io]) / (4 * np.pi)  # [m/rad]
+            surf_height = proper.prop_get_wavelength(wfo.wf_collection[iw, io]) / (4 * np.pi)  # [m/rad]
             ao_map = -ao_map * surf_height  # Converts DM map to units of [m] of actuator heights
             
             return ao_map
@@ -195,7 +195,7 @@ def quick_ao(wfo, WFS_map):
 
 def ideal_wfs(wfo):
     """
-    saves the unwrapped phase [arctan2(imag/real)] of the wfo.wf_array at each wavelength
+    saves the unwrapped phase [arctan2(imag/real)] of the wfo.wf_collection at each wavelength
 
     It is an idealized image (exact copy) of the wavefront phase per wavelength. Only the map for the first object
     (the star) is saved
@@ -203,7 +203,7 @@ def ideal_wfs(wfo):
     :param wfo: wavefront object
     :return: array containing only the unwrapped phase delay of the wavefront; shape=[n_wavelengths], units=radians
     """
-    star_wf = wfo.wf_array[:, 0]
+    star_wf = wfo.wf_collection[:, 0]
     WFS_map = np.zeros((len(star_wf), sp.grid_size, sp.grid_size))
 
     for iw in range(len(star_wf)):
