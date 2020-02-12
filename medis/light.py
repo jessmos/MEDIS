@@ -3,14 +3,15 @@ Module for the different format of light that gets passed between the observator
 
 """
 
+import os
 import numpy as np
 import yaml
-from medis.params import iop
-from controller import get_data
-from medis.Utils.misc import dprint
-from observatory import Aberrations, Coronagraph, Telescope, Detector
+from medis.params import iop, sp
+from medis.controller import get_data
+from medis.utils import dprint
+from medis.observatory import Aberrations, Coronagraph, Telescope, Detector
 
-sp = iop.simulation_config
+# sp = iop.simulation_config
 
 class Wavefronts():
     """
@@ -25,7 +26,8 @@ class Fields():
 
     """
     def __init__(self):
-        self.config = yaml.load(iop.fields_config)
+        # self.config = yaml.load(iop.fields_config)
+        self.cache_name = iop.fields
 
     def generate(self):
         self.prescription = get_data(Telescope)
@@ -42,10 +44,31 @@ class Fields():
 
         return cpx_sequence
 
+    def can_load(self):
+        if self.use_cache:
+            file_exists = os.path.exists(self.cache_name)
+            if file_exists:
+                configs_match = self.configs_match()
+                if configs_match:
+                    return True
+
+        return False
+
+    def configs_match(self):
+        cur_config = self.__dict__
+        cache_config = self.load_config()
+        configs_match = cur_config == cache_config
+
+        return configs_match
+
     def save(self):
         pass
 
     def load(self):
+        pass
+
+    def load_config(self):
+        """ Reads the relevant config data from the saved file """
         pass
 
     def view(self):

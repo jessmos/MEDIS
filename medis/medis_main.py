@@ -30,14 +30,27 @@ import medis.atmosphere as atmos
 from medis.plot_tools import view_spectra
 import medis.CDI as cdi
 import medis.utils as mu
+from medis.controller import get_data
+from medis.light import Fields
 
 ################################################################################################################
 ################################################################################################################
 ################################################################################################################
 sentinel = None
 
+def run_medis(mode='Fields'):
+    data_product = eval(mode)
+    if data_product.can_load():
+        data_product.data = data_product.load()
+    else:
+        data_product.data = data_product.generate()
+        if data_product.usecache:
+            data_product.save()
 
-class RunMedis():
+    return data_product
+
+
+class Medis():
     """
     coletcs both the telescope simulator (returns complex fields) and the MKIDs simulator (returns photon lists) into
     a single class
@@ -103,25 +116,19 @@ class RunMedis():
                                                                          PASSVALUE=kwargs,
                                                                          VERBOSE=False,
                                                                          TABLE=False)  # 1 is dummy wavelength
-                now = time.time()
-                elapsed = float(now - start) / 60.
-                each_iter = float(elapsed) / (sp.numframes + 1)
 
-                print('***********************************')
-                print(f'{elapsed:.2f} minutes elapsed, each time step took {each_iter:.2f} minutes')
-
-            print('MEDIS Telescope Run Completed')
-            print('**************************************')
-            finish = time.time()
-            print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
-            # print(f"Number of timesteps = {np.shape(cpx_sequence)[0]}")
-
-            return self.cpx_sequence, self.sampling
+            # print('MEDIS Telescope Run Completed')
+            # print('**************************************')
+            # finish = time.time()
+            # print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
+            # # print(f"Number of timesteps = {np.shape(cpx_sequence)[0]}")
+            #
+            # return self.cpx_sequence, self.sampling
 
         # =======================================================================================================
         # Open-Loop- Uses Multiprocessing
         # =======================================================================================================
-        elif not sp.closed_loop:
+        else:
             try:
                 multiprocessing.set_start_method('spawn')
             except RuntimeError:
@@ -133,11 +140,11 @@ class RunMedis():
             jobs = []
 
             # Everything initialised in Timeseries is available to us in this obj. planes etc need to be accessed using a queue
-            series = Timeseries(time_idx, out_chunk, (tp, ap, sp, iop))
+            mt = MutliTime(time_idx, out_chunk, (tp, ap, sp, iop))
 
             # Create the processes
             for i in range(sp.num_processes):
-                p = multiprocessing.Process(target=series.gen_timeseries, args=())
+                p = multiprocessing.Process(target=mt.gen_timeseries, args=())
                 jobs.append(p)
                 p.start()
 
@@ -150,32 +157,27 @@ class RunMedis():
                 time_idx.put(sentinel)
 
             # ========================
-            # Generate Obs Sequence
+            # Read Obs Sequence
             # ========================
             # Getting Returned Variables from gen_timeseries
-
-            for it in range(int(np.ceil(series.num_chunks))):
+            for it in range(int(np.ceil(mt.num_chunks))):
                 fields_chunk, sampling = out_chunk.get()
-                self.cpx_sequence[it*series.chunk_steps - sp.startframe :
-                             (it+1)*series.chunk_steps - sp.startframe, :, :, :, :, :] = fields_chunk
-
-                # cpx_seq dimensions (tsteps, planes, wavelengths, objects, x, y)
-                # size is (sp.numframes, len(sp.save_list), ap.n_wavl_init, 1+len(ap.contrast), sp.grid_size, sp.grid_size)
-
-            if sp.verbose:
-                mu.display_sequence_shape(self.cpx_sequence)
+                self.cpx_sequence[it*mt.chunk_steps - sp.startframe :
+                             (it+1)*mt.chunk_steps - sp.startframe, :, :, :, :, :] = fields_chunk
 
             # # Ending the gen_timeseries loop via multiprocessing protocol
             for i, p in enumerate(jobs):
                 p.join()  # Wait for all the jobs to finish and consolidate them here
 
-            print('MEDIS Telescope Run Completed')
-            print('**************************************')
-            finish = time.time()
-            print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
-            # print(f"Number of timesteps = {np.shape(cpx_sequence)[0]}")
+        print('MEDIS Telescope Run Completed')
+        print('**************************************')
+        finish = time.time()
+        print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
+        # print(f"Number of timesteps = {np.shape(cpx_sequence)[0]}")
 
-            return self.cpx_sequence, self.sampling
+        mu.display_sequence_shape(self.cpx_sequence)
+
+        return self.cpx_sequence, self.sampling
 
     def MKIDs(self):
         """
@@ -185,20 +187,8 @@ class RunMedis():
         """
         #TODO Rupert integrates the MKIDs stuff here
 
-    def save(self, fields, sampling):
-        """
-        :param fields: np.ndarray of any shape
 
-        :return:
-        """
-        raise NotImplementedError
-        np.save(iop.fields+np.str(sampling), fields)
-
-    def load(self):
-        return np.load(iop.fields)
-
-
-class Timeseries():
+class MutliTime():
     """
     generates observation sequence by calling optics_propagate in time series
 
@@ -231,17 +221,15 @@ class Timeseries():
         self.conf_obj_tup = conf_obj_tup
 
         self.sampling = None
-        required_servo = int(tp.servo_error[0])
-        required_band = int(tp.servo_error[1])
-        required_nframes = required_servo + required_band
-
         max_steps = self.max_chunk()
         checkpoint_steps = max_steps if sp.checkpointing is None else sp.checkpointing
         self.chunk_steps = min([max_steps, sp.numframes, checkpoint_steps])
-        print(f'Using chunks of size {self.chunk_steps}')
+        if sp.verbose: print(f'Using chunks of size {self.chunk_steps}')
         self.num_chunks = sp.numframes/self.chunk_steps
         self.init_fields_chunk()
         self.final_chunk_size = sp.numframes % self.chunk_steps
+
+        self.theta_series
 
     def init_fields_chunk(self):
         self.fields_chunk = np.empty((self.chunk_steps, len(sp.save_list), ap.n_wvl_init, 1 + len(ap.contrast),

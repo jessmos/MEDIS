@@ -43,20 +43,3 @@ def get_data(obj_types):
         datas = get_obj_data(obj_types)
 
     return datas
-
-def configs_match(obj):
-    cur_config = obj.__dict__
-    cache_config = np.loadtxt(obj.cache_name)
-    configs_match = cur_config == cache_config
-
-    return configs_match
-
-def can_load(obj):
-    if sp.use_cache:
-        file_exists = os.path.exists(obj.cache_name)
-        if file_exists:
-            configs_match = configs_match(obj)
-            if configs_match:
-                return True
-
-    return False

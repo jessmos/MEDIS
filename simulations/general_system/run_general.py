@@ -28,16 +28,18 @@ ap.contrast = [1e-5]
 ap.companion_xy = [[15, -15]]  # units of this are in lambda/tp.entrance_d
 
 tp.entrance_d = 8
-sp.numframes = 1
 
-sp.focused_sys = True
+sp.numframes = 10
+sp.focused_sys = False
 sp.beam_ratio = 0.14  # parameter dealing with the sampling of the beam in the pupil/focal plane
 sp.grid_size = 512  # creates a nxn array of samples of the wavefront
 sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
+sp.closed_loop = False
+sp.usecache = False
 
 # Toggles for Aberrations and Control
 tp.obscure = False
-tp.use_atmos = False
+tp.use_atmos = True
 tp.use_aber = False
 tp.use_ao = True
 tp.ao_act = 14
@@ -87,8 +89,16 @@ if __name__ == '__main__':
     # =======================================================================
     # Run it!!!!!!!!!!!!!!!!!
     # =======================================================================
-    cpx_sequence, sampling = mm.run_medis()
-    for o in range(len(ap.contrast)+1):
-        datacube = np.sum(np.abs(cpx_sequence)**2, axis=(0,1))[:,o]
-        print(o)
-        view_spectra(datacube, logZ=True, title='lol')
+
+    cpx_sequence, sampling = mm.run_medis('Fields')
+
+    # med = mm.Medis()
+    #
+    # cpx_sequence, sampling = mm.RunMedis().telescope()
+    # fp_sampling = sampling[-1][:]
+    # print(fp_sampling)
+    # for o in range(len(ap.contrast)+1):
+    #     print(cpx_sequence.shape)
+    #     datacube = np.sum(np.abs(cpx_sequence)**2, axis=(0,1))[:,o]
+    #     print(o, datacube.shape)
+    #     view_spectra(datacube, logZ=True, title='Spectral Channels', dx=fp_sampling)
