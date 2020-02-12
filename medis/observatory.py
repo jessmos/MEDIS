@@ -6,9 +6,9 @@ Module for the different observatory components
 import os
 import yaml
 from medis.params import iop
-from atmosphere import Atmosphere
-from controller import get_data, configs_match, can_load
-from medis.Utils.misc import dprint
+from medis.atmosphere import Atmosphere
+from medis.controller import get_data, configs_match, can_load
+from medis.utils import dprint
 
 # class Astrophysics():
 #     def __init__(self):
