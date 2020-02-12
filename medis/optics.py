@@ -143,7 +143,7 @@ class Wavefronts():
                     samp_lambda[iw] = proper.prop_get_sampling(self.wf_array[iw, 0])
                     # self.plane_sampling.append(proper.prop_get_sampling(self.wf_array[iw,0]))
 
-            dprint(f"saving plane at {location}")
+            if sp.verbose: dprint(f"saving plane at {location}")
             self.Efield_planes = np.vstack((self.Efield_planes, E_field))
             self.saved_planes.append(location)
             self.plane_sampling.append(samp_lambda)
@@ -160,7 +160,7 @@ class Wavefronts():
 
         cpx_planes = np.array(self.Efield_planes)
         sampling = np.array(self.plane_sampling)
-        dprint(f"sampling array shape is {sampling.shape}")
+        if sp.verbose: dprint(f"sampling array shape is {sampling.shape}")
 
         # Conex Mirror-- cirshift array for off-axis observing
         # if tp.pix_shift is not [0, 0]:
