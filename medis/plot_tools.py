@@ -212,35 +212,36 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
         pass
     fig.suptitle(title, fontweight='bold', fontsize=16)
 
-    # Converting Sampling Units to Readable numbers
-    if dx[w] < 1e-6:
-        dx[w] *= 1e6  # [convert to um]
-        axlabel = 'um'
-    elif dx[w] < 1e-3:
-        dx[w] *= 1e3  # [convert to mm]
-        axlabel = 'mm'
-    elif 1e-2 > dx[w] > 1e-3:
-        dx[w] *= 1e2  # [convert to cm]
-        axlabel = 'cm'
-    else:
-        axlabel = 'm'
-
-    # X,Y lables
-    if dx is not None:
-        # dprint(f"sampling = {sampl[w]}")
-        tic_spacing = np.linspace(0, sp.maskd_size, 5)  # 5 (# of ticks) is just set by hand, arbitrarily chosen
-        tic_lables = np.round(
-            np.linspace(-dx[w] * sp.maskd_size / 2, dx[w] * sp.maskd_size / 2, 5)).astype(
-            int)  # nsteps must be same as tic_spacing
-        tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
-        tic_spacing[-1] = tic_spacing[-1] - 1  # hack for edge effects
-        plt.xticks(tic_spacing, tic_lables, fontsize=6)
-        plt.yticks(tic_spacing, tic_lables, fontsize=6)
-        # plt.xlabel('[um]', fontsize=8)
-        plt.ylabel(axlabel, fontsize=8)
-
     for t in range(n_tsteps):
         ax = fig.add_subplot(gs[t])
+
+        # Converting Sampling Units to Readable numbers
+        if dx[t] < 1e-6:
+            dx[t] *= 1e6  # [convert to um]
+            axlabel = 'um'
+        elif dx[t] < 1e-3:
+            dx[t] *= 1e3  # [convert to mm]
+            axlabel = 'mm'
+        elif 1e-2 > dx[t] > 1e-3:
+            dx[t] *= 1e2  # [convert to cm]
+            axlabel = 'cm'
+        else:
+            axlabel = 'm'
+
+        # X,Y lables
+        if dx is not None:
+            # dprint(f"sampling = {sampl[w]}")
+            tic_spacing = np.linspace(0, sp.maskd_size, 5)  # 5 (# of ticks) is just set by hand, arbitrarily chosen
+            tic_lables = np.round(
+                np.linspace(-dx[t] * sp.maskd_size / 2, dx[t] * sp.maskd_size / 2, 5)).astype(
+                int)  # nsteps must be same as tic_spacing
+            tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
+            tic_spacing[-1] = tic_spacing[-1] - 1  # hack for edge effects
+            plt.xticks(tic_spacing, tic_lables, fontsize=6)
+            plt.yticks(tic_spacing, tic_lables, fontsize=6)
+            # plt.xlabel('[um]', fontsize=8)
+            plt.ylabel(axlabel, fontsize=8)
+
         if logZ:
             if vlim[0] is not None and vlim[0] <= 0:
                 if cdip.use_cdi and not np.isnan(phases[t]):
@@ -271,7 +272,7 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
             clabel = "Normalized Intensity"
 
         if use_axis == 'anno':
-            annotate_axis(im, ax, img_tseries.shape[1])
+            ax.annotate_axis(im, ax, img_tseries.shape[1])
         if use_axis is None:
             plt.axis('off')
 
@@ -293,6 +294,9 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
     view plot of intensity in each wavelength bin at a single (last) timestep
     will pull out the plane(s) of sp.save_list at last tstep of cpx_sequence, convert to intensity, and sum over
       wavelength and object
+
+    Currently, the atmosphere and enterance pupil are plotted in units of phase vs intensity. I think we should change
+    this later for user-specification
 
     :param cpx_seq:
     :param title: string, must be set or will error!
