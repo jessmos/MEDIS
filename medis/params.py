@@ -28,10 +28,10 @@ class IO_params:
 
     def __init__(self, testname='Subaru-test1'):  # testname should be the name of the particular example you are running,
                                               # for example 'BetaPic' or 'simple_telescope'
-        self.rootdir = '/home/captainkay/mazinlab/MKIDSim/'
-        self.datadir = '/home/captainkay/mazinlab/MKIDSim/CDIsim_data/'
-        # self.rootdir = '/Users/dodkins/mazinlab/MKIDSim/miniMEDIS/'
-        # self.datadir = '/Users/dodkins/mazinlab/MKIDSim/CDIsim_data/'
+        # self.rootdir = '/home/captainkay/mazinlab/MKIDSim/'
+        # self.datadir = '/home/captainkay/mazinlab/MKIDSim/CDIsim_data/'
+        self.rootdir = '/Users/dodkins/mazinlab/MKIDSim/miniMEDIS/'
+        self.datadir = '/Users/dodkins/mazinlab/MKIDSim/CDIsim_data/'
 
         # Unprocessed Science Data
         self.testname = testname  # set this up in the definition line, but can update it with iop.update('newname')
@@ -47,6 +47,9 @@ class IO_params:
         self.aberroot = 'aberrations'
         self.aberdata = f"gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
         # self.aberdir = os.path.join(self.testdir, self.aberroot, self.aberdata)
+
+        self.config = os.path.join(self.testdir,
+                                  'telescope.h5')
 
 
     def update(self, new_name='example1'):
@@ -115,6 +118,7 @@ class Simulation_params:
         self.return_fields = True  # If false the full complex six cube is not generated and passed. Saving memory
         self.verbose = True
         self.debug = False
+        # self.usecache = True  # if save file exists then load, otherwise create a new sim
 
     def __iter__(self):
         for attr, value in self.__dict__.items():
