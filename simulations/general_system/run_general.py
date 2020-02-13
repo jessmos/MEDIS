@@ -16,7 +16,7 @@ from medis.utils import dprint
 from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
 import medis.medis_main as mm
 
-tp.prescription = 'general_telescope'
+tp.prescription = 'general_system'
 tp.obscure = True
 
 #################################################################################################
