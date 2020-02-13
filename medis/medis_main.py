@@ -39,7 +39,7 @@ from medis.light import Fields
 sentinel = None
 
 def run_medis(mode='Fields'):
-    data_product = eval(mode)
+    data_product = eval(mode)()
     if data_product.can_load():
         data_product.data = data_product.load()
     else:
