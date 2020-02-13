@@ -51,11 +51,18 @@ def deformable_mirror(wfo, WFS_map, theta, plane_name=None):
     :param wfo: wavefront object
     :param WFS_map: wavefront sensor map, should be in units of phase delay
     :param theta: phase of CDI probe (either radians or NAN if no probe to be applied at this timestep)
+    :param plane_name: name of plane (should be 'woofer' or 'tweeter' for best functionality
     :return: nothing is returned, but the probe map has been applied to the DM via proper.prop_dm
     """
+    # AO Actuator Count from DM Type
+    if plane_name == 'tweeter' and hasattr('tp','ao_tweeter'):
+        nact = tp.ao_tweeter
+    elif plane_name == 'woofer' and hasattr('tp','ao_woofer'):
+        nact = tp.ao_woofer
+    else:
+        nact = tp.ao_act
 
     # DM Coordinates
-    nact = tp.ao_act  # number of DM actuators along one axis
     nact_across_pupil = nact - 2  # number of full DM actuators across pupil (oversizing DM extent)
     dm_xc = (nact / 2) - 0.5  # The location of the optical axis (center of the wavefront) on the DM in
     dm_yc = (nact / 2) - 0.5  # actuator units. First actuator is centered on (0.0, 0.0). The 0.5 is a
@@ -75,7 +82,7 @@ def deformable_mirror(wfo, WFS_map, theta, plane_name=None):
             #######
             # AO
             #######
-            dm_map = quick_ao(wfo, WFS_map)
+            dm_map = quick_ao(wfo, nact, WFS_map)
 
             #######
             # CDI
@@ -110,10 +117,9 @@ def deformable_mirror(wfo, WFS_map, theta, plane_name=None):
 ################################################################################
 # Ideal AO
 ################################################################################
-def quick_ao(wfo, WFS_map):
+def quick_ao(wfo, nact, WFS_map):
     """
-    calculate the offset map to send to the DM from the WFS mals
-
+    calculate the offset map to send to the DM from the WFS map
 
     The main idea is to apply the DM only to the region of the wavefront that contains the beam. The phase map from
     the wfs saved the whole wavefront, so that must be cropped. During the wavefront initialization in
@@ -145,7 +151,6 @@ def quick_ao(wfo, WFS_map):
     beam_ratios = wfo.beam_ratios
     shape = wfo.wf_collection.shape  # [n_wavelengths, n_astro_objects]
 
-    nact = tp.ao_act                    # number of DM actuators along one axis
     nact_across_pupil = nact-2          # number of full DM actuators across pupil (oversizing DM extent)
                                         # Note: oversample by 2 actuators hardcoded here, check if this is appropriate 
     

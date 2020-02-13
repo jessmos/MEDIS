@@ -133,6 +133,9 @@ class Wavefronts():
         :param location: name of plane where field is being saved
         :return: self.save_E_fields
         """
+        if sp.verbose:
+            dprint(f"saving plane at {location}")
+
         if location is not None and location in sp.save_list:
             shape = self.wf_collection.shape
             E_field = np.zeros((1, np.shape(self.wf_collection)[0],
@@ -147,7 +150,6 @@ class Wavefronts():
                     samp_lambda[iw] = proper.prop_get_sampling(self.wf_collection[iw, 0])
                     # self.plane_sampling.append(proper.prop_get_sampling(self.wf_collection[iw,0]))
 
-            if sp.verbose: dprint(f"saving plane at {location}")
             self.Efield_planes = np.vstack((self.Efield_planes, E_field))
             self.saved_planes.append(location)
             self.plane_sampling.append(samp_lambda)
@@ -159,12 +161,14 @@ class Wavefronts():
         :return:
         """
         # Saving Complex Data via save_plane
-        if sp.save_fields and 'detector' in sp.save_list:  # save before prop_end so unaffected by EXTRACT flag and
+        if sp.save_fields:                                 # save detector by default unless sp.save_fields is false
             self.save_plane(location='detector')           # shifting, etc already done in save_plane function
 
         cpx_planes = np.array(self.Efield_planes)
         sampling = np.array(self.plane_sampling)
-        if sp.verbose: dprint(f"sampling array shape is {sampling.shape}")
+
+        if sp.verbose:
+            dprint(f"sampling array shape is {sampling.shape}")
 
         # Conex Mirror-- cirshift array for off-axis observing
         # if tp.pix_shift is not [0, 0]:
@@ -190,6 +194,8 @@ def interp_wavelength(data_in, ax):
         f_out = interp1d(wave_samps, data_in, axis=ax)
         new_heights = np.linspace(0, 1, ap.n_wvl_final)
         data_out = f_out(new_heights)
+    else:
+        data_out = data_in
 
     return data_out
 
@@ -246,7 +252,7 @@ def add_obscurations(wf, M2_frac=0, d_primary=0, d_secondary=0, legs_frac=0.05, 
     """
     adds central obscuration (secondary shadow) and/or spider legs as spatial mask to the wavefront
 
-    :param wf: proper wavefront
+    :param wf: 2D proper wavefront
     :param M2_frac: ratio of tp.diam the M2 occupies
     :param d_primary: diameter of the primary mirror
     :param d_secondary: diameter of the secondary mirror
@@ -288,7 +294,6 @@ def abs_zeros(wf):
      or imaginary part of the complex-valued E-field is zero at a gridpoint. If so, it sets the full cpmplex
      value to zero, so 0+0j
     """
-
     bad_locs = np.logical_or(np.real(wf) == -0, np.imag(wf) == -0)
     wf[bad_locs] = 0 + 0j
 
@@ -347,6 +352,7 @@ def offset_companion(wfo):
                 ##############################################
                 wfo.wf_collection[iw, io].wfarr *= np.sqrt(ap.contrast[io-1])
 
+                #TODO implement wavelength-dependant scaling
                 # Wavelength-dependent scaling by cont_scaling
                 # wfo.wf_collection[iw, io].wfarr = wfo.wf_collection[iw, io].wfarr * np.sqrt(ap.contrast[io-1] * cont_scaling[iw])
 
