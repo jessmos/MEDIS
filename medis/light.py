@@ -5,9 +5,9 @@ Module for the different format of light that gets passed between the observator
 
 import os
 import numpy as np
-import yaml
-from medis.params import iop, sp
-from medis.controller import get_data
+import proper
+from medis.params import iop, sp, tp, ap, atmp, cdip
+from medis.controller import auto_load
 from medis.utils import dprint
 from medis.observatory import Aberrations, Coronagraph, Telescope, Detector
 
@@ -26,27 +26,34 @@ class Fields():
 
     """
     def __init__(self):
-        # self.config = yaml.load(iop.fields_config)
-        self.cache_name = iop.fields
+        self.config = {'astro': ap, 'tele': tp, 'sim': sp,
+                       'atm': atmp, 'CDI': cdip, 'IO': iop}
+        self.use_cache = True
+        self.time_parrelize = True
+        self.chunk_time = True
 
     def generate(self):
-        self.prescription = get_data(Telescope)
+        self.telescope = auto_load(Telescope)
 
+        cpx_sequence = np.zeros((self.config['sim'].numframes, len(self.config['sim'].save_list),
+                                 self.config['astro'].n_wvl_init, 1 + len(self.config['astro'].contrast),
+                                      self.config['sim'].grid_size, self.config['sim'].grid_size), dtype=np.complex)
 
-        cpx_sequence = np.zeros((sp.numframes, len(sp.save_list), ap.n_wvl_init, 1 + len(ap.contrast),
-                                      sp.grid_size, sp.grid_size), dtype=np.complex)
-        for t in range(sp.numframes):
-            kwargs = {'iter': t, 'params': [ap, tp, iop, sp], 'theta': theta_series[t]}
-            self.cpx_sequence[t], self.sampling = proper.prop_run(self.prescription, 1, sp.grid_size,
-                                                                  PASSVALUE=kwargs,
-                                                                  VERBOSE=False,
+        for t in range(self.config['sim'].numframes):
+            kwargs = {'iter': t,
+                      'params': [self.config['astro'], self.config['tele'],
+                                            self.config['IO'], self.config['sim']],
+                      'theta': self.config['cdip'].theta_series[t]}
+            self.cpx_sequence[t], self.sampling = proper.prop_run(self.telescope.prescription,
+                                                                  1, self.config['sim'].grid_size,
+                                                                  PASSVALUE=kwargs, VERBOSE=False,
                                                                   TABLE=False)  # 1 is dummy wavelength
 
         return cpx_sequence
 
     def can_load(self):
         if self.use_cache:
-            file_exists = os.path.exists(self.cache_name)
+            file_exists = os.path.exists(self.config['IO'].fields)
             if file_exists:
                 configs_match = self.configs_match()
                 if configs_match:
@@ -61,14 +68,14 @@ class Fields():
 
         return configs_match
 
+    def load_config(self):
+        """ Reads the relevant config data from the saved file """
+        pass
+
     def save(self):
         pass
 
     def load(self):
-        pass
-
-    def load_config(self):
-        """ Reads the relevant config data from the saved file """
         pass
 
     def view(self):
@@ -143,6 +150,27 @@ class Photons():
     def sample_cube(self):
         photons = Dist(intensity)
         return photons
+
+    def can_load(self):
+        if self.use_cache:
+            file_exists = os.path.exists(iop.fields)
+            if file_exists:
+                configs_match = self.configs_match()
+                if configs_match:
+                    return True
+
+        return False
+
+    def configs_match(self):
+        cur_config = self.__dict__
+        cache_config = self.load_config()
+        configs_match = cur_config == cache_config
+
+        return configs_match
+
+    def load_config(self):
+        """ Reads the relevant config data from the saved file """
+        pass
 
     def save(self):
         pass

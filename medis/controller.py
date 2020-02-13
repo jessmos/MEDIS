@@ -1,7 +1,7 @@
 """ Functions that are common to each can be applied to each object """
 
 
-def get_obj_data(obj_type):
+def auto_load_single(obj_type):
     """
     load or generate the data for a single object
 
@@ -11,18 +11,18 @@ def get_obj_data(obj_type):
 
     obj = obj_type()
     if obj.can_load():
-        obj.data = obj.load()
+        obj.load()
     else:
-        obj.data = obj.generate()
-        if sp.usecache:
+        obj.generate()
+        if obj.use_cache:
             obj.save()
 
-    if sp.debug:
+    if obj.debug:
         obj.view()
 
-    return obj.data
+    return obj
 
-def get_data(obj_types):
+def auto_load(obj_types):
     """
     Load/generate data for an object or list of objects
 
@@ -35,11 +35,11 @@ def get_data(obj_types):
     """
 
     if isinstance(obj_types, list):
-        datas = []  # the plural of the plural
+        objs = []  # the plural of the plural
         for obj_type in obj_types:
-            data = get_obj_data(obj_type)
-            datas.append(data)
+            obj = auto_load_single(obj_type)
+            objs.append(obj)
     else:
-        datas = get_obj_data(obj_types)
+        objs = auto_load_single(obj_types)
 
-    return datas
+    return objs

@@ -22,15 +22,29 @@ class Atmosphere():
 
     """
     def __init__(self):
-        if self.can_load():
-            self.data = self.load()
-        else:
-            self.data = self.generate()
-            if sp.usecache:
-                self.save()
+        self.use_cache = True
+        self.debug = True
 
-        if sp.debug:
-            self.view()
+    def can_load(self):
+        if self.use_cache:
+            file_exists = os.path.exists(iop.fields)
+            if file_exists:
+                configs_match = self.configs_match()
+                if configs_match:
+                    return True
+
+        return False
+
+    def configs_match(self):
+        cur_config = self.__dict__
+        cache_config = self.load_config()
+        configs_match = cur_config == cache_config
+
+        return configs_match
+
+    def load_config(self):
+        """ Reads the relevant config data from the saved file """
+        pass
 
     def generate(self):
         pass

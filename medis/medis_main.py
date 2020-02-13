@@ -30,7 +30,7 @@ import medis.atmosphere as atmos
 from medis.plot_tools import view_spectra
 import medis.CDI as cdi
 import medis.utils as mu
-from medis.controller import get_data
+from medis.controller import auto_load
 from medis.light import Fields
 
 ################################################################################################################
