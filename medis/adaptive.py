@@ -4,7 +4,7 @@ adaptive.py
 functions relating to simulating an AO system with Proper
 mostly code copied from the original MEDIS from Rupert
 
-Generally, the optical perscription will call the deformable_mirror function, which will compile all information and
+Generally, the optical prescription will call the deformable_mirror function, which will compile all information and
 run sequentially all functions related to creating the adaptive optic correction (main AO functionality, relating to
 atmospheric and common-path aberrations) as well as using or not CDI probes, DM corrections or errors, etc
 
@@ -109,7 +109,7 @@ def deformable_mirror(wfo, WFS_map, theta, plane_name=None):
 
     # check_sampling(0, wfo, "E-Field after DM", getframeinfo(stack()[0][0]), units='um')  # check sampling in optics.py
 
-    if plane_name is not None:
+    if plane_name is not None and plane_name in sp.save_list:
         wfo.save_plane(plane_name)
     return
 

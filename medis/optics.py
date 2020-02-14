@@ -110,6 +110,10 @@ class Wavefronts():
         """
         if 'plane_name' in kwargs:
             plane_name = kwargs.pop('plane_name')  # remove plane_name from **kwargs
+            if plane_name in sp.save_list:
+                pass
+            else:
+                plane_name = None
         elif func.__name__ in sp.save_list:
             plane_name = func.__name__
         else:
@@ -119,13 +123,14 @@ class Wavefronts():
             for io in range(shape[1]):
                 func(self.wf_collection[iw, io], *args, **kwargs)
 
-        # Saving complex field data
+        # Saving complex field data after function is applied
         if sp.save_fields and plane_name is not None:
             self.save_plane(location=plane_name)
 
     def save_plane(self, location=None):
         """
-        Saves the complex field at a specified location in the optical system.
+        Saves the complex field at a specified location in the optical system. If the function is called by
+        wfo.loop_over_function, the plane is saved AFTER the function is applied
 
         Note that the complex planes saved are not summed by object, interpolated over wavelength, nor masked down
         to the sp.maskd_size.
@@ -168,7 +173,7 @@ class Wavefronts():
         sampling = np.array(self.plane_sampling)
 
         if sp.verbose:
-            dprint(f"sampling array shape is {sampling.shape}")
+            dprint(f"sampling array shape is {sampling.shape} (n_planes_saved, n_wavelengths)")
 
         # Conex Mirror-- cirshift array for off-axis observing
         # if tp.pix_shift is not [0, 0]:
