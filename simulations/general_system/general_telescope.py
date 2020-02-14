@@ -51,12 +51,12 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     # Aperture, Atmosphere, and Secondary Obscuration
     ###################################################
     # Defines aperture (baffle-before primary)
-    wfo.loop_over_function(proper.prop_circular_aperture, **{'radius': tp.entrance_d/2})
-    # wfo.loop_over_function(proper.prop_define_entrance)  # normalizes the intensity
+    wfo.loop_collection(proper.prop_circular_aperture, **{'radius': tp.entrance_d/2})
+    # wfo.loop_collection(proper.prop_define_entrance)  # normalizes the intensity
 
     # Obscure Baffle
     if tp.obscure:
-        wfo.loop_over_function(opx.add_obscurations, M2_frac=1/8, d_primary=tp.entrance_d, legs_frac=tp.legs_frac)
+        wfo.loop_collection(opx.add_obscurations, M2_frac=1/8, d_primary=tp.entrance_d, legs_frac=tp.legs_frac)
 
     # Pass through a mini-atmosphere inside the telescope baffle
     #  The atmospheric model used here (as of 3/5/19) uses different scale heights,
@@ -66,13 +66,13 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     #  phase offset at a particular frequency.
     # quicklook_wf(wfo.wf_collection[0,0])
     if tp.use_atmos:
-        wfo.loop_over_function(atmos.add_atmos, PASSVALUE['iter'], plane_name='atmosphere')
+        wfo.loop_collection(atmos.add_atmos, PASSVALUE['iter'], plane_name='atmosphere')
         # quicklook_wf(wfo.wf_collection[0, 0])
 
     # quicklook_wf(wfo.wf_collection[0,0])
     #TODO rotate atmos not yet implementid in 2.0
     # if tp.rotate_atmos:
-    #     wfo.loop_over_function(aber.rotate_atmos, *(PASSVALUE['iter']))
+    #     wfo.loop_collection(aber.rotate_atmos, *(PASSVALUE['iter']))
 
     # Both offsets and scales the companion wavefront
     if wfo.wf_collection.shape[1] > 1:
@@ -80,16 +80,16 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
 
     # TODO rotate atmos not yet implementid in 2.0
     # if tp.rotate_sky:
-    #     wfo.loop_over_function(opx.rotate_sky, *PASSVALUE['iter'])
+    #     wfo.loop_collection(opx.rotate_sky, *PASSVALUE['iter'])
 
     ########################################
     # Telescope Primary-ish Aberrations
     #######################################
     # Abberations before AO
     if tp.use_CPA:
-        wfo.loop_over_function(aber.add_aber, tp.entrance_d, tp.aber_params, tp.aber_vals,
+        wfo.loop_collection(aber.add_aber, tp.entrance_d, tp.aber_params, tp.aber_vals,
                                step=PASSVALUE['iter'], lens_name='CPA')
-    # wfo.loop_over_function(proper.prop_circular_aperture, **{'radius': tp.entrance_d / 2})
+    # wfo.loop_collection(proper.prop_circular_aperture, **{'radius': tp.entrance_d / 2})
         # wfo.wf_collection = aber.abs_zeros(wfo.wf_collection)
 
     #######################################
@@ -122,27 +122,27 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     # Abberations after the AO Loop
     if tp.use_NCPA:
         aber.add_aber(wfo, tp.f_lens, tp.aber_params, tp.aber_vals, PASSVALUE['iter'], lens_name='NCPA')
-        wfo.loop_over_function(proper.prop_circular_aperture, **{'radius': tp.entrance_d / 2})
+        wfo.loop_collection(proper.prop_circular_aperture, **{'radius': tp.entrance_d / 2})
         # TODO does this need to be here?
-        # wfo.loop_over_function(opx.add_obscurations, tp.entrance_d/4, legs=False)
+        # wfo.loop_collection(opx.add_obscurations, tp.entrance_d/4, legs=False)
         # wfo.wf_collection = aber.abs_zeros(wfo.wf_collection)
 
     # Low-order aberrations
     if tp.use_zern_ab:
-        wfo.loop_over_function(aber.add_zern_ab)
+        wfo.loop_collection(aber.add_zern_ab)
 
     if tp.use_apod:
-        wfo.loop_over_function(apodization, True)
+        wfo.loop_collection(apodization, True)
 
     # First Focusing Optics
-    wfo.loop_over_function(opx.prop_pass_lens, tp.f_lens, tp.f_lens)
+    wfo.loop_collection(opx.prop_pass_lens, tp.f_lens, tp.f_lens)
 
     ########################################
     # Coronagraph
     ########################################
     # there are additional un-aberated optics in the coronagraph module
     if tp.use_coronagraph:
-        wfo.loop_over_function(coronagraph, *(tp.f_lens, tp.occulter_type, tp.occult_loc, tp.entrance_d))
+        wfo.loop_collection(coronagraph, *(tp.f_lens, tp.occulter_type, tp.occult_loc, tp.entrance_d))
 
     ########################################
     # Focal Plane

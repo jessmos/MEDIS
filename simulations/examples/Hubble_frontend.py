@@ -85,10 +85,10 @@ def Hubble_frontend(empty_lamda, grid_size, PASSVALUE):
     # Hubble Propagation
     #######################################
     # Defines aperture (baffle-before primary)
-    wfo.loop_over_function(proper.prop_circular_aperture, **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
+    wfo.loop_collection(proper.prop_circular_aperture, **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
     # Obscurations
-    wfo.loop_over_function(opx.add_obscurations, d_primary=tp.entrance_d, d_secondary=tp.d_secondary, legs_frac=0.01)
-    wfo.loop_over_function(proper.prop_define_entrance)  # normalizes the intensity
+    wfo.loop_collection(opx.add_obscurations, d_primary=tp.entrance_d, d_secondary=tp.d_secondary, legs_frac=0.01)
+    wfo.loop_collection(proper.prop_define_entrance)  # normalizes the intensity
 
     # Test Sampling
     if PASSVALUE['iter'] == 1:
@@ -99,14 +99,14 @@ def Hubble_frontend(empty_lamda, grid_size, PASSVALUE):
     # CPA from Effective Primary
     # aber.add_aber(wfo.wf_collection, tp.entrance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='primary')
 
-    # wfo.loop_over_function(opx.prop_pass_lens, tp.flen_primary, tp.flen_primary)
-    wfo.loop_over_function(opx.prop_pass_lens, tp.flen_primary, tp.dist_pri_second)
+    # wfo.loop_collection(opx.prop_pass_lens, tp.flen_primary, tp.flen_primary)
+    wfo.loop_collection(opx.prop_pass_lens, tp.flen_primary, tp.dist_pri_second)
 
     # Secondary
     # aber.add_aber(wfo.wf_collection, tp.d_secondary, tp.aber_params, step=PASSVALUE['iter'], lens_name='second')
     # # Zernike Aberrations- Low Order
-    # wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, tp.zernike_vals)
-    wfo.loop_over_function(opx.prop_pass_lens, tp.flen_secondary, tp.dist_second_focus)
+    # wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, tp.zernike_vals)
+    wfo.loop_collection(opx.prop_pass_lens, tp.flen_secondary, tp.dist_second_focus)
 
     ########################################
     # Focal Plane

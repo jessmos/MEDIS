@@ -119,57 +119,57 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
 
     # Atmosphere
     # atmos has only effect on phase delay, not intensity
-    wfo.loop_over_function(atmos.add_atmos, PASSVALUE['iter'], plane_name='atmosphere')
+    wfo.loop_collection(atmos.add_atmos, PASSVALUE['iter'], plane_name='atmosphere')
 
     # Defines aperture (baffle-before primary)
     # Obscurations (Secondary and Spiders)
-    wfo.loop_over_function(opx.add_obscurations, d_primary=tp.d_nsmyth, d_secondary=tp.d_secondary, legs_frac=0.05)
-    wfo.loop_over_function(proper.prop_circular_aperture,
+    wfo.loop_collection(opx.add_obscurations, d_primary=tp.d_nsmyth, d_secondary=tp.d_secondary, legs_frac=0.05)
+    wfo.loop_collection(proper.prop_circular_aperture,
                            **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
-    wfo.loop_over_function(proper.prop_define_entrance, plane_name='entrance_pupil')  # normalizes abs intensity
+    wfo.loop_collection(proper.prop_define_entrance, plane_name='entrance_pupil')  # normalizes abs intensity
 
     if ap.companion:
         # Must do this after all calls to prop_define_entrance
         opx.offset_companion(wfo)
-        wfo.loop_over_function(proper.prop_circular_aperture,
+        wfo.loop_collection(proper.prop_circular_aperture,
                                **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
 
     # Test Sampling
     # opx.check_sampling(PASSVALUE['iter'], wfo, "initial", getframeinfo(stack()[0][0]), units='mm')
     # Testing Primary Focus (instead of propagating to focal plane)
-    # wfo.loop_over_function(opx.prop_pass_lens, tp.flen_nsmyth, tp.flen_nsmyth)  # test only going to prime focus
+    # wfo.loop_collection(opx.prop_pass_lens, tp.flen_nsmyth, tp.flen_nsmyth)  # test only going to prime focus
 
     ########################################
     # Subaru Propagation
     #######################################
     # Effective Primary
     # CPA from Effective Primary
-    wfo.loop_over_function(aber.add_aber, tp.entrance_d, tp.aber_params, primary_aber_vals,
+    wfo.loop_collection(aber.add_aber, tp.entrance_d, tp.aber_params, primary_aber_vals,
                            step=PASSVALUE['iter'], lens_name='effective-primary')
     # Zernike Aberrations- Low Order
-    # wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
-    wfo.loop_over_function(opx.prop_pass_lens, tp.flen_nsmyth, tp.dist_nsmyth_ao1)
+    # wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
+    wfo.loop_collection(opx.prop_pass_lens, tp.flen_nsmyth, tp.dist_nsmyth_ao1)
 
     ########################################
     # AO188 Propagation
     ########################################
     # # AO188-OAP1
-    wfo.loop_over_function(aber.add_aber, tp.d_ao1, tp.aber_params, OAP1_aber_vals,
+    wfo.loop_collection(aber.add_aber, tp.d_ao1, tp.aber_params, OAP1_aber_vals,
                            step=PASSVALUE['iter'], lens_name='ao188-OAP1')
-    wfo.loop_over_function(opx.prop_pass_lens, tp.fl_ao1, tp.dist_ao1_dm)
+    wfo.loop_collection(opx.prop_pass_lens, tp.fl_ao1, tp.dist_ao1_dm)
 
     # AO System
     if tp.use_ao:
         WFS_map = ao.ideal_wfs(wfo)
         ao.deformable_mirror(wfo, WFS_map, PASSVALUE['theta'], plane_name='woofer')
     # ------------------------------------------------
-    wfo.loop_over_function(proper.prop_propagate, tp.dist_dm_ao2)
+    wfo.loop_collection(proper.prop_propagate, tp.dist_dm_ao2)
 
     # AO188-OAP2
-    wfo.loop_over_function(aber.add_aber, tp.d_ao2, tp.aber_params, OAP2_aber_vals,
+    wfo.loop_collection(aber.add_aber, tp.d_ao2, tp.aber_params, OAP2_aber_vals,
                            step=PASSVALUE['iter'], lens_name='ao188-OAP2')
-    # wfo.loop_over_function(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)
-    wfo.loop_over_function(opx.prop_pass_lens, tp.fl_ao2, tp.dist_oap2_focus)
+    # wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)
+    wfo.loop_collection(opx.prop_pass_lens, tp.fl_ao2, tp.dist_oap2_focus)
 
     ########################################
     # Focal Plane

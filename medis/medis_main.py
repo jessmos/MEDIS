@@ -30,29 +30,29 @@ import medis.atmosphere as atmos
 from medis.plot_tools import view_spectra
 import medis.CDI as cdi
 import medis.utils as mu
-from medis.controller import get_data
-from medis.light import Fields
+# from medis.controller import get_data
+# from medis.light import Fields
 
 ################################################################################################################
 ################################################################################################################
 ################################################################################################################
-sentinel = None
+# sentinel = None
+#
+# def run_medis(mode='Fields'):
+#     data_product = eval(mode)
+#     if data_product.can_load():
+#         data_product.data = data_product.load()
+#     else:
+#         data_product.data = data_product.generate()
+#         if data_product.usecache:
+#             data_product.save()
+#
+#     return data_product
+#
 
-def run_medis(mode='Fields'):
-    data_product = eval(mode)
-    if data_product.can_load():
-        data_product.data = data_product.load()
-    else:
-        data_product.data = data_product.generate()
-        if data_product.usecache:
-            data_product.save()
-
-    return data_product
-
-
-class Medis():
+class RunMedis():
     """
-    coletcs both the telescope simulator (returns complex fields) and the MKIDs simulator (returns photon lists) into
+    colletcs both the telescope simulator (returns complex fields) and the MKIDs simulator (returns photon lists) into
     a single class
 
 
@@ -66,9 +66,9 @@ class Medis():
 
         initialize different sub-processes, such as atmosphere and aberration maps, MKID device parameters
         sets up the multiprocessing features
-        returns the observation sequence created by gen_timeseries
+        returns the observation sequence
 
-        :return: obs_sequence
+        :return: obs_sequence [n_timesteps, n_saved_planes, n_wavelengths, n_stars/planets, grid_size, grid_size]
         """
         print('Beginning Telescope Simulation with MEDIS')
         print('***************************************')
@@ -117,13 +117,13 @@ class Medis():
                                                                          VERBOSE=False,
                                                                          TABLE=False)  # 1 is dummy wavelength
 
-            # print('MEDIS Telescope Run Completed')
-            # print('**************************************')
-            # finish = time.time()
-            # print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
-            # # print(f"Number of timesteps = {np.shape(cpx_sequence)[0]}")
-            #
-            # return self.cpx_sequence, self.sampling
+            print('MEDIS Telescope Run Completed')
+            print('**************************************')
+            finish = time.time()
+            print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
+            # print(f"Number of timesteps = {np.shape(cpx_sequence)[0]}")
+
+            return self.cpx_sequence, self.sampling
 
         # =======================================================================================================
         # Open-Loop- Uses Multiprocessing

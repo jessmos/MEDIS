@@ -90,7 +90,7 @@ class Wavefronts():
             for io, (iwf, wf) in enumerate(zip(names, wfs)):
                 self.wf_collection[iw, io] = wf
 
-    def loop_over_function(self, func, *args, **kwargs):
+    def loop_collection(self, func, *args, **kwargs):
         """
         For each wavelength and astronomical object apply a function to the wavefront.
 
@@ -130,7 +130,7 @@ class Wavefronts():
     def save_plane(self, location=None):
         """
         Saves the complex field at a specified location in the optical system. If the function is called by
-        wfo.loop_over_function, the plane is saved AFTER the function is applied
+        wfo.loop_collection, the plane is saved AFTER the function is applied
 
         Note that the complex planes saved are not summed by object, interpolated over wavelength, nor masked down
         to the sp.maskd_size.
@@ -314,8 +314,8 @@ def offset_companion(wfo):
     offsets the companion wavefront using the 2nd and 3rd order Zernike Polynomials (X,Y tilt)
     companion(s) contrast and location(s) set in params
 
-    We don't call this function via wfo.loop_over_function because we need to know which object (io) we are on, which
-    is not supported in the current format. This is the only acception to applying loop_over_function
+    We don't call this function via wfo.loop_collection because we need to know which object (io) we are on, which
+    is not supported in the current format. This is the only acception to applying loop_collection
 
     Important: this function must be called AFTER any calls to proper.prop_define_entrance, which normalizes the
     intensity, because we scale the intensity of the planet relative to the star via the user-parameter ap.contrast.
