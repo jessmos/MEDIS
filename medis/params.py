@@ -16,6 +16,7 @@ TODO
 import numpy as np
 import os
 import proper
+import h5py
 
 class IO_params:
     """
@@ -276,4 +277,55 @@ proper.use_cubic_conv = True
 # print(proper.__version__)
 # proper.prop_init_savestate()
 
+class Configuration():
+    """
+    Class responsible for getting and saving configuration data
 
+    """
+
+    def __init__(self):
+        self.debug = True
+        self.ap=ap
+        self.tp=tp
+        self.atmp=atmp
+        self.cdip=cdip
+        self.iop=iop
+        self.sp=sp
+
+    def generate(self):
+        print('No data to generate for Configuration')
+
+    def can_load(self):
+        if self.use_cache:
+            file_exists = os.path.exists(iop.fields)
+            if file_exists:
+                configs_match = self.configs_match()
+                if configs_match:
+                    return True
+
+        return False
+
+    def configs_match(self):
+        cur_config = self.__dict__
+        cache_config = self.load()
+        configs_match = cur_config == cache_config
+        return configs_match
+
+    def save(self):
+        with h5py.File(self.config.iop.config, mode='a') as hdf:
+            print(f'Saving observation data at {self.config.iop.config}')
+            dset = hdf.create_dataset('iop', tuple(shape), maxshape=tuple(shape), dtype=np.complex64,
+                                      chunks=tuple(chunk),
+                                      compression="gzip")
+
+            dset[t] = self.config.iop
+
+    def load(self):
+        with h5py.File(self.config.iop.config, 'r') as hf:
+            # fields = hf.get('data')[:]
+            config = hf.get('config')[:]
+        return config
+
+    def view(self):
+        for param in [ap, cp, tp, mp, sp]:
+            pprint.pprint(param.__dict__)
