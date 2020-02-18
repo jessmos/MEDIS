@@ -146,7 +146,6 @@ def quick_ao(wf, nact, WFS_map):
     :param WFS_map: returned from quick_wfs (as of Aug 2019, its an idealized image)
     :return: ao_map: map of DM actuator command heights in units of m
     """
-    beam_ratios = wfo.beam_ratios
 
     nact_across_pupil = nact-2          # number of full DM actuators across pupil (oversizing DM extent)
                                         # Note: oversample by 2 actuators hardcoded here, check if this is appropriate 
@@ -163,11 +162,11 @@ def quick_ao(wf, nact, WFS_map):
     ###################################
     # cropping here by beam_ratio rather than d_beam is valid since the beam size was initialized
     #  using the scaled beam_ratios when the wfo was created
-    ao_map = WFS_map[iw,
-             sp.grid_size//2 - np.int_(beam_ratios[iw]*sp.grid_size//2):
-             sp.grid_size//2 + np.int_(beam_ratios[iw]*sp.grid_size//2)+1,
-             sp.grid_size//2 - np.int_(beam_ratios[iw]*sp.grid_size//2):
-             sp.grid_size//2 + np.int_(beam_ratios[iw]*sp.grid_size//2)+1]
+    ao_map = WFS_map[wf.iw,
+             sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2):
+             sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+1,
+             sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2):
+             sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+1]
 
     ########################################################
     # Interpolating the WFS map onto the actuator spacing

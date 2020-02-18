@@ -14,10 +14,20 @@ from inspect import getframeinfo, stack
 from medis.params import ap, tp, sp
 from medis.utils import dprint
 
+class Wavefront(proper.WaveFront):
+    """ Wrapper for proper.Wavefront that stores source and wavelength info """
 
-############################
-# Create Wavefront Array
-############################
+    def __init__(self, wavefront, lamda, name, beam_ratio, iw, io):
+        self.lamda = lamda
+        self.name = name
+        self.beam_ratio = beam_ratio
+        self.iw  = iw
+        self.io  = io
+
+        for attr in dir(wavefront):
+            if not hasattr(self, attr):
+                setattr(self, attr, getattr(wavefront, attr))
+
 class Wavefronts():
     """
     An object containing all of the complex E fields for each sampled wavelength and astronomical object at this timestep
@@ -40,13 +50,17 @@ class Wavefronts():
         # wf_collection is an array of arrays; the wf_collection is (number_wavelengths x number_astro_objects)
         # each 2D field in the wf_collection is the 2D array of complex E-field values at that wavelength, per object
         # the E-field size is given by (sp.grid_size x sp.grid_size)
+
+        ############################
+        # Create Wavefront Array
+        ############################
         if ap.companion:
             self.wf_collection = np.empty((ap.n_wvl_init, 1 + len(ap.contrast)), dtype=object)
         else:
             self.wf_collection = np.empty((ap.n_wvl_init, 1), dtype=object)
 
         # Init Beam Ratios
-        self.beam_ratios = np.zeros_like(self.wsamples)
+        # self.beam_ratios = np.zeros_like(self.wsamples)
 
         # Init Locations of saved E-field
         self.saved_planes = []  # string of locations where fields have been saved (should match sp.save_list after run is completed)
@@ -59,7 +73,7 @@ class Wavefronts():
 
     def initialize_proper(self):
         # Initialize the Wavefront in Proper
-        for iw, w in enumerate(self.wsamples):
+        for iw, wavelength in enumerate(self.wsamples):
             # Scale beam ratio by wavelength for polychromatic imaging
             # see Proper manual pg 37
             # Proper is devised such that you get a Nyquist sampled image in the focal plane. If you optical system
@@ -69,13 +83,13 @@ class Wavefronts():
             #  plane, the beam ratio does not need to be scaled by wavelength, because of some optics wizardry that
             #  I don't fully understand. KD 2019
             if sp.focused_sys:
-                self.beam_ratios[iw] = sp.beam_ratio
+                beam_ratio = sp.beam_ratio
             else:
-                self.beam_ratios[iw] = sp.beam_ratio * ap.wvl_range[0] / w
+                beam_ratio = sp.beam_ratio * ap.wvl_range[0] / wavelength
                 # dprint(f"iw={iw}, w={w}, beam ratio is {self.beam_ratios[iw]}")
 
             # Initialize the wavefront at entrance pupil
-            wfp = proper.prop_begin(tp.entrance_d, w, sp.grid_size, self.beam_ratios[iw])
+            wfp = proper.prop_begin(tp.entrance_d, wavelength, sp.grid_size, beam_ratio)
 
             wfs = [wfp]
             names = ['star']
@@ -83,12 +97,12 @@ class Wavefronts():
             # Initiate wavefronts for companion(s)
             if ap.companion:
                 for ix in range(len(ap.contrast)):
-                    wfc = proper.prop_begin(tp.entrance_d, w, sp.grid_size, self.beam_ratios[iw])
+                    wfc = proper.prop_begin(tp.entrance_d, wavelength, sp.grid_size, beam_ratio)
                     wfs.append(wfc)
                     names.append('companion_%i' % ix)
 
-            for io, (iwf, wf) in enumerate(zip(names, wfs)):
-                self.wf_collection[iw, io] = wf
+            for io, (name, wf) in enumerate(zip(names, wfs)):
+                self.wf_collection[iw, io] = Wavefront(wf, wavelength, name, beam_ratio, iw, io)
 
     def loop_collection(self, func, *args, **kwargs):
         """
@@ -119,10 +133,9 @@ class Wavefronts():
         else:
             plane_name = None
 
-        shape = self.wf_collection.shape
-        for iw in range(shape[0]):
-            for io in range(shape[1]):
-                func(self.wf_collection[iw, io], *args, **kwargs)
+        for sources in self.wf_collection:
+            for wavefront in sources:
+                func(wavefront, *args, **kwargs)
 
         # Saving complex field data after function is applied
         if sp.save_fields and plane_name is not None:
@@ -149,11 +162,13 @@ class Wavefronts():
                                        sp.grid_size,
                                        sp.grid_size), dtype=np.complex64)
             samp_lambda = np.zeros(ap.n_wvl_init)
-            for iw in range(shape[0]):
-                for io in range(shape[1]):
-                    wf = proper.prop_shift_center(self.wf_collection[iw, io].wfarr)
+            # for iw in range(shape[0]):
+            #     for io in range(shape[1]):
+            for iw, sources in enumerate(self.wf_collection):
+                for io, wavefront in enumerate(sources):
+                    wf = proper.prop_shift_center(wavefront.wfarr)
                     E_field[0, iw, io] = copy.copy(wf)
-                    samp_lambda[iw] = proper.prop_get_sampling(self.wf_collection[iw, 0])
+                    samp_lambda[iw] = proper.prop_get_sampling(sources[0])
                     # self.plane_sampling.append(proper.prop_get_sampling(self.wf_collection[iw,0]))
 
             self.Efield_planes = np.vstack((self.Efield_planes, E_field))
@@ -307,7 +322,7 @@ def rotate_sky(wf, it):
     raise NotImplementedError
 
 
-def offset_companion(wfo):
+def offset_companion(wf):
     """
     offsets the companion wavefront using the 2nd and 3rd order Zernike Polynomials (X,Y tilt)
     companion(s) contrast and location(s) set in params
@@ -332,32 +347,30 @@ def offset_companion(wfo):
     :return: nothing implicitly returned but the given wfo initiated in Wavefronts class has been altered to give the
         appropriate wavefront for a planet in the focal plane
     """
-    if ap.companion is True:
+    if ap.companion is True and wf.name != 'star':
         cont_scaling = np.linspace(1. / ap.C_spec, 1, ap.n_wvl_init)
 
-        for iw in range(wfo.wf_collection.shape[0]):
-            for io in range(1, wfo.wf_collection.shape[1]):
-                # Shifting the Array
-                if sp.focused_sys:
-                    # Scaling into lambda/D AND scaling by wavelength
-                    xloc = ap.companion_xy[io-1][0] * wfo.wf_collection[iw,io].lamda / tp.entrance_d \
-                           * ap.wvl_range[0] / wfo.wf_collection[iw,io].lamda # * (-1)**(iw%2)
-                    yloc = ap.companion_xy[io-1][1] * wfo.wf_collection[iw,io].lamda / tp.entrance_d \
-                            *  ap.wvl_range[0] / wfo.wf_collection[iw,io].lamda  # / (2*np.pi)   * (-1)**(iw%2)
-                else:
-                    # Scaling Happens Naturally!
-                    xloc = ap.companion_xy[io-1][0]
-                    yloc = ap.companion_xy[io-1][1]
-                proper.prop_zernikes(wfo.wf_collection[iw, io], [2, 3], np.array([xloc, yloc]))  # zernike[2,3] = x,y tilt
+        # Shifting the Array
+        if sp.focused_sys:
+            # Scaling into lambda/D AND scaling by wavelength
+            xloc = ap.companion_xy[wf.io-1][0] * wf.lamda / tp.entrance_d \
+                   * ap.wvl_range[0] / wf.lamda # * (-1)**(iw%2)
+            yloc = ap.companion_xy[wf.io-1][1] * wf.lamda / tp.entrance_d \
+                    *  ap.wvl_range[0] / wf.lamda  # / (2*np.pi)   * (-1)**(iw%2)
+        else:
+            # Scaling Happens Naturally!
+            xloc = ap.companion_xy[wf.io-1][0]
+            yloc = ap.companion_xy[wf.io-1][1]
+        proper.prop_zernikes(wf, [2, 3], np.array([xloc, yloc]))  # zernike[2,3] = x,y tilt
 
-                ##############################################
-                # Wavelength/Contrast  Scaling the Companion
-                ##############################################
-                wfo.wf_collection[iw, io].wfarr *= np.sqrt(ap.contrast[io-1])
+        ##############################################
+        # Wavelength/Contrast  Scaling the Companion
+        ##############################################
+        wf.wfarr *= np.sqrt(ap.contrast[wf.io-1])
 
-                #TODO implement wavelength-dependant scaling
-                # Wavelength-dependent scaling by cont_scaling
-                # wfo.wf_collection[iw, io].wfarr = wfo.wf_collection[iw, io].wfarr * np.sqrt(ap.contrast[io-1] * cont_scaling[iw])
+        #TODO implement wavelength-dependant scaling
+        # Wavelength-dependent scaling by cont_scaling
+        # wfo.wf_collection[iw, io].wfarr = wfo.wf_collection[iw, io].wfarr * np.sqrt(ap.contrast[io-1] * cont_scaling[iw])
 
 
 def check_sampling(tstep, wfo, location, line_info, units=None):
