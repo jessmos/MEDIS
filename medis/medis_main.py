@@ -39,12 +39,24 @@ from medis.light import Fields
 sentinel = None
 
 def run_medis(mode='Fields'):
+    """
+    Get either a multidimensional cps_sequence or photon set wrapped in an object. Modified version of auto_load_single
+
+    Parameters
+    ----------
+    mode : str, optional
+           'Fields' or 'Photons'
+
+    Returns
+    -------
+    The light object with data atribute loaded/generated
+    """
     data_product = eval(mode)()
     if data_product.can_load():
         data_product.data = data_product.load()
     else:
         data_product.data = data_product.generate()
-        if data_product.usecache:
+        if data_product.use_cache:
             data_product.save()
 
     return data_product

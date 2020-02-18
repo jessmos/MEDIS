@@ -5,6 +5,7 @@ Module for the different observatory components
 
 import os
 import yaml
+import importlib
 from medis.params import iop, tp
 from medis.atmosphere import Atmosphere
 from medis.controller import auto_load
@@ -113,17 +114,20 @@ class Telescope():
         self.config = tp
         self.use_cache = True
         self.debug = True
+        self.full_prescription = f'{os.path.dirname(os.path.dirname(os.path.abspath(__file__)))}' \
+                                 f'/simulations/{tp.prescription}/{tp.prescription}.py'
+        self.relative_prescription = f'simulations.{tp.prescription}.{tp.prescription}'
 
     def generate(self):
         auto_load([Atmosphere, Aberrations, Coronagraph])
-        if not os.path.exists(f'{os.path.dirname(os.path.dirname(os.path.abspath(__file__)))}/simulations/{tp.prescription}'):
+        if not os.path.exists(self.full_prescription):
             print(f'No prescription found with name {self.config.prescription}. Create it first. See ../simulations/ '
                   f'for examples')
             raise AssertionError
 
     def can_load(self):
         if self.use_cache:
-            file_exists = os.path.exists(iop.fields)
+            file_exists = os.path.exists(self.full_prescription)
             if file_exists:
                 configs_match = self.configs_match()
                 if configs_match:
@@ -139,14 +143,14 @@ class Telescope():
         return configs_match
 
     def load_config(self):
-        """ Reads the relevant config data from the saved file """
-        pass
+        i = importlib.import_module(self.relative_prescription)
+        self.config = i.tp
 
     def save(self):
         pass
 
     def load(self):
-
+        pass
 
     def view(self):
         pass
