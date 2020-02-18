@@ -49,7 +49,7 @@ tp.obscure = False
 tp.use_atmos = True
 tp.use_aber = True
 tp.use_ao = True
-tp.ao_woofer = 14
+tp.act_woofer = 14
 cdip.use_cdi = False
 
 # Plotting

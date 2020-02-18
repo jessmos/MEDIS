@@ -118,6 +118,7 @@ class Wavefronts():
             plane_name = func.__name__
         else:
             plane_name = None
+
         shape = self.wf_collection.shape
         for iw in range(shape[0]):
             for io in range(shape[1]):
@@ -171,9 +172,6 @@ class Wavefronts():
 
         cpx_planes = np.array(self.Efield_planes)
         sampling = np.array(self.plane_sampling)
-
-        if sp.verbose:
-            dprint(f"sampling array shape is {sampling.shape} (n_planes_saved, n_wavelengths)")
 
         # Conex Mirror-- cirshift array for off-axis observing
         # if tp.pix_shift is not [0, 0]:

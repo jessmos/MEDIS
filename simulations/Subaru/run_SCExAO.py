@@ -42,7 +42,7 @@ ap.companion_xy = [[5, -5]]  # units of this are lambda/tp.entrance_d
 # Toggles for Aberrations and Control
 tp.obscure = False
 tp.use_atmos = True
-tp.use_aber = False
+tp.use_aber = True
 tp.use_ao = True
 cdip.use_cdi = False
 

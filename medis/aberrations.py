@@ -17,6 +17,7 @@ import pickle
 from medis.params import tp, iop, ap, sp
 from medis.utils import *
 
+
 ################################################################################################################
 # Aberrations
 ################################################################################################################
@@ -128,7 +129,7 @@ def add_aber(wf, d_lens, aber_params, aber_vals, step=0, lens_name=None):
             raise NotImplementedError
 
 
-def add_zern_ab(wfo, zern_order=[2,3,4], zern_vals=np.array([175,-150,200])*1.0e-9):
+def add_zern_ab(wf, zern_order=[2,3,4], zern_vals=np.array([175,-150,200])*1.0e-9):
     """
     adds low-order aberrations from Zernike polynomials
 
@@ -149,7 +150,7 @@ def add_zern_ab(wfo, zern_order=[2,3,4], zern_vals=np.array([175,-150,200])*1.0e
     9 Y clover (trefoil)
     10 X clover (trefoil)
     """
-    proper.prop_zernikes(wfo, zern_order, zern_vals)
+    proper.prop_zernikes(wf, zern_order, zern_vals)
 
 
 def randomize_zern_values(zern_orders):

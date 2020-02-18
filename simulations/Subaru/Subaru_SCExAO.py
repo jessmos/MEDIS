@@ -73,7 +73,7 @@ primary_aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies 
                      'a_amp': [0.05, 0.01]}
 # ----------------------------
 # AO188 DM
-tp.ao_woofer = 14  # approximately a 188 DM (14*14=169)
+tp.act_woofer = 14  # approximately a 188 DM (14*14=169)
 
 # ----------------------------
 # AO188 OAP1
@@ -111,7 +111,7 @@ tp.lyot_size = 0.75  # units are in fraction of surface blocked
 # These params aren't actually working, so just doing very basic, 4F optical systems until further notice
 
 tp.d_tweeter = 0.02  # just 1/10 scale the same system as AO188 since I don't actually know these parameters
-tp.ao_tweeter = 45  # approx a 2000 actuator DM, (45x45=2025)
+tp.act_tweeter = 45  # approx a 2000 actuator DM, (45x45=2025)
 tp.fl_sl = 0.1021  # m  focal length of SCExAO lens
 tp.dist_cg_sl1 = tp.fl_sl + .000001  # m distance between AO188 focus and scexao lens1
 tp.dist_sl1_scexao = 0.1345  # m
