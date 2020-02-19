@@ -1,16 +1,11 @@
 """
-run_SubaruFrontend
+run_SCExAO
 KD
-Dec 9 2019
+Feb 2020
 
-This is the starting point to run the Subaru_frontend prescription. From here, you can turn on/off toggles, change AO
+This is the starting point to run the Subaru_SCExAO prescription. From here, you can turn on/off toggles, change AO
 settings, view different planes, and make other changes to running the prescription without changing the base
 prescription or the default params themselves.
-
-This file is meant to 'cleanup' a lot of the functionality between having defaults saved in the params file and
-the prescription. Most changes necessary to run multiple instances of the base prescription will be made here. This is
-the same layot/format as the Example files that Rupert was using in v1.0. These are now meant to be paired with a more
-specific prescription than the original optics_propagate, which had more toggles and less sophisiticated optical train.
 
 """
 import numpy as np
@@ -25,7 +20,7 @@ import medis.medis_main as mm
 #################################################################################################
 #################################################################################################
 # Telescope
-tp.prescription = 'Subaru_frontend'
+tp.prescription = 'Subaru_SCExAO'
 tp.entrance_d = 7.9716
 tp.flen_primary = tp.entrance_d * 13.612
 
@@ -35,7 +30,7 @@ sp.closed_loop = True
 
 # Grid Parameters
 sp.focused_sys = True
-sp.beam_ratio = 0.15  # parameter dealing with the sampling of the beam in the pupil/focal plane
+sp.beam_ratio = 0.18  # parameter dealing with the sampling of the beam in the pupil/focal plane
 sp.grid_size = 512  # creates a nxn array of samples of the wavefront
 sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
 
@@ -49,11 +44,10 @@ tp.obscure = False
 tp.use_atmos = True
 tp.use_aber = True
 tp.use_ao = True
-tp.act_woofer = 14
 cdip.use_cdi = False
 
 # Plotting
-sp.show_wframe = False  # Plot white light image frame
+sp.show_wframe = False  # plot white light image frame
 sp.show_spectra = False  # Plot spectral cube at single timestep
 sp.spectra_cols = 3  # number of subplots per row in view_datacube
 sp.show_tseries = False  # Plot full timeseries of white light frames
@@ -63,12 +57,12 @@ sp.show_planes = True
 # Saving
 sp.save_obs = False  # save obs_sequence (timestep, wavelength, x, y)
 sp.save_fields = True  # toggle to turn saving uniformly on/off
-sp.save_list = ['atmosphere', 'entrance_pupil', 'woofer', 'detector']  # list of locations in optics train to save
+sp.save_list = ['atmosphere', 'entrance_pupil','coronagraph', 'detector']  # list of locations in optics train to save
 
 
 if __name__ == '__main__':
     # testname = input("Please enter test name: ")
-    testname = 'Subaru-test2'
+    testname = 'SCExAO-test1'
     iop.update(testname)
     iop.makedir()
 
@@ -102,7 +96,7 @@ if __name__ == '__main__':
                            # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
                 logZ=True,
                 dx=fp_sampling[0],
-                vlim=(1e-3, 1e-1))
+                vlim=(None,None))  # (1e-3, 1e-1)
 
     # Plotting Spectra at last tstep
     if sp.show_spectra:
@@ -129,7 +123,7 @@ if __name__ == '__main__':
     # Plotting Selected Plane
     if sp.show_planes:
         # vlim = ((None, None), (None, None), (None, None), (None, None), (None, None))
-        vlim = [(None,None), (None,None), (None,None), (1e-3,1e-1)]  # (7e-4, 6e-4)
+        vlim = [(None,None), (None,None), (None,None), (None,None)]  # (1e-2,1e-1) (7e-4, 6e-4)
         logZ = [True, False, False, True]
         if sp.save_list:
             plot_planes(cpx_sequence,

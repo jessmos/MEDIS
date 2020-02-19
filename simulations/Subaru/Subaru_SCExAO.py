@@ -33,6 +33,7 @@ import medis.optics as opx
 import medis.aberrations as aber
 import medis.adaptive as ao
 import medis.atmosphere as atmos
+import medis.coronagraphy as cg
 
 
 #################################################################################################
@@ -71,6 +72,10 @@ primary_aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies 
                      'c': [3.1, 0.5],  #
                      'a_amp': [0.05, 0.01]}
 # ----------------------------
+# AO188 DM
+tp.act_woofer = 14  # approximately a 188 DM (14*14=169)
+
+# ----------------------------
 # AO188 OAP1
 # Paramaters taken from "Design of the Subaru laser guide star adaptive optics module"
 #  Makoto Watanabe et. al. SPIE doi: 10.1117/12.551032
@@ -93,15 +98,34 @@ OAP2_aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4
                   'c': [3.1, 0.5],  #
                   'a_amp': [0.05, 0.01]}
 
+# ------------------------------
+# Coronagraph
+tp.cg_type = 'Gaussian'
+tp.cg_size = 3  # physical size or lambda/D size
+tp.cg_size_units = "l/D"  # "m" or "l/D"
+tp.fl_cg_lens = 0.1021  # m
+tp.lyot_size = 0.75  # units are in fraction of surface blocked
+
+# ------------------------------
+# SCExAO
+# These params aren't actually working, so just doing very basic, 4F optical systems until further notice
+
+tp.d_tweeter = 0.02  # just 1/10 scale the same system as AO188 since I don't actually know these parameters
+tp.act_tweeter = 45  # approx a 2000 actuator DM, (45x45=2025)
+tp.fl_sl = 0.1021  # m  focal length of SCExAO lens
+tp.dist_cg_sl1 = tp.fl_sl + .000001  # m distance between AO188 focus and scexao lens1
+tp.dist_sl1_scexao = 0.1345  # m
+tp.dist_scexao_sl2 = 0.2511 - tp.dist_sl1_scexao  # m
+tp.dist_sl2_focus = 0.1261  # m
+
 
 #################################################################################################
 #################################################################################################
 #################################################################################################
 
-def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
+def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     """
-    propagates instantaneous complex E-field thru Subaru from the primary through the AO188
-        AO system in loop over wavelength range
+    propagates instantaneous complex E-field thru Subaru from the primary through SCExAO
 
     this function is called a 'prescription' by proper
 
@@ -172,16 +196,45 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     wfo.loop_collection(opx.prop_pass_lens, tp.fl_ao2, tp.dist_oap2_focus)
 
     ########################################
+    # SCExAO
+    # #######################################
+    # SCExAO DM
+    # SXExAO Reimaging 1
+    # wfo.loop_collection(aber.add_aber, tp.d_ao1, tp.aber_params, OAP1_aber_vals,
+    #                        step=PASSVALUE['iter'], lens_name='ao188-OAP1')
+    wfo.loop_collection(proper.prop_propagate, tp.fl_sl)
+    wfo.loop_collection(opx.prop_pass_lens, tp.fl_sl, tp.fl_sl)
+    #
+    # AO System
+    if tp.use_ao:
+        WFS_map = ao.ideal_wfs(wfo)
+        ao.deformable_mirror(wfo, WFS_map, PASSVALUE['theta'], plane_name='tweeter')
+    # ------------------------------------------------
+    wfo.loop_collection(proper.prop_propagate, tp.fl_sl)
+
+    # SXExAO Reimaging 2
+    # wfo.loop_collection(aber.add_aber, tp.d_ao2, tp.aber_params, OAP2_aber_vals,
+    #                        step=PASSVALUE['iter'], lens_name='ao188-OAP2')
+    # wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)
+    wfo.loop_collection(opx.prop_pass_lens, tp.fl_sl, tp.fl_sl)  #tp.dist_sl2_focus
+
+    # Coronagraph
+    # settings should be put into tp, and are not implicitly passed here
+    wfo.loop_collection(cg.coronagraph, occulter_mode=tp.cg_type, plane_name='coronagraph')
+
+    ########################################
     # Focal Plane
     # #######################################
     # Check Sampling in focal plane
-    opx.check_sampling(PASSVALUE['iter'], wfo, "focal plane", getframeinfo(stack()[0][0]), units='nm')
-    # opx.check_sampling(PASSVALUE['iter'], wfo, "focal plane", getframeinfo(stack()[0][0]), units='arcsec')
-
     # wfo.focal_plane fft-shifts wfo from Fourier Space (origin==lower left corner) to object space (origin==center)
     cpx_planes, sampling = wfo.focal_plane()
 
-    print(f"Finished datacube at timestep = {PASSVALUE['iter']}")
+    if sp.verbose:
+        opx.check_sampling(PASSVALUE['iter'], wfo, "focal plane", getframeinfo(stack()[0][0]), units='nm')
+        # opx.check_sampling(PASSVALUE['iter'], wfo, "focal plane", getframeinfo(stack()[0][0]), units='arcsec')
+
+    if sp.verbose:
+        print(f"Finished datacube at timestep = {PASSVALUE['iter']}")
 
     return cpx_planes, sampling
 
