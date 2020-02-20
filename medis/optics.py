@@ -133,9 +133,17 @@ class Wavefronts():
         else:
             plane_name = None
 
-        for sources in self.wf_collection:
-            for wavefront in sources:
-                func(wavefront, *args, **kwargs)
+        manipulator_output = np.empty(self.wf_collection.shape)
+        for iw, sources in enumerate(self.wf_collection):
+            for io, wavefront in enumerate(sources):
+                manipulator_output[iw, io] = func(wavefront, *args, **kwargs)
+
+        # if there's at least one not np.nan element add this array to the Wavefronts obj
+        if not np.all(np.isnan(manipulator_output)):
+            if plane_name:
+                setattr(self, plane_name, manipulator_output)
+            else:
+                setattr(self, func.__name__, manipulator_output)
 
         # Saving complex field data after function is applied
         if sp.save_fields and plane_name is not None:
