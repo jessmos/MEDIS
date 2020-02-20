@@ -191,7 +191,7 @@ def quick_ao(wf, nact, WFS_map):
     return ao_map
             
 
-def ideal_wfs(wfo):
+def ideal_wfs(wf):
     """
     saves the unwrapped phase [arctan2(imag/real)] of the wfo.wf_collection at each wavelength
 
@@ -201,16 +201,10 @@ def ideal_wfs(wfo):
     :param wfo: wavefront object
     :return: array containing only the unwrapped phase delay of the wavefront; shape=[n_wavelengths], units=radians
     """
-    star_wf = wfo.wf_collection[:, 0]
-    WFS_map = np.zeros((len(star_wf), sp.grid_size, sp.grid_size))
+    if wf.name == 'star':
+        WFS_map = unwrap_phase(proper.prop_get_phase(wf))
 
-    for iw in range(len(star_wf)):
-        WFS_map[iw] = unwrap_phase(proper.prop_get_phase(star_wf[iw]))
-
-    if 'ideal_wfs' in sp.save_list:
-        wfo.save_plane(location='ideal_wfs')
-
-    return WFS_map
+        return WFS_map
 
 ################################################################################
 # Full AO

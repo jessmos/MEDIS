@@ -76,7 +76,9 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
 
     # Both offsets and scales the companion wavefront
     if wfo.wf_collection.shape[1] > 1:
-        opx.offset_companion(wfo)
+        wfo.loop_collection(opx.offset_companion)
+        wfo.loop_collection(proper.prop_circular_aperture,
+                               **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
 
     # TODO rotate atmos not yet implementid in 2.0
     # if tp.rotate_sky:
@@ -97,7 +99,7 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     #######################################
     if tp.use_ao:
         if tp.open_ao:
-            WFS_map = ao.ideal_wfs(wfo)
+            wfo.loop_collection(ao.ideal_wfs)
             # tiptilt = np.zeros((sp.grid_size,sp.grid_size))
         else:
             #TODO Rupert-CPA maps are no longer generated. Not sure what you want to do here. The CPA map is stored
