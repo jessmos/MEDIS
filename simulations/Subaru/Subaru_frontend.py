@@ -130,7 +130,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
 
     if ap.companion:
         # Must do this after all calls to prop_define_entrance
-        opx.offset_companion(wfo)
+        wfo.loop_collection(opx.offset_companion)
         wfo.loop_collection(proper.prop_circular_aperture,
                                **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
 
@@ -160,7 +160,9 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
 
     # AO System
     if tp.use_ao:
-        WFS_map = ao.ideal_wfs(wfo)
+        # WFS_map = ao.ideal_wfs(wfo)
+        wfo.loop_collection(ao.ideal_wfs)
+        WFS_map = wfo.ideal_wfs
         ao.deformable_mirror(wfo, WFS_map, PASSVALUE['theta'], plane_name='woofer')
     # ------------------------------------------------
     wfo.loop_collection(proper.prop_propagate, tp.dist_dm_ao2)
