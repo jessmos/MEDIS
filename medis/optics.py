@@ -46,7 +46,7 @@ class Wavefronts():
 
         # Using Proper to propagate wavefront from primary through optical system, loop over wavelength
         self.wsamples = np.linspace(ap.wvl_range[0], ap.wvl_range[1], ap.n_wvl_init)  # units set in params (should be m)
-
+        self.num_sources = 1 + len(ap.contrast) if ap.companion else 1
         # wf_collection is an array of arrays; the wf_collection is (number_wavelengths x number_astro_objects)
         # each 2D field in the wf_collection is the 2D array of complex E-field values at that wavelength, per object
         # the E-field size is given by (sp.grid_size x sp.grid_size)
@@ -54,10 +54,7 @@ class Wavefronts():
         ############################
         # Create Wavefront Array
         ############################
-        if ap.companion:
-            self.wf_collection = np.empty((ap.n_wvl_init, 1 + len(ap.contrast)), dtype=object)
-        else:
-            self.wf_collection = np.empty((ap.n_wvl_init, 1), dtype=object)
+        self.wf_collection = np.empty((len(self.wsamples), self.num_sources), dtype=object)
 
         # Init Beam Ratios
         # self.beam_ratios = np.zeros_like(self.wsamples)
@@ -133,13 +130,15 @@ class Wavefronts():
         else:
             plane_name = None
 
-        manipulator_output = np.empty(self.wf_collection.shape)
+        # manipulator_output = np.empty(self.wf_collection.shape)
+        manipulator_output = [[[] for _ in range(len(self.wsamples))] for _ in range(self.num_sources)]
         for iw, sources in enumerate(self.wf_collection):
             for io, wavefront in enumerate(sources):
-                manipulator_output[iw, io] = func(wavefront, *args, **kwargs)
+                manipulator_output[io][iw] = func(wavefront, *args, **kwargs)
 
+        manipulator_output = np.array(manipulator_output)
         # if there's at least one not np.nan element add this array to the Wavefronts obj
-        if not np.all(np.isnan(manipulator_output)):
+        if np.any(manipulator_output != None):
             if plane_name:
                 setattr(self, plane_name, manipulator_output)
             else:
