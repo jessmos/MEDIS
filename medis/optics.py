@@ -21,8 +21,8 @@ class Wavefront(proper.WaveFront):
         self.lamda = lamda
         self.name = name
         self.beam_ratio = beam_ratio
-        self.iw  = iw
-        self.io  = io
+        self.iw = iw
+        self.io = io
 
         for attr in dir(wavefront):
             if not hasattr(self, attr):
@@ -145,7 +145,7 @@ class Wavefronts():
                 setattr(self, func.__name__, manipulator_output)
 
         # Saving complex field data after function is applied
-        if sp.save_fields and plane_name is not None:
+        if plane_name is not None:
             self.save_plane(location=plane_name)
 
     def save_plane(self, location=None):
@@ -334,9 +334,6 @@ def offset_companion(wf):
     offsets the companion wavefront using the 2nd and 3rd order Zernike Polynomials (X,Y tilt)
     companion(s) contrast and location(s) set in params
 
-    We don't call this function via wfo.loop_collection because we need to know which object (io) we are on, which
-    is not supported in the current format. This is the only acception to applying loop_collection
-
     Important: this function must be called AFTER any calls to proper.prop_define_entrance, which normalizes the
     intensity, because we scale the intensity of the planet relative to the star via the user-parameter ap.contrast.
 
@@ -350,7 +347,7 @@ def offset_companion(wf):
         gradient ap.C_spec should be chosen carefully to consider the number of wavelengths and spectral type of the
         star and planet in the simulation.
 
-    :param wfo: wavefront object, shape=(n_wavelengths, n_astro_objects, grid_sz, grid_sz)
+    :param wf: single wavefront, shape=(grid_sz, grid_sz)
     :return: nothing implicitly returned but the given wfo initiated in Wavefronts class has been altered to give the
         appropriate wavefront for a planet in the focal plane
     """

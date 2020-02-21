@@ -154,7 +154,7 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
 
     if ap.companion:
         # Must do this after all calls to prop_define_entrance
-        opx.offset_companion(wfo)
+        wfo.loop_collection(opx.offset_companion)
         wfo.loop_collection(proper.prop_circular_aperture,
                                **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
 
@@ -185,7 +185,7 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     # AO System
     if tp.use_ao:
         WFS_map = ao.ideal_wfs(wfo)
-        ao.deformable_mirror(wfo, WFS_map, PASSVALUE['theta'], plane_name='woofer')
+        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['theta'], plane_name='woofer')  # don't use PASSVALUE['WFS_map'] here because open loop
     # ------------------------------------------------
     wfo.loop_collection(proper.prop_propagate, tp.dist_dm_ao2)
 
@@ -208,7 +208,7 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     # AO System
     if tp.use_ao:
         WFS_map = ao.ideal_wfs(wfo)
-        ao.deformable_mirror(wfo, WFS_map, PASSVALUE['theta'], plane_name='tweeter')
+        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['theta'], plane_name='tweeter')
     # ------------------------------------------------
     wfo.loop_collection(proper.prop_propagate, tp.fl_sl)
 

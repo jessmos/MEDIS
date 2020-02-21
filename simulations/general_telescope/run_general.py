@@ -64,7 +64,7 @@ sp.tseries_cols = 5  # number of subplots per row in view_timeseries
 sp.show_planes = True
 
 # Saving
-sp.save_obs = False  # save obs_sequence (timestep, wavelength, x, y)
+sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
 sp.save_fields = True  # toggle to turn saving uniformly on/off
 sp.save_list = ['detector']  # list of locations in optics train to save
 

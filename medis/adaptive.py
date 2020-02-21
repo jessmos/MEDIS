@@ -25,6 +25,15 @@ from medis.optics import check_sampling
 from medis.utils import dprint
 
 
+# def ao(wf, WFS_map, theta):
+#     if sp.closed_loop:
+#         deformable_mirror(wf, WFS_map, theta)
+#     else:
+#         WFS_map = ideal_wfs(wf)  # overwrite WFS_map
+#         # dprint(f"WFS_ma.shape = {WFS_map.shape}")
+#         deformable_mirror(wf, WFS_map, theta)
+#
+
 ################################################################################
 # Deformable Mirror
 ################################################################################
@@ -73,7 +82,6 @@ def deformable_mirror(wf, WFS_map, theta, plane_name=None):
     ############################
     # Creating DM Surface Map
     ############################
-
     d_beam = 2 * proper.prop_get_beamradius(wf)  # beam diameter
     act_spacing = d_beam / nact_across_pupil  # actuator spacing [m]
     # map_spacing = proper.prop_get_sampling(wfo.wf_collection[iw,0])
@@ -81,7 +89,7 @@ def deformable_mirror(wf, WFS_map, theta, plane_name=None):
     #######
     # AO
     #######
-    dm_map = quick_ao(wf, nact, WFS_map)
+    dm_map = quick_ao(wf, nact, WFS_map[wf.iw])
 
     #######
     # CDI
@@ -107,7 +115,6 @@ def deformable_mirror(wf, WFS_map, theta, plane_name=None):
     # proper.prop_dm(wfo, dm_map, dm_xc, dm_yc, N_ACT_ACROSS_PUPIL=nact, FIT=True)  #
 
     # check_sampling(0, wfo, "E-Field after DM", getframeinfo(stack()[0][0]), units='um')  # check sampling in optics.py
-
 
     return
 
@@ -162,7 +169,8 @@ def quick_ao(wf, nact, WFS_map):
     ###################################
     # cropping here by beam_ratio rather than d_beam is valid since the beam size was initialized
     #  using the scaled beam_ratios when the wfo was created
-    ao_map = WFS_map[wf.iw,
+    # dprint(f"{WFS_map[0,0,0]}")
+    ao_map = WFS_map[
              sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2):
              sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+1,
              sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2):
@@ -191,8 +199,28 @@ def quick_ao(wf, nact, WFS_map):
     return ao_map
             
 
-def ideal_wfs(wf):
+# def ideal_wfs(wf):
+#     """
+#     saves the unwrapped phase [arctan2(imag/real)] of the wf at each wavelength
+#
+#     It is an idealized image (exact copy) of the wavefront phase per wavelength. Only the map for the first object
+#     (the star) is saved
+#
+#     :param wf: wavefront object
+#     :return: array containing only the unwrapped phase delay of the wavefront; shape=[n_wavelengths], units=radians
+#     """
+#     if wf.name == 'star':
+#         WFS_map = np.zeros((ap.n_wvl_init, sp.grid_size, sp.grid_size))
+#         for iw in range(ap.n_wvl_init):
+#             dprint(f"iw = {iw}")
+#             WFS_map[iw] = unwrap_phase(proper.prop_get_phase(wf))
+#         dprint(f"wfs_map.shape={WFS_map.shape}")
+#         return WFS_map
+#     else:
+#         pass
+def ideal_wfs(wfo):
     """
+    saves the unwrapped phase [arctan2(imag/real)] of the wfo.wf_array at each wavelength
     saves the unwrapped phase [arctan2(imag/real)] of the wfo.wf_collection at each wavelength
 
     It is an idealized image (exact copy) of the wavefront phase per wavelength. Only the map for the first object
@@ -201,10 +229,16 @@ def ideal_wfs(wf):
     :param wfo: wavefront object
     :return: array containing only the unwrapped phase delay of the wavefront; shape=[n_wavelengths], units=radians
     """
-    if wf.name == 'star':
-        WFS_map = unwrap_phase(proper.prop_get_phase(wf))
+    star_wf = wfo.wf_collection[:, 0]
+    WFS_map = np.zeros((len(star_wf), sp.grid_size, sp.grid_size))
 
-        return WFS_map
+    for iw in range(len(star_wf)):
+        WFS_map[iw] = unwrap_phase(proper.prop_get_phase(star_wf[iw]))
+
+    if 'ideal_wfs' in sp.save_list or sp.closed_loop:
+        wfo.save_plane(location='ideal_wfs')
+
+    return WFS_map
 
 ################################################################################
 # Full AO

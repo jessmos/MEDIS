@@ -38,6 +38,7 @@ from medis.light import Fields
 ################################################################################################################
 sentinel = None
 
+
 def run_medis(mode='Fields'):
     """
     Get either a multidimensional cps_sequence or photon set wrapped in an object. Modified version of auto_load_single
@@ -110,20 +111,21 @@ class RunMedis():
         else:
             theta_series = np.zeros(sp.numframes) * np.nan  # string of Nans
 
+        # Initialize Obs Sequence
+        self.cpx_sequence = np.zeros((sp.numframes, len(sp.save_list), ap.n_wvl_init, 1 + len(ap.contrast),
+                                      sp.grid_size, sp.grid_size), dtype=np.complex)
+        self.sampling = np.zeros((len(sp.save_list), ap.n_wvl_init))
+
         # =======================================================================================================
         # Closed-Loop- No Multiprocessing
         # =======================================================================================================
         if sp.closed_loop:
-            # Initialize Obs Sequence
-            self.cpx_sequence = np.zeros((sp.numframes, len(sp.save_list), ap.n_wvl_init, 1 + len(ap.contrast),
-                                          sp.grid_size, sp.grid_size), dtype=np.complex)
-            self.sampling = np.zeros((len(sp.save_list), ap.n_wvl_init))
-
             ##########################
             # Generating Timeseries
             ##########################
             for t in range(sp.numframes):
-                kwargs = {'iter': t, 'params': [ap, tp, iop, sp], 'theta': theta_series[t]}
+                kwargs = {'iter': t, 'params': [ap, tp, iop, sp], 'theta': theta_series[t],
+                          'WFS_map':self.cpx_sequence[t-sp.ao_delay]}
                 self.cpx_sequence[t], self.sampling = proper.prop_run(tp.prescription, 1, sp.grid_size,
                                                                          PASSVALUE=kwargs,
                                                                          VERBOSE=False,
@@ -152,7 +154,7 @@ class RunMedis():
             jobs = []
 
             # Everything initialised in Timeseries is available to us in this obj. planes etc need to be accessed using a queue
-            mt = MutliTime(time_idx, out_chunk, (tp, ap, sp, iop))
+            mt = MutliTime(time_idx, out_chunk, (tp, ap, sp, iop), theta_series)
 
             # Create the processes
             for i in range(sp.num_processes):
@@ -202,7 +204,9 @@ class RunMedis():
 
 class MutliTime():
     """
-    generates observation sequence by calling optics_propagate in time series
+    multiprocessing class for running open-loop telescope simulations
+
+    generates observation sequence by...
 
     is the time loop wrapper for the proper prescription, so multiple calls to the proper prescription as aberrations
         or atmosphere evolve
@@ -224,13 +228,14 @@ class MutliTime():
       return protocols.
       :intensity_seq is the intensity data in the focal plane only, with shape [timestep, wavelength, x, y]
       :cpx_seq is the complex-valued E-field in the planes specified by sp.save_list.
-            has shape [timestep, planes, wavelength, objects, x, y]
+            has shape [timestep, planes, wavelength, astronomical bodies, x, y]
       :sampling is the final sampling per wavelength in the focal plane
     """
-    def __init__(self, time_idx, out_chunk, conf_obj_tup):
+    def __init__(self, time_idx, out_chunk, conf_obj_tup, theta_series):
         self.time_idx = time_idx
         self.out_chunk = out_chunk
         self.conf_obj_tup = conf_obj_tup
+        self.theta_series = theta_series
 
         self.sampling = None
         max_steps = self.max_chunk()
@@ -277,9 +282,10 @@ class MutliTime():
         start = time.time()
 
         for it, t in enumerate(iter(self.time_idx.get, sentinel)):
-
             # if sp.verbose: print('timestep %i, using process %i' % (it, i))
-            kwargs = {'iter': t, 'params': [ap, tp, iop, sp], 'theta': self.theta_series[t]}
+            WFS_map = np.zeros((sp.grid_size, sp.grid_size))  # generate empty WFS_map (because we pass it in for
+                                                              # closed-loop processing, need to be consistent here
+            kwargs = {'iter': t, 'params': [ap, tp, iop, sp], 'WFS_map': WFS_map, 'theta': self.theta_series[t]}
             timestep_field, sampling = proper.prop_run(tp.prescription, 1, sp.grid_size, PASSVALUE=kwargs,
                                                        VERBOSE=False, TABLE=False)  # 1 is dummy wavelength
 

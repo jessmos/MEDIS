@@ -24,7 +24,7 @@ def phase_cal(wavelengths):
 ####################################################################################################
 # Functions Relating to Reading, Loading, and Saving Data #
 ####################################################################################################
-def save_obs_sequence(obs_sequence, obs_seq_file='obs_seq.pkl'):
+def save_to_disk_sequence(obs_sequence, obs_seq_file='obs_seq.pkl'):
     """saves obs sequence as a .pkl file
 
     :param obs_sequence- Observation sequence, 4D data structure

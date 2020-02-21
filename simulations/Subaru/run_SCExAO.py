@@ -26,7 +26,7 @@ tp.flen_primary = tp.entrance_d * 13.612
 
 # Simulation & Timing
 sp.numframes = 1
-sp.closed_loop = True
+sp.closed_loop = False
 
 # Grid Parameters
 sp.focused_sys = True
@@ -55,7 +55,7 @@ sp.tseries_cols = 5  # number of subplots per row in view_timeseries
 sp.show_planes = True
 
 # Saving
-sp.save_obs = False  # save obs_sequence (timestep, wavelength, x, y)
+sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
 sp.save_fields = True  # toggle to turn saving uniformly on/off
 sp.save_list = ['atmosphere', 'entrance_pupil','coronagraph', 'detector']  # list of locations in optics train to save
 
@@ -64,6 +64,7 @@ if __name__ == '__main__':
     # testname = input("Please enter test name: ")
     testname = 'SCExAO-test1'
     iop.update(testname)
+    dprint(f"iop name = {iop.testname}")
     iop.makedir()
 
     # =======================================================================

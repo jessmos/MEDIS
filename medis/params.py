@@ -10,7 +10,6 @@ time: seconds
 TODO
     * Add all possible initial SP attributes here so the user knows what the possible options are. Consider adding other param types too
     * add user_params.py too so we don't have to keep changing rootdir and datadir when pushing?
-    * Possibly remove one of save_fields and save_obs
 """
 
 import numpy as np
@@ -27,12 +26,12 @@ class IO_params:
     to be generated, so are also included in filenames
     """
 
-    def __init__(self, testname='Subaru-test1'):  # testname should be the name of the particular example you are running,
+    def __init__(self, testname='dummy'):  # testname should be the name of the particular example you are running,
                                               # for example 'BetaPic' or 'simple_telescope'
-        # self.rootdir = '/home/captainkay/mazinlab/MKIDSim/'
-        # self.datadir = '/home/captainkay/mazinlab/MKIDSim/CDIsim_data/'
-        self.rootdir = '/Users/dodkins/mazinlab/MKIDSim/miniMEDIS/'
-        self.datadir = '/Users/dodkins/mazinlab/MKIDSim/CDIsim_data/'
+        self.rootdir = '/home/captainkay/mazinlab/MKIDSim/'
+        self.datadir = '/home/captainkay/mazinlab/MKIDSim/CDIsim_data/'
+        # self.rootdir = '/Users/dodkins/mazinlab/MKIDSim/miniMEDIS/'
+        # self.datadir = '/Users/dodkins/mazinlab/MKIDSim/CDIsim_data/'
 
         # Unprocessed Science Data
         self.testname = testname  # set this up in the definition line, but can update it with iop.update('newname')
@@ -52,7 +51,6 @@ class IO_params:
         self.config = os.path.join(self.testdir,
                                   'telescope.h5')
 
-
     def update(self, new_name='example1'):
         self.__init__(testname=new_name)
 
@@ -62,9 +60,6 @@ class IO_params:
             os.makedirs(self.datadir, exist_ok=True)
         if not os.path.isdir(self.testdir):
             os.makedirs(self.testdir, exist_ok=True)
-        # if not os.path.isdir(self.aberdir):
-        #     os.makedirs(self.aberdir, exist_ok=True)
-
 
     def __iter__(self):
         for attr, value in self.__dict__.items():
@@ -99,6 +94,7 @@ class Simulation_params:
         # Timing Params
         self.closed_loop = True  # if false (open loop), then initiate multiprocessing for individual timesteps
         self.sample_time = 0.01  # [s] seconds per timestep/frame. used in atmosphere evolution, etc
+        self.ao_delay = 1  # [tstep] number of timesteps of delay for closed loop AO
         self.startframe = 0  # useful for things like RDI
         self.numframes = 1  # number of timesteps in the simulation
 
@@ -110,9 +106,8 @@ class Simulation_params:
         self.tseries_cols = 2  # number of subplots per row in view_timeseries
 
         # Reading/Saving Params
-        self.save_obs = False  # Saves observation sequence (timestep, wavelength, x, y)
+        self.save_to_disk = False  # Saves observation sequence (timestep, wavelength, x, y)
         self.save_list = ['detector']  # list of locations in optics train to save
-        self.save_fields = True  # toggle to turn saving uniformly on/off
         self.memory_limit = 10e9  # number of bytes for sixcube of complex fields before chunking happens
         self.checkpointing = None  # int or None number of timesteps before complex fields sixcube is saved
                                  # minimum of this and max allowed steps for memory reasons takes priority
