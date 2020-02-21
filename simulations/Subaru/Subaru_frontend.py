@@ -160,9 +160,9 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
 
     # AO System
     if tp.use_ao:
-        # WFS_map = ao.ideal_wfs(wfo)
-        wfo.loop_collection(ao.ideal_wfs)
-        WFS_map = wfo.ideal_wfs
+        # WFS_map = ao.open_loop_wfs(wfo)
+        wfo.loop_collection(ao.open_loop_wfs)
+        WFS_map = wfo.open_loop_wfs
         ao.deformable_mirror(wfo, WFS_map, PASSVALUE['theta'], plane_name='woofer')
     # ------------------------------------------------
     wfo.loop_collection(proper.prop_propagate, tp.dist_dm_ao2)

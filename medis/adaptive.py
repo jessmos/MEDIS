@@ -29,7 +29,7 @@ from medis.utils import dprint
 #     if sp.closed_loop:
 #         deformable_mirror(wf, WFS_map, theta)
 #     else:
-#         WFS_map = ideal_wfs(wf)  # overwrite WFS_map
+#         WFS_map = open_loop_wfs(wf)  # overwrite WFS_map
 #         # dprint(f"WFS_ma.shape = {WFS_map.shape}")
 #         deformable_mirror(wf, WFS_map, theta)
 #
@@ -199,26 +199,7 @@ def quick_ao(wf, nact, WFS_map):
     return ao_map
             
 
-# def ideal_wfs(wf):
-#     """
-#     saves the unwrapped phase [arctan2(imag/real)] of the wf at each wavelength
-#
-#     It is an idealized image (exact copy) of the wavefront phase per wavelength. Only the map for the first object
-#     (the star) is saved
-#
-#     :param wf: wavefront object
-#     :return: array containing only the unwrapped phase delay of the wavefront; shape=[n_wavelengths], units=radians
-#     """
-#     if wf.name == 'star':
-#         WFS_map = np.zeros((ap.n_wvl_init, sp.grid_size, sp.grid_size))
-#         for iw in range(ap.n_wvl_init):
-#             dprint(f"iw = {iw}")
-#             WFS_map[iw] = unwrap_phase(proper.prop_get_phase(wf))
-#         dprint(f"wfs_map.shape={WFS_map.shape}")
-#         return WFS_map
-#     else:
-#         pass
-def ideal_wfs(wfo):
+def open_loop_wfs(wfo):
     """
     saves the unwrapped phase [arctan2(imag/real)] of the wfo.wf_array at each wavelength
     saves the unwrapped phase [arctan2(imag/real)] of the wfo.wf_collection at each wavelength
@@ -235,8 +216,8 @@ def ideal_wfs(wfo):
     for iw in range(len(star_wf)):
         WFS_map[iw] = unwrap_phase(proper.prop_get_phase(star_wf[iw]))
 
-    if 'ideal_wfs' in sp.save_list or sp.closed_loop:
-        wfo.save_plane(location='ideal_wfs')
+    if 'open_loop_wfs' in sp.save_list or sp.closed_loop:
+        wfo.save_plane(location='open_loop_wfs')
 
     return WFS_map
 

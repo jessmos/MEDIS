@@ -99,7 +99,7 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     #######################################
     if tp.use_ao:
         if tp.open_ao:
-            wfo.loop_collection(ao.ideal_wfs)
+            wfo.loop_collection(ao.open_loop_wfs)
             # tiptilt = np.zeros((sp.grid_size,sp.grid_size))
         else:
             #TODO Rupert-CPA maps are no longer generated. Not sure what you want to do here. The CPA map is stored
