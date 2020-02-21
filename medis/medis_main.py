@@ -302,9 +302,7 @@ class MutliTime():
                 time.sleep(1)
 
             if chunk_seen or final_chunk_seen:  # chunk completed or simulation finished
-
-                if sp.return_fields:
-                    self.out_chunk.put((self.fields_chunk, sampling))
+                self.out_chunk.put((self.fields_chunk, sampling))
                 if sp.save_to_disk:
                     self.save(self.fields_chunk, sampling)
 

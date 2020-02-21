@@ -111,7 +111,6 @@ class Simulation_params:
         self.memory_limit = 10e9  # number of bytes for sixcube of complex fields before chunking happens
         self.checkpointing = None  # int or None number of timesteps before complex fields sixcube is saved
                                  # minimum of this and max allowed steps for memory reasons takes priority
-        self.return_fields = True  # If false the full complex six cube is not generated and passed. Saving memory
         self.verbose = True
         self.debug = False
         # self.usecache = True  # if save file exists then load, otherwise create a new sim
