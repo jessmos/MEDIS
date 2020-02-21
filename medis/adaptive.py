@@ -201,11 +201,13 @@ def quick_ao(wf, nact, WFS_map):
 
 def open_loop_wfs(wfo):
     """
-    saves the unwrapped phase [arctan2(imag/real)] of the wfo.wf_array at each wavelength
     saves the unwrapped phase [arctan2(imag/real)] of the wfo.wf_collection at each wavelength
 
     It is an idealized image (exact copy) of the wavefront phase per wavelength. Only the map for the first object
     (the star) is saved
+
+    #TODO the way this is saved for naming the WFS_map is going to break if you want to do closed loop WFS on a
+    #woofer-tweeter system
 
     :param wfo: wavefront object
     :return: array containing only the unwrapped phase delay of the wavefront; shape=[n_wavelengths], units=radians
@@ -217,7 +219,7 @@ def open_loop_wfs(wfo):
         WFS_map[iw] = unwrap_phase(proper.prop_get_phase(star_wf[iw]))
 
     if 'open_loop_wfs' in sp.save_list or sp.closed_loop:
-        wfo.save_plane(location='open_loop_wfs')
+        wfo.save_plane(location='WFS_map')
 
     return WFS_map
 

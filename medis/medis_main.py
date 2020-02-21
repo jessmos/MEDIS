@@ -284,7 +284,7 @@ class MutliTime():
         for it, t in enumerate(iter(self.time_idx.get, sentinel)):
             # if sp.verbose: print('timestep %i, using process %i' % (it, i))
             WFS_map = np.zeros((sp.grid_size, sp.grid_size))  # generate empty WFS_map (because we pass it in for
-                                                              # closed-loop processing, need to be consistent here
+                                                              # closed-loop processing, need to be consistent here)
             kwargs = {'iter': t, 'params': [ap, tp, iop, sp], 'WFS_map': WFS_map, 'theta': self.theta_series[t]}
             timestep_field, sampling = proper.prop_run(tp.prescription, 1, sp.grid_size, PASSVALUE=kwargs,
                                                        VERBOSE=False, TABLE=False)  # 1 is dummy wavelength
@@ -305,7 +305,7 @@ class MutliTime():
 
                 if sp.return_fields:
                     self.out_chunk.put((self.fields_chunk, sampling))
-                if sp.save_fields:
+                if sp.save_to_disk:
                     self.save(self.fields_chunk, sampling)
 
                 if sp.debug:
