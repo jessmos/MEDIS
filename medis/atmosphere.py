@@ -128,7 +128,7 @@ def add_atmos(wf, it):
     wavelength. prop_add_phase wants the phase delay to be in units of meters for each wavelength, so we convert to
     meters via the wavelength/np.pi
 
-    :param wf: a single (2D) wfo.wf_collection[iw,io] at one wavelength and object
+    :param wf: a single (2D) wfo.wf_collection[iw,ib] at one wavelength and object
     :param it: timestep# in obs_sequence. Comes from medis_main.gen_timeseries()
     :return: nothing returned, wfo is modified with proper.prop_add_phase
     """

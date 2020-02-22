@@ -17,12 +17,12 @@ from medis.utils import dprint
 class Wavefront(proper.WaveFront):
     """ Wrapper for proper.Wavefront that stores source and wavelength info """
 
-    def __init__(self, wavefront, lamda, name, beam_ratio, iw, io):
+    def __init__(self, wavefront, lamda, name, beam_ratio, iw, ib):
         self.lamda = lamda
         self.name = name
         self.beam_ratio = beam_ratio
         self.iw = iw
-        self.io = io
+        self.ib = ib
 
         for attr in dir(wavefront):
             if not hasattr(self, attr):
@@ -30,15 +30,15 @@ class Wavefront(proper.WaveFront):
 
 class Wavefronts():
     """
-    An object containing all of the complex E fields for each sampled wavelength and astronomical object at this timestep
+    An object containing all of the complex E fields for each sampled wavelength and astronomical object at this tstep
 
     :params
 
     :returns
     self.wf_collection: a 2D array, where each element is its own 2D proper wavefront object structured as
-     self.wf_collection[iw,io]. Here, iw, io is each wavefront and object, respectively
+     self.wf_collection[iw,ib]. Here, iw, ib is each wavefront and object, respectively
         ...meaning its an array of arrays.
-        thus, self.wf_collection[iw,io] is itself a 2D array of complex data. Its size is [sp.grid_size, sp.grid_size]
+        thus, self.wf_collection[iw,ib] is itself a 2D array of complex data. Its size is [sp.grid_size, sp.grid_size]
         we will call each instance of the collection a single wavefront wf
     self.save_E_fields: a matrix of E fields (proper.WaveFront.wfarr) at specified locations in the chain
     """
@@ -46,18 +46,15 @@ class Wavefronts():
 
         # Using Proper to propagate wavefront from primary through optical system, loop over wavelength
         self.wsamples = np.linspace(ap.wvl_range[0], ap.wvl_range[1], ap.n_wvl_init)  # units set in params (should be m)
-        self.num_sources = 1 + len(ap.contrast) if ap.companion else 1
-        # wf_collection is an array of arrays; the wf_collection is (number_wavelengths x number_astro_objects)
+        self.num_bodies = 1 + len(ap.contrast) if ap.companion else 1
+        # wf_collection is an array of arrays; the wf_collection is (number_wavelengths x number_astro_bodies)
         # each 2D field in the wf_collection is the 2D array of complex E-field values at that wavelength, per object
         # the E-field size is given by (sp.grid_size x sp.grid_size)
 
         ############################
         # Create Wavefront Array
         ############################
-        self.wf_collection = np.empty((len(self.wsamples), self.num_sources), dtype=object)
-
-        # Init Beam Ratios
-        # self.beam_ratios = np.zeros_like(self.wsamples)
+        self.wf_collection = np.empty((len(self.wsamples), self.num_bodies), dtype=object)
 
         # Init Locations of saved E-field
         self.saved_planes = []  # string of locations where fields have been saved (should match sp.save_list after run is completed)
@@ -105,7 +102,7 @@ class Wavefronts():
         """
         For each wavelength and astronomical object apply a function to the wavefront.
 
-        The wavefront object has dimensions of shape=(n_wavelengths, n_astro_objects, grid_sz, grid_sz)
+        The wavefront object has dimensions of shape=(n_wavelengths, n_astro_bodies, grid_sz, grid_sz)
 
         To save, you must pass in the keyword argument plane_name when you call this function from the perscription.
         This function does not have a keyword argument for plane_name specifically, since you need to distinguish
@@ -131,7 +128,7 @@ class Wavefronts():
             plane_name = None
 
         # manipulator_output = np.empty(self.wf_collection.shape)
-        manipulator_output = [[[] for _ in range(len(self.wsamples))] for _ in range(self.num_sources)]
+        manipulator_output = [[[] for _ in range(len(self.wsamples))] for _ in range(self.num_bodies)]
         for iw, sources in enumerate(self.wf_collection):
             for io, wavefront in enumerate(sources):
                 manipulator_output[io][iw] = func(wavefront, *args, **kwargs)
@@ -359,24 +356,24 @@ def offset_companion(wf):
         # Shifting the Array
         if sp.focused_sys:
             # Scaling into lambda/D AND scaling by wavelength
-            xloc = ap.companion_xy[wf.io-1][0] * wf.lamda / tp.entrance_d \
+            xloc = ap.companion_xy[wf.ib-1][0] * wf.lamda / tp.entrance_d \
                    * ap.wvl_range[0] / wf.lamda # * (-1)**(iw%2)
-            yloc = ap.companion_xy[wf.io-1][1] * wf.lamda / tp.entrance_d \
+            yloc = ap.companion_xy[wf.ib-1][1] * wf.lamda / tp.entrance_d \
                     *  ap.wvl_range[0] / wf.lamda  # / (2*np.pi)   * (-1)**(iw%2)
         else:
             # Scaling Happens Naturally!
-            xloc = ap.companion_xy[wf.io-1][0]
-            yloc = ap.companion_xy[wf.io-1][1]
+            xloc = ap.companion_xy[wf.ib-1][0]
+            yloc = ap.companion_xy[wf.ib-1][1]
         proper.prop_zernikes(wf, [2, 3], np.array([xloc, yloc]))  # zernike[2,3] = x,y tilt
 
         ##############################################
         # Wavelength/Contrast  Scaling the Companion
         ##############################################
-        wf.wfarr *= np.sqrt(ap.contrast[wf.io-1])
+        wf.wfarr *= np.sqrt(ap.contrast[wf.ib-1])
 
         #TODO implement wavelength-dependant scaling
         # Wavelength-dependent scaling by cont_scaling
-        # wf = wf * np.sqrt(ap.contrast[wf.io-1] * cont_scaling[wf.iw])
+        # wf = wf * np.sqrt(ap.contrast[wf.ib-1] * cont_scaling[wf.iw])
 
 
 def check_sampling(tstep, wfo, location, line_info, units=None):
