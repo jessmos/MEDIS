@@ -334,6 +334,9 @@ def offset_companion(wf):
     offsets the companion wavefront using the 2nd and 3rd order Zernike Polynomials (X,Y tilt)
     companion(s) contrast and location(s) set in params
 
+    We don't call this function via wfo.loop_collection because we need to know which object (io) we are on, which
+    is not supported in the current format. This is the only acception to applying loop_collection
+
     Important: this function must be called AFTER any calls to proper.prop_define_entrance, which normalizes the
     intensity, because we scale the intensity of the planet relative to the star via the user-parameter ap.contrast.
 
@@ -347,7 +350,7 @@ def offset_companion(wf):
         gradient ap.C_spec should be chosen carefully to consider the number of wavelengths and spectral type of the
         star and planet in the simulation.
 
-    :param wf: single wavefront, shape=(grid_sz, grid_sz)
+    :param wf: singe wavefront object from wfo.wf_collection, shape=(grid_sz, grid_sz)
     :return: nothing implicitly returned but the given wfo initiated in Wavefronts class has been altered to give the
         appropriate wavefront for a planet in the focal plane
     """
@@ -374,7 +377,7 @@ def offset_companion(wf):
 
         #TODO implement wavelength-dependant scaling
         # Wavelength-dependent scaling by cont_scaling
-        # wfo.wf_collection[iw, io].wfarr = wfo.wf_collection[iw, io].wfarr * np.sqrt(ap.contrast[io-1] * cont_scaling[iw])
+        # wf = wf * np.sqrt(ap.contrast[wf.io-1] * cont_scaling[wf.iw])
 
 
 def check_sampling(tstep, wfo, location, line_info, units=None):

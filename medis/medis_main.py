@@ -246,8 +246,6 @@ class MutliTime():
         self.init_fields_chunk()
         self.final_chunk_size = sp.numframes % self.chunk_steps
 
-        self.theta_series
-
     def init_fields_chunk(self):
         self.fields_chunk = np.empty((self.chunk_steps, len(sp.save_list), ap.n_wvl_init, 1 + len(ap.contrast),
                                       sp.grid_size, sp.grid_size), dtype=np.complex64)

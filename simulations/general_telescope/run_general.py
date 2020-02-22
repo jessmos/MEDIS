@@ -71,10 +71,10 @@ sp.save_list = ['detector']  # list of locations in optics train to save
 tp.use_CPA = False
 tp.use_NCPA = False
 tp.aber_params = {'QuasiStatic': False,  # or 'Static'
-                    'Phase': True,
-                    'Amp': False}
-                    # Coefficients used to calcuate PSD errormap in Proper (see pg 56 in manual)
-                    # only change these if making new aberration maps
+                            'Phase': True,
+                            'Amp': False}
+                            # Coefficients used to calcuate PSD errormap in Proper (see pg 56 in manual)
+                            # only change these if making new aberration maps
 tp.aber_vals = {'a': [7.2e-17, 3e-17],
                   'b': [0.8, 0.2],
                   'c': [3.1, 0.5],
@@ -90,8 +90,8 @@ if __name__ == '__main__':
     # Run it!!!!!!!!!!!!!!!!!
     # =======================================================================
 
-    Fields = mm.run_medis('Fields')
-    cpx_sequence, sampling = Fields.cpx_sequence, Fields.sampling
+    cpx_sequence, sampling = mm.RunMedis().telescope()
+    # cpx_sequence, sampling = mm.run_medis('Fields')
 
     # med = mm.Medis()
     #
@@ -103,3 +103,10 @@ if __name__ == '__main__':
         datacube = np.sum(np.abs(cpx_sequence)**2, axis=(0,1))[:,o]
         print(o, datacube.shape)
         view_spectra(datacube, logZ=True, title='Spectral Channels', dx=fp_sampling)
+    # fp_sampling = sampling[-1][:]
+    # print(fp_sampling)
+    # for o in range(len(ap.contrast)+1):
+    #     print(cpx_sequence.shape)
+    #     datacube = np.sum(np.abs(cpx_sequence)**2, axis=(0,1))[:,o]
+    #     print(o, datacube.shape)
+    #     view_spectra(datacube, logZ=True, title='Spectral Channels', dx=fp_sampling)

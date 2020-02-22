@@ -202,7 +202,7 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     # SXExAO Reimaging 1
     # wfo.loop_collection(aber.add_aber, tp.d_ao1, tp.aber_params, OAP1_aber_vals,
     #                        step=PASSVALUE['iter'], lens_name='ao188-OAP1')
-    wfo.loop_collection(proper.prop_propagate, tp.fl_sl)
+    wfo.loop_collection(proper.prop_propagate, tp.fl_sl)  # from AO188 focus to S-OAP1
     wfo.loop_collection(opx.prop_pass_lens, tp.fl_sl, tp.fl_sl)
     #
     # AO System
