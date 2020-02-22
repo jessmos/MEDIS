@@ -98,8 +98,8 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     # AO
     #######################################
     if tp.use_ao:
-        if tp.open_ao:
-            wfo.loop_collection(ao.open_loop_wfs)
+        if not sp.closed_loop:
+            WFS_map = ao.open_loop_wfs(wfo)
             # tiptilt = np.zeros((sp.grid_size,sp.grid_size))
         else:
             #TODO Rupert-CPA maps are no longer generated. Not sure what you want to do here. The CPA map is stored
@@ -112,13 +112,9 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
         #     CPA_maps, PASSVALUE['tiptilt'] = ao.tiptilt(wfo, CPA_maps, tiptilt)
 
         if tp.include_dm:
-            ao.deformable_mirror(wfo, WFS_map, PASSVALUE['theta'])
+            wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['theta'])
 
-        # if not tp.open_ao:
-        #     PASSVALUE['WFS_map'] = ao.closedloop_wfs(wfo, WFS_map)
-        # ao.flat_outside(wfo.wf_collection)
-
-    ########################################
+   ########################################
     # Post-AO Telescope Distortions
     # #######################################
     # Abberations after the AO Loop

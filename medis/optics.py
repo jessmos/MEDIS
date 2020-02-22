@@ -189,8 +189,7 @@ class Wavefronts():
         :return:
         """
         # Saving Complex Data via save_plane
-        if sp.save_fields:                                 # save detector by default unless sp.save_fields is false
-            self.save_plane(location='detector')           # shifting, etc already done in save_plane function
+        self.save_plane(location='detector')           # shifting, etc already done in save_plane function
 
         cpx_planes = np.array(self.Efield_planes)
         sampling = np.array(self.plane_sampling)
