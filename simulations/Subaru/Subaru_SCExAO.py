@@ -137,14 +137,6 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     """
     # print("Propagating Broadband Wavefront Through Subaru")
 
-    # Updating params due to multiprocessing weirdness
-    # I am only passing in iop for now, since this conf_obj_tup stuff doesn't update anything that is not already in
-    # the params file. In other words, if you *add* things to tp in this script, they won't get passed via this
-    # protocol. However, you *do* seem to need it for the iop.update() feature to be passed. I don't know if that is
-    # because you call it in the main script of the run_SCExAO script or why
-    # pv = PASSVALUE['params']
-    # iop.__dict__ = pv[0].__dict__
-
     # Initialize the Wavefront in Proper
     wfo = opx.Wavefronts()
     wfo.initialize_proper()
@@ -157,14 +149,14 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     # Obscurations (Secondary and Spiders)
     wfo.loop_collection(opx.add_obscurations, d_primary=tp.d_nsmyth, d_secondary=tp.d_secondary, legs_frac=0.05)
     wfo.loop_collection(proper.prop_circular_aperture,
-                           **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
+                        **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
     wfo.loop_collection(proper.prop_define_entrance, plane_name='entrance_pupil')  # normalizes abs intensity
 
     if ap.companion:
         # Must do this after all calls to prop_define_entrance
         wfo.loop_collection(opx.offset_companion)
         wfo.loop_collection(proper.prop_circular_aperture,
-                               **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
+                            **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
 
     # Test Sampling
     # opx.check_sampling(PASSVALUE['iter'], wfo, "initial", getframeinfo(stack()[0][0]), units='mm')
