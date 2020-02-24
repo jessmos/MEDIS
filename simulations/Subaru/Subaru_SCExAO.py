@@ -27,7 +27,7 @@ import numpy as np
 from inspect import getframeinfo, stack
 import proper
 
-from medis.params import ap, tp, sp
+from medis.params import iop, sp, ap, tp, cdip
 from medis.utils import dprint
 import medis.optics as opx
 import medis.aberrations as aber
@@ -39,7 +39,7 @@ import medis.coronagraphy as cg
 #################################################################################################
 #################################################################################################
 #################################################################################################
-#iop.update('Subaru-basic-test1')
+# iop.update('SCExAO-dummy-save')
 
 # Defining Subaru parameters
 # ----------------------------
@@ -136,6 +136,14 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     :returns spectral cube at instantaneous time in the focal_plane()
     """
     # print("Propagating Broadband Wavefront Through Subaru")
+
+    # Updating params due to multiprocessing weirdness
+    # I am only passing in iop for now, since this conf_obj_tup stuff doesn't update anything that is not already in
+    # the params file. In other words, if you *add* things to tp in this script, they won't get passed via this
+    # protocol. However, you *do* seem to need it for the iop.update() feature to be passed. I don't know if that is
+    # because you call it in the main script of the run_SCExAO script or why
+    # pv = PASSVALUE['params']
+    # iop.__dict__ = pv[0].__dict__
 
     # Initialize the Wavefront in Proper
     wfo = opx.Wavefronts()

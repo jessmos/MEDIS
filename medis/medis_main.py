@@ -154,7 +154,7 @@ class RunMedis():
             jobs = []
 
             # Everything initialised in Timeseries is available to us in this obj. planes etc need to be accessed using a queue
-            mt = MutliTime(time_idx, out_chunk, (tp, ap, sp, iop), theta_series)
+            mt = MutliTime(time_idx, out_chunk, theta_series)
 
             # Create the processes
             for i in range(sp.num_processes):
@@ -216,8 +216,6 @@ class MutliTime():
 
     :param time_ind: time index for parallelization (used by multiprocess)
     :param out_chunk: used for returning complex planes and sampling
-    :param conf_obj_tup : "global" configuration parameters need to be passed as args to gen_timesteries and
-                            proper.prop_run for multiprocessing reasons
     :param sp.memory_limit : number of bytes for sixcube of complex fields before chunking happens
     :param checkpointing : int or None number of timesteps before complex fields sixcube is saved
                             minimum of this and max allowed steps for memory reasons takes priority
@@ -231,10 +229,9 @@ class MutliTime():
             has shape [timestep, planes, wavelength, astronomical bodies, x, y]
       :sampling is the final sampling per wavelength in the focal plane
     """
-    def __init__(self, time_idx, out_chunk, conf_obj_tup, theta_series):
+    def __init__(self, time_idx, out_chunk, theta_series):
         self.time_idx = time_idx
         self.out_chunk = out_chunk
-        self.conf_obj_tup = conf_obj_tup
         self.theta_series = theta_series
 
         self.sampling = None
@@ -274,16 +271,13 @@ class MutliTime():
             has shape [timestep, planes, wavelength, objects, x, y]
         :sampling is the final sampling per wavelength in the focal plane
         """
-
-        (tp, ap, sp, iop) = self.conf_obj_tup  # This is neccessary
-
         start = time.time()
 
         for it, t in enumerate(iter(self.time_idx.get, sentinel)):
             # if sp.verbose: print('timestep %i, using process %i' % (it, i))
             WFS_map = np.zeros((sp.grid_size, sp.grid_size))  # generate empty WFS_map (because we pass it in for
                                                               # closed-loop processing, need to be consistent here)
-            kwargs = {'iter': t, 'params': [ap, tp, iop, sp], 'WFS_map': WFS_map, 'theta': self.theta_series[t]}
+            kwargs = {'iter': t, 'params': [iop, sp, ap, tp, cdip], 'WFS_map': WFS_map, 'theta': self.theta_series[t]}
             timestep_field, sampling = proper.prop_run(tp.prescription, 1, sp.grid_size, PASSVALUE=kwargs,
                                                        VERBOSE=False, TABLE=False)  # 1 is dummy wavelength
 

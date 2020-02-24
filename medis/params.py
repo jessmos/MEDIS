@@ -26,8 +26,8 @@ class IO_params:
     to be generated, so are also included in filenames
     """
 
-    def __init__(self, testname='dummy'):  # testname should be the name of the particular example you are running,
-                                              # for example 'BetaPic' or 'simple_telescope'
+    def __init__(self, testname='dummy'):  # you can update the testname with iop.update('your_testname')
+                                            # and then run iop.mkdir()
         self.rootdir = '/home/captainkay/mazinlab/MKIDSim/'
         self.datadir = '/home/captainkay/mazinlab/MKIDSim/CDIsim_data/'
         # self.rootdir = '/Users/dodkins/mazinlab/MKIDSim/miniMEDIS/'
@@ -46,7 +46,6 @@ class IO_params:
         # Aberration Metadata
         self.aberroot = 'aberrations'
         self.aberdata = f"gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
-        # self.aberdir = os.path.join(self.testdir, self.aberroot, self.aberdata)
 
         self.config = os.path.join(self.testdir,
                                   'telescope.h5')
@@ -84,7 +83,7 @@ class Simulation_params:
         self.grid_size = 512  # creates a nxn array of samples of the wavefront
                               # must be bigger than the beam size to avoid FT effects at edges; must be factor of 2
                               # NOT the size of your detector/# of pixels
-        self.maskd_size = 300  # will truncate grid_size to this range (avoids FFT artifacts)
+        self.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts)
                                # set to grid_size if undesired
         self.focused_sys = False  # use this to turn scaling of beam ratio by wavelength on/off
                         # turn on/off as necessary to ensure optics in focal plane have same sampling at each
