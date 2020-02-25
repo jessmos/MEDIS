@@ -22,7 +22,7 @@ import medis.medis_main as mm
 # testname = input("Please enter test name: ")
 testname = 'SCExAO-test1'
 iop.update(testname)
-dprint(f"iop name = {iop.testname}")
+# dprint(f"iop name = {iop.testname}")
 iop.makedir()
 
 # Telescope
@@ -36,18 +36,18 @@ sp.closed_loop = False
 
 # Grid Parameters
 sp.focused_sys = True
-sp.beam_ratio = 0.18  # parameter dealing with the sampling of the beam in the pupil/focal plane
+sp.beam_ratio = 0.2  # parameter dealing with the sampling of the beam in the pupil/focal plane
 sp.grid_size = 512  # creates a nxn array of samples of the wavefront
 sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
 
 # Companion
-ap.companion = True
+ap.companion = False
 ap.contrast = [1e-1]
 ap.companion_xy = [[5, -5]]  # units of this are lambda/tp.entrance_d
 
 # Toggles for Aberrations and Control
 tp.obscure = False
-tp.use_atmos = True
+tp.use_atmos = False
 tp.use_aber = False
 tp.use_ao = True
 cdip.use_cdi = False
@@ -62,7 +62,7 @@ sp.show_planes = True
 
 # Saving
 sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
-sp.save_list = ['atmosphere', 'entrance_pupil', 'coronagraph', 'detector']  # list of locations in optics train to save
+sp.save_list = ['atmosphere', 'entrance_pupil', 'woofer', 'detector']  # list of locations in optics train to save
 
 
 if __name__ == '__main__':
@@ -106,7 +106,7 @@ if __name__ == '__main__':
                             # f"Beam Ratio = {sp.beam_ratio:.4f}",#  sampling = {sampling*1e6:.4f} [um/gridpt]",
                       logZ=True,
                       subplt_cols=sp.spectra_cols,
-                      vlim=(1e-4, 1e-1),
+                      vlim=(1e-10, 1e-4),
                       dx=fp_sampling)
 
     # Plotting Timeseries in White Light
@@ -116,7 +116,7 @@ if __name__ == '__main__':
                                             f"AO={tp.use_ao}. CDI={cdip.use_cdi}",
                         subplt_cols=sp.tseries_cols,
                         logZ=True,
-                        vlim=(1e-6, 1e-3))
+                        vlim=(1e-10, 1e-4))
                         # dx=fp_sampling[0])
 
     # Plotting Selected Plane

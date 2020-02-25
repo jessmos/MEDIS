@@ -104,7 +104,7 @@ class Wavefronts():
 
         The wavefront object has dimensions of shape=(n_wavelengths, n_astro_bodies, grid_sz, grid_sz)
 
-        To save, you must pass in the keyword argument plane_name when you call this function from the perscription.
+        To save, you must pass in the keyword argument plane_name when you call this function from the prescription.
         This function does not have a keyword argument for plane_name specifically, since you need to distinguish
         it from the **kwargs you want to pass to the function that you are looping over.
         If you are saving the plane at this location, keep in mind it is saved AFTER the function is applied. This
@@ -127,6 +127,11 @@ class Wavefronts():
         else:
             plane_name = None
 
+        # manipulator_output is a way to store the values of a function passed into loop_collections.
+        # EG you could use this as a way to save your WFS map if desired. The WFS map would be returned
+        # as a 2D array by a WFS function (eg ao.closed_loop_wfs()) and then we could call it later and use it
+        # or  just save it and plot it
+        # also if we don't use it we can get rid of some of it
         # manipulator_output = np.empty(self.wf_collection.shape)
         manipulator_output = [[[] for _ in range(len(self.wsamples))] for _ in range(self.num_bodies)]
         for iw, sources in enumerate(self.wf_collection):
@@ -160,20 +165,17 @@ class Wavefronts():
             dprint(f"saving plane at {location}")
 
         if location is not None and location in sp.save_list:
-            shape = self.wf_collection.shape
             E_field = np.zeros((1, np.shape(self.wf_collection)[0],
                                        np.shape(self.wf_collection)[1],
                                        sp.grid_size,
                                        sp.grid_size), dtype=np.complex64)
             samp_lambda = np.zeros(ap.n_wvl_init)
-            # for iw in range(shape[0]):
-            #     for io in range(shape[1]):
+
             for iw, sources in enumerate(self.wf_collection):
+                samp_lambda[iw] = proper.prop_get_sampling(self.wf_collection[iw,0])
                 for io, wavefront in enumerate(sources):
                     wf = proper.prop_shift_center(wavefront.wfarr)
                     E_field[0, iw, io] = copy.copy(wf)
-                    samp_lambda[iw] = proper.prop_get_sampling(sources[0])
-                    # self.plane_sampling.append(proper.prop_get_sampling(self.wf_collection[iw,0]))
 
             self.Efield_planes = np.vstack((self.Efield_planes, E_field))
             self.saved_planes.append(location)

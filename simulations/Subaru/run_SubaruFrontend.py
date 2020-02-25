@@ -24,6 +24,10 @@ import medis.medis_main as mm
 #################################################################################################
 #################################################################################################
 #################################################################################################
+testname = 'Subaru-test2'
+iop.update(testname)
+iop.makedir()
+
 # Telescope
 tp.prescription = 'Subaru_frontend'
 tp.entrance_d = 7.9716
@@ -67,11 +71,6 @@ sp.save_list = ['atmosphere', 'entrance_pupil', 'woofer', 'detector']  # list of
 
 
 if __name__ == '__main__':
-    # testname = input("Please enter test name: ")
-    testname = 'Subaru-test2'
-    iop.update(testname)
-    iop.makedir()
-
     # =======================================================================
     # Run it!!!!!!!!!!!!!!!!!
     # =======================================================================

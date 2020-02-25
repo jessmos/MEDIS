@@ -16,12 +16,17 @@ from medis.utils import dprint
 from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
 import medis.medis_main as mm
 
-tp.prescription = 'general_telescope'
-tp.obscure = True
 
 #################################################################################################
 #################################################################################################
 #################################################################################################
+testname = 'general'
+iop.update(testname)
+iop.makedir()
+
+tp.prescription = 'general_telescope'
+tp.obscure = True
+
 # Companion
 ap.companion = True
 ap.contrast = [1e-5]
@@ -81,11 +86,6 @@ tp.aber_vals = {'a': [7.2e-17, 3e-17],
                   'a_amp': [0.05, 0.01]}
 
 if __name__ == '__main__':
-    # testname = input("Please enter test name: ")
-    testname = 'general'
-    iop.update(testname)
-    iop.makedir()
-
     # =======================================================================
     # Run it!!!!!!!!!!!!!!!!!
     # =======================================================================

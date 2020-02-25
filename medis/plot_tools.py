@@ -168,9 +168,9 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
         warnings.simplefilter("ignore", category=UserWarning)
         gs.tight_layout(fig, pad=1.08, rect=(0, 0, 1, 0.85))  # rect = (left, bottom, right, top)
         # fig.tight_layout(pad=50)
-        # cbar_ax = fig.add_axes([0.55, 0.1, 0.2, 0.05])  # Add axes for colorbar @ position [left,bottom,width,height]
-        # cb = fig.colorbar(im, cax=cbar_ax, orientation='horizontal')  #
-        # cb.set_label(clabel)
+        cbar_ax = fig.add_axes([0.55, 0.3, 0.2, 0.05])  # Add axes for colorbar @ position [left,bottom,width,height]
+        cb = fig.colorbar(im, cax=cbar_ax, orientation='horizontal')  #
+        cb.set_label(clabel)
 
     if show is True:
         plt.show(block=True)

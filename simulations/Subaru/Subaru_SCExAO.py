@@ -112,7 +112,8 @@ tp.lyot_size = 0.75  # units are in fraction of surface blocked
 
 tp.d_tweeter = 0.02  # just 1/10 scale the same system as AO188 since I don't actually know these parameters
 tp.act_tweeter = 45  # approx a 2000 actuator DM, (45x45=2025)
-tp.fl_sl = 0.1021  # m  focal length of SCExAO lens
+# tp.fl_sl = 0.1021  # m  focal length of SCExAO lens
+tp.fl_sl = 0.255  # m focal length of SCExAO lens
 tp.dist_cg_sl1 = tp.fl_sl + .000001  # m distance between AO188 focus and scexao lens1
 tp.dist_sl1_scexao = 0.1345  # m
 tp.dist_scexao_sl2 = 0.2511 - tp.dist_sl1_scexao  # m
@@ -185,7 +186,7 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     # AO System
     if tp.use_ao:
         WFS_map = ao.open_loop_wfs(wfo)
-        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['theta'], plane_name='woofer')  # don't use PASSVALUE['WFS_map'] here because open loop
+        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], plane_name='woofer')  # don't use PASSVALUE['WFS_map'] here because open loop
     # ------------------------------------------------
     wfo.loop_collection(proper.prop_propagate, tp.dist_dm_ao2)
 
@@ -208,7 +209,7 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     # AO System
     if tp.use_ao:
         WFS_map = ao.open_loop_wfs(wfo)
-        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['theta'], plane_name='tweeter')
+        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], plane_name='tweeter')
     # ------------------------------------------------
     wfo.loop_collection(proper.prop_propagate, tp.fl_sl)
 

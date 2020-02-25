@@ -124,7 +124,7 @@ class RunMedis():
             # Generating Timeseries
             ##########################
             for t in range(sp.numframes):
-                kwargs = {'iter': t, 'params': [ap, tp, iop, sp], 'theta': theta_series[t],
+                kwargs = {'iter': t, 'params': [ap, tp, iop, sp],
                           'WFS_map':self.cpx_sequence[t-sp.ao_delay]}
                 self.cpx_sequence[t], self.sampling = proper.prop_run(tp.prescription, 1, sp.grid_size,
                                                                          PASSVALUE=kwargs,
@@ -154,7 +154,7 @@ class RunMedis():
             jobs = []
 
             # Everything initialised in Timeseries is available to us in this obj. planes etc need to be accessed using a queue
-            mt = MutliTime(time_idx, out_chunk, theta_series)
+            mt = MutliTime(time_idx, out_chunk)
 
             # Create the processes
             for i in range(sp.num_processes):
@@ -178,6 +178,7 @@ class RunMedis():
                 fields_chunk, sampling = out_chunk.get()
                 self.cpx_sequence[it*mt.chunk_steps - sp.startframe :
                              (it+1)*mt.chunk_steps - sp.startframe, :, :, :, :, :] = fields_chunk
+            self.sampling = sampling
 
             # # Ending the gen_timeseries loop via multiprocessing protocol
             for i, p in enumerate(jobs):
@@ -229,10 +230,9 @@ class MutliTime():
             has shape [timestep, planes, wavelength, astronomical bodies, x, y]
       :sampling is the final sampling per wavelength in the focal plane
     """
-    def __init__(self, time_idx, out_chunk, theta_series):
+    def __init__(self, time_idx, out_chunk):
         self.time_idx = time_idx
         self.out_chunk = out_chunk
-        self.theta_series = theta_series
 
         self.sampling = None
         max_steps = self.max_chunk()
@@ -274,17 +274,14 @@ class MutliTime():
         start = time.time()
 
         for it, t in enumerate(iter(self.time_idx.get, sentinel)):
-            # if sp.verbose: print('timestep %i, using process %i' % (it, i))
-            WFS_map = np.zeros((sp.grid_size, sp.grid_size))  # generate empty WFS_map (because we pass it in for
-                                                              # closed-loop processing, need to be consistent here)
-            kwargs = {'iter': t, 'params': [iop, sp, ap, tp, cdip], 'WFS_map': WFS_map, 'theta': self.theta_series[t]}
+            kwargs = {'iter': t, 'params': [iop, sp, ap, tp, cdip]}
             timestep_field, sampling = proper.prop_run(tp.prescription, 1, sp.grid_size, PASSVALUE=kwargs,
                                                        VERBOSE=False, TABLE=False)  # 1 is dummy wavelength
 
             chunk_ind = it % self.chunk_steps
 
             self.fields_chunk[chunk_ind] = timestep_field
-            self.seen_substeps[chunk_ind]=1
+            self.seen_substeps[chunk_ind] = 1
 
             chunk_seen = np.all(self.seen_substeps)
             final_chunk_seen = it == sp.numframes-1 and np.all(self.seen_substeps[:self.final_chunk_size])
@@ -306,11 +303,11 @@ class MutliTime():
 
 
         now = time.time()
-        elapsed = float(now - start) / 60.
+        elapsed = float(now - start)
         each_iter = float(elapsed) / (sp.numframes + 1)
 
         print('***********************************')
-        print(f'{elapsed:.2f} minutes elapsed, each time step took {each_iter:.2f} minutes')
+        print(f'{elapsed/60.:.2f} minutes elapsed, each time step took {each_iter:.2f} minutes')
 
 
 if __name__ == '__main__':

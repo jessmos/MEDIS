@@ -37,7 +37,7 @@ from medis.utils import dprint
 ################################################################################
 # Deformable Mirror
 ################################################################################
-def deformable_mirror(wf, WFS_map, theta, plane_name=None):
+def deformable_mirror(wf, WFS_map, iter, plane_name=None):
     """
     combine different DM actuator commands into single map to send to prop_dm
 
@@ -59,7 +59,7 @@ def deformable_mirror(wf, WFS_map, theta, plane_name=None):
 
     :param wf: single wavefront
     :param WFS_map: wavefront sensor map, should be in units of phase delay
-    :param theta: phase of CDI probe (either radians or NAN if no probe to be applied at this timestep)
+    :param iter: the current index of iteration (which timestep this is)
     :param plane_name: name of plane (should be 'woofer' or 'tweeter' for best functionality
     :return: nothing is returned, but the probe map has been applied to the DM via proper.prop_dm
     """
@@ -94,9 +94,9 @@ def deformable_mirror(wf, WFS_map, theta, plane_name=None):
     #######
     # CDI
     ######
-    if not np.isnan(theta):
+    if cdip.use_cdi:
         # dprint(f"Applying CDI probe, lambda = {wfo.wsamples[iw]*1e9:.2f} nm")
-        probe = cdi.CDIprobe(theta, iw)
+        probe = cdi.CDIprobe(iter)
         # Add Probe to DM map
         dm_map = dm_map + probe
 
@@ -114,7 +114,7 @@ def deformable_mirror(wf, WFS_map, theta, plane_name=None):
     proper.prop_dm(wf, dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
     # proper.prop_dm(wfo, dm_map, dm_xc, dm_yc, N_ACT_ACROSS_PUPIL=nact, FIT=True)  #
 
-    # check_sampling(0, wfo, "E-Field after DM", getframeinfo(stack()[0][0]), units='um')  # check sampling in optics.py
+    # check_sampling(0, wfo, "E-Field after DM", getframeinfo(stack()[0][0]), units='um')  # check sampling from optics.py
 
     return
 
