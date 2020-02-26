@@ -14,8 +14,42 @@ from inspect import getframeinfo, stack
 from medis.params import ap, tp, sp
 from medis.utils import dprint
 
+
+####################################################################################################
+# Wavefront/Wavefronts Classes
+####################################################################################################
+"""
+RunMEDIS.telescope is a wrapper program designed to make it easier for an end-user to create an optical design and 
+process broadband light for multiple individual astronomical bodies through it. As such, we need to blend the 
+functionality of the original proper code with a structure format that contains all our data efficiently and in a 
+consistent, end-user friendly manner. We have opted to do so by containing all the broadband and multi-body info into
+a Wavefronts class instance. The Wavefronts class creates a wf_collection, which is a n_wavelength x n_astro_body array.
+This wf_collection is an array of arrays, because each array element (wf) is a single Wavefront class object. The 
+Wavefront class is the blending mechanism between proper and MEDIS, and basically re-attaches the methods/attributes of 
+the Wavefront class in Proper, plus adds some MEDIS-related attributes. The data of each wf is stored in a 2D n_gridpt x 
+n_gridpt array.
+
+In the Wavefronts class, we unwrap the information of the wfo.wf_collection[n_wavelength,n_astro_body].wf[sp.gridsize,
+sp.gridsize] into a single array called Efield_planes. Efield_planes is just a different way of collecting the data, 
+the main difference being that the wfo.wf_collection allows us to manipulate the data in a easy manner for the proper
+prescriptions, which run on a single wf but need to know how to manipulate the data based on the wavelength and body it 
+contains. The Efield_planes stores a subset of this data into a n-dimensional array which is easier to store/save to 
+disk. Another way of looking at this is that all functions in the proper prescription see the Wavefronts object and 
+manipulate its data, but only the specific data of interest gets collected and passed by the Efield_planes array. We 
+pass Efield planes in-out to RunMedis.telescope(), whereas RunMedis.telescope() doesn't ever see the Wavefronts
+objects. Eventually, the Efield_planes will be stored in the cpx_sequence of shape:
+(n_timesteps, n_saved_planes, n_wavelengths, n_asto_bodies, sp.grid_size, sp.grid_size) 
+"""
+
 class Wavefront(proper.WaveFront):
-    """ Wrapper for proper.Wavefront that stores source and wavelength info """
+    """
+    Wrapper for proper.Wavefront that stores source and wavelength info
+
+    Wavefront is an intermediate class object that grabs the methods/attributes from the wavefront class in proper and
+    stores them with the appropriate wf in the Wavefronts object wfo.wf_collection[iw, ib]. This way, each instance
+    of the  wfo.wf_collection[iw, ib] has some information about itself that can be used by the various proper functions
+    when thay are called by wfo.loop_collection
+    """
 
     def __init__(self, wavefront, lamda, name, beam_ratio, iw, ib):
         self.lamda = lamda
@@ -40,6 +74,8 @@ class Wavefronts():
         ...meaning its an array of arrays.
         thus, self.wf_collection[iw,ib] is itself a 2D array of complex data. Its size is [sp.grid_size, sp.grid_size]
         we will call each instance of the collection a single wavefront wf
+        Each single wf is itself a proper class object. We use the Wavefront class to assign all the methods/attributes
+        of the proper wavefront to each wf in the wf_collection
     self.save_E_fields: a matrix of E fields (proper.WaveFront.wfarr) at specified locations in the chain
     """
     def __init__(self):
@@ -47,13 +83,13 @@ class Wavefronts():
         # Using Proper to propagate wavefront from primary through optical system, loop over wavelength
         self.wsamples = np.linspace(ap.wvl_range[0], ap.wvl_range[1], ap.n_wvl_init)  # units set in params (should be m)
         self.num_bodies = 1 + len(ap.contrast) if ap.companion else 1
-        # wf_collection is an array of arrays; the wf_collection is (number_wavelengths x number_astro_bodies)
-        # each 2D field in the wf_collection is the 2D array of complex E-field values at that wavelength, per object
-        # the E-field size is given by (sp.grid_size x sp.grid_size)
 
         ############################
         # Create Wavefront Array
         ############################
+        # wf_collection is an array of arrays; the wf_collection is (number_wavelengths x number_astro_bodies)
+        # each 2D field in the wf_collection is the 2D array of complex E-field values at that wavelength, per object
+        # the E-field size is given by (sp.grid_size x sp.grid_size)
         self.wf_collection = np.empty((len(self.wsamples), self.num_bodies), dtype=object)
 
         # Init Locations of saved E-field
@@ -359,9 +395,9 @@ def offset_companion(wf):
         if sp.focused_sys:
             # Scaling into lambda/D AND scaling by wavelength
             xloc = ap.companion_xy[wf.ib-1][0] * wf.lamda / tp.entrance_d \
-                   * ap.wvl_range[0] / wf.lamda # * (-1)**(iw%2)
+                   * ap.wvl_range[0] / wf.lamda
             yloc = ap.companion_xy[wf.ib-1][1] * wf.lamda / tp.entrance_d \
-                    *  ap.wvl_range[0] / wf.lamda  # / (2*np.pi)   * (-1)**(iw%2)
+                   * ap.wvl_range[0] / wf.lamda
         else:
             # Scaling Happens Naturally!
             xloc = ap.companion_xy[wf.ib-1][0]
