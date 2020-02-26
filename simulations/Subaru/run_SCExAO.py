@@ -36,7 +36,7 @@ sp.closed_loop = False
 
 # Grid Parameters
 sp.focused_sys = True
-sp.beam_ratio = 0.2  # parameter dealing with the sampling of the beam in the pupil/focal plane
+sp.beam_ratio = 0.18  # parameter dealing with the sampling of the beam in the pupil/focal plane
 sp.grid_size = 512  # creates a nxn array of samples of the wavefront
 sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
 
@@ -44,6 +44,8 @@ sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifac
 ap.companion = False
 ap.contrast = [1e-1]
 ap.companion_xy = [[5, -5]]  # units of this are lambda/tp.entrance_d
+ap.interp_wvl = False
+ap.n_wvl_final = 3  # final number of wavelength bins in spectral cube after interpolation
 
 # Toggles for Aberrations and Control
 tp.obscure = False
@@ -75,7 +77,8 @@ if __name__ == '__main__':
     # Focal Plane Processing
     # =======================================================================
     # cpx_sequence = (n_timesteps ,n_planes, n_waves_init, n_astro_bodies, nx ,ny)
-    # cpx_sequence = mmu.interp_wavelength(cpx_sequence, 2)  # interpolate over wavelength
+    if ap.interp_wvl:
+        cpx_sequence = opx.interp_wavelength(cpx_sequence, 2)  # interpolate over wavelength
     focal_plane = opx.extract_plane(cpx_sequence, 'detector')  # eliminates astro_body axis
     # convert to intensity THEN sum over object, keeping the dimension of tstep even if it's one
     focal_plane = np.sum(opx.cpx_to_intensity(focal_plane), axis=2)

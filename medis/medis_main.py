@@ -106,12 +106,12 @@ class RunMedis():
             ap.contrast = []
 
         # Initialize CDI probes
-        if cdip.use_cdi is True:
-            theta_series = cdi.gen_CDI_phase_stream()
-        else:
-            theta_series = np.zeros(sp.numframes) * np.nan  # string of Nans
+        # if cdip.use_cdi is True:
+        #     theta_series = cdi.gen_CDI_phase_stream()
+        # else:
+        #     theta_series = np.zeros(sp.numframes) * np.nan  # string of Nans
 
-        # Initialize Obs Sequence
+        # Initialize Obs Sequence & Sampling
         self.cpx_sequence = np.zeros((sp.numframes, len(sp.save_list), ap.n_wvl_init, 1 + len(ap.contrast),
                                       sp.grid_size, sp.grid_size), dtype=np.complex)
         self.sampling = np.zeros((len(sp.save_list), ap.n_wvl_init))
@@ -125,7 +125,7 @@ class RunMedis():
             ##########################
             for t in range(sp.numframes):
                 kwargs = {'iter': t, 'params': [ap, tp, iop, sp],
-                          'WFS_map':self.cpx_sequence[t-sp.ao_delay]}
+                          'WFS_map': self.cpx_sequence[t-sp.ao_delay]}
                 self.cpx_sequence[t], self.sampling = proper.prop_run(tp.prescription, 1, sp.grid_size,
                                                                          PASSVALUE=kwargs,
                                                                          VERBOSE=False,
@@ -135,7 +135,7 @@ class RunMedis():
             print('**************************************')
             finish = time.time()
             print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
-            # print(f"Number of timesteps = {np.shape(cpx_sequence)[0]}")
+            mu.display_sequence_shape(self.cpx_sequence)
 
             return self.cpx_sequence, self.sampling
 
@@ -187,7 +187,7 @@ class RunMedis():
         print('MEDIS Telescope Run Completed')
         print('**************************************')
         finish = time.time()
-        print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
+        print(f'Total Time elapsed: {(finish - start) / 60:.2f} minutes')
         # print(f"Number of timesteps = {np.shape(cpx_sequence)[0]}")
 
         mu.display_sequence_shape(self.cpx_sequence)
@@ -221,7 +221,6 @@ class MutliTime():
     :param checkpointing : int or None number of timesteps before complex fields sixcube is saved
                             minimum of this and max allowed steps for memory reasons takes priority
     :type time_ind: mp.Queue
-    :type conf_obj_tup: tuple
 
     :return: returns the observation sequence, but through the multiprocessing tools, not through more standard
       return protocols.
@@ -238,7 +237,8 @@ class MutliTime():
         max_steps = self.max_chunk()
         checkpoint_steps = max_steps if sp.checkpointing is None else sp.checkpointing
         self.chunk_steps = min([max_steps, sp.numframes, checkpoint_steps])
-        if sp.verbose: print(f'Using chunks of size {self.chunk_steps}')
+        if sp.verbose:
+            print(f'Using chunks of size {self.chunk_steps}')
         self.num_chunks = sp.numframes/self.chunk_steps
         self.init_fields_chunk()
         self.final_chunk_size = sp.numframes % self.chunk_steps
@@ -307,7 +307,7 @@ class MutliTime():
         each_iter = float(elapsed) / (sp.numframes + 1)
 
         print('***********************************')
-        print(f'{elapsed/60.:.2f} minutes elapsed, each time step took {each_iter:.2f} minutes')
+        print(f'{elapsed/60.:.2f} minutes elapsed in gen_timeserie \n each time step took {each_iter:.2f} seconds')
 
 
 if __name__ == '__main__':

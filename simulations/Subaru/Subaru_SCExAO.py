@@ -98,13 +98,6 @@ OAP2_aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4
                   'c': [3.1, 0.5],  #
                   'a_amp': [0.05, 0.01]}
 
-# ------------------------------
-# Coronagraph
-tp.cg_type = 'Gaussian'
-tp.cg_size = 3  # physical size or lambda/D size
-tp.cg_size_units = "l/D"  # "m" or "l/D"
-tp.fl_cg_lens = 0.1021  # m
-tp.lyot_size = 0.75  # units are in fraction of surface blocked
 
 # ------------------------------
 # SCExAO
@@ -118,6 +111,15 @@ tp.dist_cg_sl1 = tp.fl_sl + .000001  # m distance between AO188 focus and scexao
 tp.dist_sl1_scexao = 0.1345  # m
 tp.dist_scexao_sl2 = 0.2511 - tp.dist_sl1_scexao  # m
 tp.dist_sl2_focus = 0.1261  # m
+
+# ------------------------------
+# Coronagraph
+tp.cg_type = 'Gaussian'
+tp.cg_size = 3  # physical size or lambda/D size
+tp.cg_size_units = "l/D"  # "m" or "l/D"
+# tp.fl_cg_lens = 0.1021  # m
+tp.fl_cg_lens = tp.fl_sl
+tp.lyot_size = 0.75  # units are in fraction of surface blocked
 
 
 #################################################################################################
