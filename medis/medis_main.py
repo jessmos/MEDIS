@@ -71,7 +71,10 @@ class RunMedis():
 
     """
     def __init__(self):
-        self.dummy = 1
+        # Initialize Obs Sequence & Sampling
+        self.cpx_sequence = np.zeros((sp.numframes, len(sp.save_list), ap.n_wvl_init, 1 + len(ap.contrast),
+                                      sp.grid_size, sp.grid_size), dtype=np.complex)
+        self.sampling = np.zeros((len(sp.save_list), ap.n_wvl_init))
 
     def telescope(self):
         """
@@ -102,19 +105,13 @@ class RunMedis():
         #
         #     return obs_sequence
 
-        if ap.companion is False:
-            ap.contrast = []
+        mu.check_telescope_params()
 
         # Initialize CDI probes
         # if cdip.use_cdi is True:
         #     theta_series = cdi.gen_CDI_phase_stream()
         # else:
         #     theta_series = np.zeros(sp.numframes) * np.nan  # string of Nans
-
-        # Initialize Obs Sequence & Sampling
-        self.cpx_sequence = np.zeros((sp.numframes, len(sp.save_list), ap.n_wvl_init, 1 + len(ap.contrast),
-                                      sp.grid_size, sp.grid_size), dtype=np.complex)
-        self.sampling = np.zeros((len(sp.save_list), ap.n_wvl_init))
 
         # =======================================================================================================
         # Closed-Loop- No Multiprocessing
@@ -307,7 +304,7 @@ class MutliTime():
         each_iter = float(elapsed) / (sp.numframes + 1)
 
         print('***********************************')
-        print(f'{elapsed/60.:.2f} minutes elapsed in gen_timeserie \n each time step took {each_iter:.2f} seconds')
+        print(f'{elapsed/60.:.2f} minutes elapsed in gen_timeseries \n each time step took {each_iter:.2f} seconds')
 
 
 if __name__ == '__main__':

@@ -116,3 +116,24 @@ def readFITS(filename):
     return scidata
 
 
+####################################################################################################
+# Functions Related to Checking Params #
+####################################################################################################
+def check_telescope_params():
+    """
+    A general housekeeping file for params in the telescope end of MEDIS
+
+    :return:
+    """
+    # Checking Companion params
+    if ap.companion is False:
+        ap.contrast = []
+
+    # Checking Wavelength
+    if not ap.interp_wvl:
+        ap.n_wvl_final = ap.n_wvl_init
+
+
+
+
+
