@@ -45,13 +45,13 @@ ap.companion = False
 ap.contrast = [1e-1]
 ap.companion_xy = [[5, -5]]  # units of this are lambda/tp.entrance_d
 ap.interp_wvl = False
-ap.n_wvl_final = 3  # final number of wavelength bins in spectral cube after interpolation
+ap.wvl_range = np.array([800,1400])*1e-9
 
 # Toggles for Aberrations and Control
 tp.obscure = False
 tp.use_atmos = False
 tp.use_aber = False
-tp.use_ao = True
+tp.use_ao = False
 cdip.use_cdi = False
 
 # Plotting

@@ -71,6 +71,9 @@ class RunMedis():
 
     """
     def __init__(self):
+        # Check params before memory is allocated
+        mu.check_telescope_params()
+
         # Initialize Obs Sequence & Sampling
         self.cpx_sequence = np.zeros((sp.numframes, len(sp.save_list), ap.n_wvl_init, 1 + len(ap.contrast),
                                       sp.grid_size, sp.grid_size), dtype=np.complex)
@@ -105,7 +108,6 @@ class RunMedis():
         #
         #     return obs_sequence
 
-        mu.check_telescope_params()
 
         # Initialize CDI probes
         # if cdip.use_cdi is True:

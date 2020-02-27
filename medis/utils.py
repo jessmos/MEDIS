@@ -133,6 +133,16 @@ def check_telescope_params():
     if not ap.interp_wvl:
         ap.n_wvl_final = ap.n_wvl_init
 
+    # pop DM names from save_list if tp.use_ao is False
+    if not tp.use_ao:
+        if 'woofer' in sp.save_list:
+            sp.save_list.remove('woofer')
+        elif 'tweeter' in sp.save_list:
+            sp.save_list.remove('tweeter')
+        elif 'WFS_map' in sp.save_list:
+            sp.save_list.remove('WFS_map')
+
+
 
 
 

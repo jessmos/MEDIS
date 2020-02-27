@@ -105,6 +105,7 @@ OAP2_aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4
 
 tp.d_tweeter = 0.02  # just 1/10 scale the same system as AO188 since I don't actually know these parameters
 tp.act_tweeter = 45  # approx a 2000 actuator DM, (45x45=2025)
+tp.d_sl = 0.0508  # [m] diameter or SCExAO lens  == 2 inch diam
 # tp.fl_sl = 0.1021  # m  focal length of SCExAO lens
 tp.fl_sl = 0.255  # m focal length of SCExAO lens
 tp.dist_cg_sl1 = tp.fl_sl + .000001  # m distance between AO188 focus and scexao lens1
@@ -156,7 +157,7 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     wfo.loop_collection(proper.prop_define_entrance, plane_name='entrance_pupil')  # normalizes abs intensity
 
     if ap.companion:
-        # Must do this after all calls to prop_define_entrance
+        # Must do this after all calls to prop_define_entrance due to contrast scaling of companions
         wfo.loop_collection(opx.offset_companion)
         wfo.loop_collection(proper.prop_circular_aperture,
                             **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
@@ -185,7 +186,7 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
                            step=PASSVALUE['iter'], lens_name='ao188-OAP1')
     wfo.loop_collection(opx.prop_pass_lens, tp.fl_ao1, tp.dist_ao1_dm)
 
-    # AO System
+    # AO188 System
     if tp.use_ao:
         WFS_map = ao.open_loop_wfs(wfo)
         wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], plane_name='woofer')  # don't use PASSVALUE['WFS_map'] here because open loop
