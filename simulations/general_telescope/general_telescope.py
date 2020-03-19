@@ -36,13 +36,6 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     """
     # print("Propagating Broadband Wavefront Through Telescope")
 
-    # Parameters-import statements won't work through the function
-    passpara = PASSVALUE['params']
-    ap.__dict__ = passpara[0].__dict__
-    tp.__dict__ = passpara[1].__dict__
-    iop.__dict__ = passpara[2].__dict__
-    sp.__dict__ = passpara[3].__dict__
-
     # datacube = []
     wfo = opx.Wavefronts()
     wfo.initialize_proper()
@@ -112,7 +105,7 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
         #     CPA_maps, PASSVALUE['tiptilt'] = ao.tiptilt(wfo, CPA_maps, tiptilt)
 
         if tp.include_dm:
-            wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['theta'])
+            wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'])
 
    ########################################
     # Post-AO Telescope Distortions
