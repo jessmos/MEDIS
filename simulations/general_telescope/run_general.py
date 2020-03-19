@@ -63,7 +63,7 @@ tp.use_coronagraph = False
 # Plotting
 sp.show_wframe = True  # Plot white light image frame
 sp.show_spectra = True  # Plot spectral cube at single timestep
-sp.spectra_cols = 3  # number of subplots per row in view_datacube
+sp.spectra_cols = 3  # number of subplots per row in view_spectra
 sp.show_tseries = False  # Plot full timeseries of white light frames
 sp.tseries_cols = 5  # number of subplots per row in view_timeseries
 sp.show_planes = True
@@ -90,7 +90,8 @@ if __name__ == '__main__':
     # Run it!!!!!!!!!!!!!!!!!
     # =======================================================================
 
-    cpx_sequence, sampling = mm.RunMedis().telescope()
+    photons, stackcube, sampling = mm.RunMedis().MKIDs()
+
     # cpx_sequence, sampling = mm.run_medis('Fields')
 
     # med = mm.Medis()
@@ -99,10 +100,11 @@ if __name__ == '__main__':
     fp_sampling = sampling[-1][:]
     print(fp_sampling)
     for o in range(len(ap.contrast)+1):
-        print(cpx_sequence.shape)
-        datacube = np.sum(np.abs(cpx_sequence)**2, axis=(0,1))[:,o]
+        print(stackcube.shape)
+        # datacube = np.sum(np.abs(stackcube)**2, axis=(0,1))[:,o]
+        datacube = stackcube[o]
         print(o, datacube.shape)
-        view_spectra(datacube, logZ=True, title='Spectral Channels', dx=fp_sampling)
+        view_spectra(datacube, logZ=True, title='Spectral Channels', dx=fp_sampling, use_axis=False)
     # fp_sampling = sampling[-1][:]
     # print(fp_sampling)
     # for o in range(len(ap.contrast)+1):

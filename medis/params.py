@@ -50,6 +50,8 @@ class IO_params:
         self.config = os.path.join(self.testdir,
                                   'telescope.h5')
 
+        self.device_params = os.path.join(self.testdir, 'device_params.pkl')  # detector metadata
+
     def update(self, new_name='example1'):
         self.__init__(testname=new_name)
 
@@ -101,7 +103,7 @@ class Simulation_params:
         self.show_spectra = False  # Plot spectral cube at single timestep
         self.show_wframe = True  # Plot white light image frame
         self.show_tseries = False  # Plot full timeseries of white light frames
-        self.spectra_cols = 2  # number of subplots per row in view_datacube
+        self.spectra_cols = 2  # number of subplots per row in view_spectra
         self.tseries_cols = 2  # number of subplots per row in view_timeseries
 
         # Reading/Saving Params
@@ -129,7 +131,7 @@ class Astro_params:
     """
     def __init__(self):
         # Companion Object Params
-        self.star_photons = int(1e5)  # A 5 apparent mag star 1e6 cts/cm^2/s
+        self.star_flux = int(1e5)  # A 5 apparent mag star 1e6 cts/cm^2/s
         self.companion = False
         self.contrast = []
         self.C_spec = 1.5  # the gradient of the increase in contrast towards shorter wavelengths
@@ -204,6 +206,84 @@ class Telescope_params:
         return self.__str__().split(' ')[0].split('.')[-1]
 
 
+class MKID_params:
+    def __init__(self):
+        self.bad_pix = False
+        # self.interp_sample=True # avoids the quantization error in creating the datacube
+        self.QE_map = None
+        self.wavecal_coeffs = [1./12, -157]  # assume linear for now 800nm = -90deg, 1500nm = -30deg
+        self.phase_uncertainty = False  # True
+        self.phase_background = False
+        self.QE_var = False
+        self.remove_close = False
+        self.dark_counts = False
+        self.array_size = np.array([129,129])#np.array([125,80])#np.array([125,125])#
+        self.resamp = True
+        self.quantize_FCs = False
+        # self.total_pix = self.array_size[0] * self.array_size[1]
+        self.pix_yield = 0.9
+        self.hot_pix = 0  # Number of hot pixels
+        self.hot_bright = 1e3  # Number of counts/s a hot pixel registers
+        self.dark_pix_frac = 0.1  # Number of dark count pixels
+        self.dark_bright = 10  # Number of counts/s on average for dark count pixels
+        self.threshold_phase = 0#-30 # quite close to 0, basically all photons will be detected.
+
+        self.max_count = 2500.  # cts/s
+        self.dead_time = 0.02#10e-6  # s
+        self.bin_time = 2e-3 # minimum time to bin counts for stat-based analysis
+        # self.frame_time = 0.001#atm_size*atm_spat_rate/(wind_speed*atm_scale) # 0.0004
+        self.total_int = 1 #second
+        self.frame_int = 1./20
+        self.t_frames = int(self.total_int/self.frame_int)
+        self.platescale = 10 *1e-3
+        # self.xnum= self.array_size[0]
+        # self.ynum= self.array_size[1]
+
+        # for distributions
+        self.res_elements = self.array_size[0]
+        self.g_mean = 0.95
+        self.g_sig = 0.025
+        self.g_spec = -1/10.
+        self.bg_mean = 0
+        self.bg_sig = 30
+        self.r_mean = 1
+        self.r_sig = 0.05
+        self.R_mean = 50
+        self.R_sig = 2
+        self.R_spec = -1./10
+
+        self.lod = 8  # 8 pixels in these upsampled images = one lambda/d
+        self.nlod = 10  # 3 #how many lambda/D do we want to calculate out to
+
+    def __iter__(self):
+        for attr, value in self.__dict__.items():
+            yield attr, value
+
+    def __name__(self):
+        return self.__str__().split(' ')[0].split('.')[-1]
+
+
+class Device_params:
+    """
+    This is different from MKID_params in that it contains an instance of these random multidimensional parameters
+    Perhaps it could be part of MKID_params
+    """
+    def __init__(self):
+        self.QE_map = None
+        self.Rs = None
+        self.sigs = None
+        self.basesDeg = None
+        self.hot_pix = None
+        self.dark_pix_frac = None
+
+    def __iter__(self):
+        for attr, value in self.__dict__.items():
+            yield attr, value
+
+    def __name__(self):
+        return self.__str__().split(' ')[0].split('.')[-1]
+
+
 class CDI_params():
     def __init__(self):
         self.use_cdi = False
@@ -262,6 +342,8 @@ tp = Telescope_params()
 sp = Simulation_params()
 atmp = Atmos_params()
 cdip = CDI_params()
+mp = MKID_params()
+dp = Device_params()
 iop = IO_params()  # Must call this last since IO_params uses ap and tp
 
 # Turning off messages from Proper

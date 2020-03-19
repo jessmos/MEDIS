@@ -23,13 +23,16 @@ import multiprocessing
 import time
 import traceback
 import glob
+import pickle
 
-from medis.params import iop, ap, tp, sp, cdip
+from medis.params import iop, ap, tp, sp, cdip, mp
 import proper
 import medis.atmosphere as atmos
 from medis.plot_tools import view_spectra
 import medis.CDI as cdi
 import medis.utils as mu
+import medis.MKIDs as MKIDs
+import medis.optics as opx
 from medis.controller import auto_load
 from medis.light import Fields
 
@@ -131,13 +134,6 @@ class RunMedis():
                                                                          VERBOSE=False,
                                                                          TABLE=False)  # 1 is dummy wavelength
 
-            print('MEDIS Telescope Run Completed')
-            print('**************************************')
-            finish = time.time()
-            print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
-            # print(f"Number of timesteps = {np.shape(cpx_sequence)[0]}")
-
-            return self.cpx_sequence, self.sampling
 
         # =======================================================================================================
         # Open-Loop- Uses Multiprocessing
@@ -184,6 +180,10 @@ class RunMedis():
             for i, p in enumerate(jobs):
                 p.join()  # Wait for all the jobs to finish and consolidate them here
 
+        if ap.interp_wvl:
+            self.cpx_sequence = opx.interp_wavelength(self.cpx_sequence, ax=2)
+            self.sampling = opx.interp_sampling(self.sampling)
+
         print('MEDIS Telescope Run Completed')
         print('**************************************')
         finish = time.time()
@@ -200,7 +200,28 @@ class RunMedis():
 
         :return:
         """
-        #TODO Rupert integrates the MKIDs stuff here
+        # initialize MKIDs
+        MKIDs.initialize()
+
+        with open(iop.device_params, 'rb') as handle:
+            dp = pickle.load(handle)
+
+        cpx_sequence, sampling = self.telescope()
+
+        photons = np.empty((0, 4))
+        stackcube = np.zeros((len(cpx_sequence), ap.n_wvl_final, mp.array_size[1], mp.array_size[0]))
+        for step in range(len(cpx_sequence)):
+            print('step', step)
+            spectralcube = np.abs(np.sum(cpx_sequence[step, -1, :, :], axis=1)) ** 2
+            step_packets = MKIDs.get_packets(spectralcube, step, dp, mp)
+            photons = np.vstack((photons, step_packets))
+
+        # with open(iop.form_photons, 'wb') as handle:
+        #     pickle.dump((photons, stackcube), handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        return photons, stackcube, sampling
+
+
 
 
 class MutliTime():
