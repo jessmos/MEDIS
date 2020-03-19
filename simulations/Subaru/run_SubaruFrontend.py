@@ -59,7 +59,7 @@ cdip.use_cdi = False
 # Plotting
 sp.show_wframe = False  # Plot white light image frame
 sp.show_spectra = False  # Plot spectral cube at single timestep
-sp.spectra_cols = 3  # number of subplots per row in view_datacube
+sp.spectra_cols = 3  # number of subplots per row in view_spectra
 sp.show_tseries = False  # Plot full timeseries of white light frames
 sp.tseries_cols = 5  # number of subplots per row in view_timeseries
 sp.show_planes = True

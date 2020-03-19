@@ -121,11 +121,11 @@ class Photons():
         if self.dp.QE_var:
             intensity *= self.dp.QE_map[:intensity.shape[1], :intensity.shape[1]]
 
-        if hasattr(self.dp, 'star_phot'): self.dp.star_photons_per_s = self.dp.star_phot
-        num_events = int(self.dp.star_photons_per_s * self.dp.sample_time * np.sum(intensity))
+        if hasattr(self.dp, 'star_phot'): self.dp.star_flux = self.dp.star_phot
+        num_events = int(self.dp.star_flux * self.dp.sample_time * np.sum(intensity))
 
         if sp.verbose:
-            dprint(f'star flux: {self.dp.star_photons_per_s}, cube sum: {np.sum(intensity)}, num events: {num_events}')
+            dprint(f'star flux: {self.dp.star_flux}, cube sum: {np.sum(intensity)}, num events: {num_events}')
 
         photons = self.sample_cube(intensity, num_events)
         # photons = spec.calibrate_phase(photons)
