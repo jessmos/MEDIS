@@ -222,6 +222,17 @@ def interp_wavelength(data_in, ax):
 
     return data_out
 
+def interp_sampling(sampling):
+    if ap.interp_wvl and 1 < ap.n_wvl_init < ap.n_wvl_final:
+        wave_samps = np.linspace(0, 1, ap.n_wvl_init)
+        f_out = interp1d(wave_samps, sampling, axis=1)  # axis 1 because sa
+        new_heights = np.linspace(0, 1, ap.n_wvl_final)
+        data_out = f_out(new_heights)
+    else:
+        data_out = sampling
+
+    return data_out
+
 
 def extract_plane(data_in, plane_name):
     """
