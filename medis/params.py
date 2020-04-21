@@ -28,8 +28,12 @@ class IO_params:
 
     def __init__(self, testname='example1'):  # you can update the testname with iop.update('your_testname')
                                             # and then run iop.mkdir()
-        # self.datadir = '/home/captainkay/mazinlab/MKIDSim/CDIsim_data/'
-        self.datadir = '/Users/dodkins/MKIDSim/mkid_param_invest/'
+        self.datadir = '/home/captainkay/mazinlab/MKIDSim/CDIsim_data/'
+        # self.datadir = '/Users/dodkins/MKIDSim/mkid_param_invest/'
+        # self.datadir = '/Users/dodkins/MKIDSim/'
+
+        self.prescriptions_root = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                               'simulations')  # top level of where prescriptions found
 
         # Unprocessed Science Data
         self.testname = testname  # set this up in the definition line, but can update it with iop.update('newname')
@@ -49,9 +53,9 @@ class IO_params:
         aberdir = "gridsz{}_bmratio{}_tsteps{}"
         self.aberdir = os.path.join(self.testdir, self.aberroot, aberdir)  # full path to FITS files
 
-        self.prescroot = 'telescope'
-        prescdir = "{}"
-        self.prescdir = os.path.join(self.testdir, self.prescroot, prescdir)  # copy of the prescription
+        self.prescopyroot = 'telescope'
+        prescopydir = "{}"
+        self.prescopydir = os.path.join(self.testdir, self.prescopyroot, prescopydir)  # copy of the prescription
 
         self.device = os.path.join(self.testdir, 'device.pkl')  # detector metadata
 
@@ -165,7 +169,7 @@ class Telescope_params:
     """
     def __init__(self):
         # Optics + Detector
-        self.prescription = 'Hubble_frontend'
+        self.prescription = 'Subaru_SCExAO'#'general_telescope'#
         self.entrance_d = 5  # 7.971  # [m] telescope enterence pupil diameter in meters
         self.fnum_primary = 12  # f-number of primary
         self.flen_primary = 25  # [m] focal length of primary
@@ -178,6 +182,9 @@ class Telescope_params:
 
                             {'aber_vals': [7.2e-17, 0.8, 3.1], 'diam': 0.2, 'focal_length': 1.2, 'dist': 1.345, 'name': 'NCPA'}
                             ]
+
+        self.use_atmos = True
+        self.obscure = False
 
         # AO System Settings
         self.use_ao = True
@@ -197,8 +204,8 @@ class Telescope_params:
         # Aberrations
         self.servo_error = [0, 1]  # [0,1] # False # No delay and rate of 1/frame_time
         self.abertime = 0.5  # time scale of optic aberrations in seconds
-        self.aber_params = {'QuasiStatic': False,  # or 'Static'
-                            'Phase': True,
+
+        self.aber_params = {'Phase': True,
                             'Amp': False}
                             # Coefficients used to calcuate PSD errormap in Proper (see pg 56 in manual)
                             # only change these if making new aberration maps
@@ -206,6 +213,16 @@ class Telescope_params:
                           'b': [0.8, 0.2],  # correlation length (b/2pi defines knee)
                           'c': [3.1, 0.5],  #
                           'a_amp': [0.05, 0.01]}
+
+        self.lens_params = [{'aber_vals': [7.2e-17, 0.8, 3.1],  # power at low spatial frequencies (m4), correlation length (b/2pi defines knee)
+                            'diam': 0.2,  # m  diamater of AO1
+                            'focal_length': 1.2,  # m  focal length OAP1
+                            'dist' : 1.345,  # m distance OAP1 to DM
+                            'name': 'CPA'},
+
+                            {'aber_vals': [7.2e-17, 0.8, 3.1], 'diam': 0.2, 'focal_length': 1.2, 'dist': 1.345, 'name': 'NCPA'}
+                            ]
+
         # Zernike Settings- see pg 192 for details
         self.zernike_orders = [2, 3, 4]  # Order of Zernike Polynomials to include
         self.zernike_vals = np.array([175, -150, 200])*1.0e-9  # value of Zernike order in nm,

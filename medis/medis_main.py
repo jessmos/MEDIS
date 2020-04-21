@@ -19,6 +19,7 @@ Rupert will fill in the overview of the MKIDS part.
 
 """
 import os
+import sys
 import numpy as np
 import multiprocessing
 import time
@@ -213,22 +214,27 @@ class Telescope():
 
         if not self.save_exists:
             # copy over the prescription
-            self.params['iop'].prescdir = self.params['iop'].prescdir.format(self.params['tp'].prescription)
-            target = os.path.join(self.params['iop'].prescdir, self.params['tp'].prescription+'.py')
-            if os.path.exists(target):
-                print(f"Prescription already exists at \n\n\t{target} \n\n... skipping copying\n\n")
+            self.params['iop'].prescopydir = self.params['iop'].prescopydir.format(self.params['tp'].prescription)
+            self.target = os.path.join(self.params['iop'].prescopydir, self.params['tp'].prescription+'.py')
+            if os.path.exists(self.target):
+                print(f"Prescription already exists at \n\n\t{self.target} \n\n... skipping copying\n\n")
             else:
-                prescriptions = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'simulations')
-                fullprescription = os.path.join(prescriptions,
-                                                self.params['tp'].prescription,
-                                                self.params['tp'].prescription+'.py')
-                print(f"Copying over prescription {fullprescription}")
-                if not os.path.exists(fullprescription):
+                prescriptions = self.params['iop'].prescriptions_root
+                fullprescription = glob.glob(os.path.join(prescriptions, '**', self.params['tp'].prescription+'.py'),
+                                             recursive=True)
+                if len(fullprescription) == 0:
                     raise FileNotFoundError
+                elif len(fullprescription) > 1:
+                    print(f'Multiple precriptions at {fullprescription}')
+                    raise FileExistsError
 
-                if not os.path.isdir(self.params['iop'].prescdir):
-                    os.makedirs(self.params['iop'].prescdir, exist_ok=True)
-                shutil.copyfile(fullprescription, target)
+                fullprescription = fullprescription[0]
+                print(f"Copying over prescription {fullprescription}")
+
+                if not os.path.isdir(self.params['iop'].prescopydir):
+                    os.makedirs(self.params['iop'].prescopydir, exist_ok=True)
+                shutil.copyfile(fullprescription, self.target)
+                sys.path.insert(0, os.path.dirname(self.target))
 
             # initialize atmosphere
             self.params['iop'].atmosdir = self.params['iop'].atmosdir.format(params['sp'].grid_size,
@@ -357,7 +363,6 @@ class Telescope():
             self.sampling = np.zeros((len(self.params['sp'].save_list), self.params['ap'].n_wvl_init))
 
             for it, t in enumerate(range(t0, self.params['sp'].numframes + t0)):
-                self.kwargs['iter'] = t
                 WFS_ind = ['wfs' in plane for plane in self.params['sp'].save_list]
                 if t > self.params['sp'].ao_delay:
                     self.kwargs['WFS_field'] = self.cpx_sequence[it - self.params['sp'].ao_delay, WFS_ind, :, 0]
@@ -367,8 +372,8 @@ class Telescope():
                                                     self.params['sp'].grid_size), dtype=np.complex)
                     self.kwargs['AO_field'] = np.zeros((self.params['ap'].n_wvl_init, self.params['sp'].grid_size,
                                                         self.params['sp'].grid_size), dtype=np.complex)
-                self.cpx_sequence[it], sampling = proper.prop_run(self.params['tp'].prescription, 1,  # 1 is dummy wavelength
-                                                                      self.params['sp'].grid_size, PASSVALUE=self.kwargs)
+                self.cpx_sequence[it], sampling = self.run_timestep(t)
+
             print('************************')
             if self.params['sp'].save_to_disk: self.save(self.cpx_sequence)
 
@@ -382,8 +387,7 @@ class Telescope():
 
     def run_timestep(self, t):
         self.kwargs['iter'] = t
-        return proper.prop_run(self.params['tp'].prescription, 1,  # 1 is dummy wavelength
-                        self.params['sp'].grid_size, PASSVALUE=self.kwargs)
+        return proper.prop_run(self.params['tp'].prescription, 1, self.params['sp'].grid_size, PASSVALUE=self.kwargs)
 
     def pretty_sequence_shape(self):
 
@@ -423,10 +427,10 @@ class Telescope():
 
 
 if __name__ == '__main__':
-    #todo update this code
-    pass
-#     # testname = input("Please enter test name: ")
-#     testname = 'dummy1'
-#     self.params['iop'].update(testname)
-#     self.params['iop'].makedir()
-#     RunMedis.telescope()
+    from medis.params import params
+
+    sim = RunMedis(params=params, name='example1', product='fields')
+    observation = sim()
+    cpx_sequence = observation['fields']
+    sampling = observation['sampling']
+
