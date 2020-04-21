@@ -97,7 +97,7 @@ class Photons():
         self.config = yaml.load(iop.photons_config)
 
     def generate(self):
-        self.dp = Detector().device_params
+        self.dp = Detector().device
         self.fields = Fields().data
         return self.get_packets()
 
@@ -105,7 +105,7 @@ class Photons():
         intensity = np.abs(self.fields)**2
 
         if self.dp.resamp:
-            nyq_sampling = self.dp.band[0] * 1e-9 * 360 * 3600 / (4 * np.pi * tp.diam)
+            nyq_sampling = self.dp.band[0] * 1e-9 * 360 * 3600 / (4 * np.pi * tp.entrance_d)
             sampling = nyq_sampling * tp.beam_ratio * 2  # nyq sampling happens at tp.beam_ratio = 0.5
             x = np.arange(-self.dp.grid_size * sampling / 2, self.dp.grid_size * sampling / 2, sampling)
             xnew = np.arange(-self.dp.array_size[0] * self.dp.platescale / 2, self.dp.array_size[0] * self.dp.platescale / 2, self.dp.platescale)

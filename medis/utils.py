@@ -10,6 +10,8 @@ from medis.params import sp, ap, tp, iop
 def dprint(*message):
     """
     prints location of code where message is printed from
+
+    >>> dprint('foo', 'bar')
     """
     caller = getframeinfo(stack()[1][0])
     print("%s:%d - %s" % (caller.filename, caller.lineno, message))

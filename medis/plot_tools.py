@@ -422,7 +422,16 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
     plt.show(block=True)
 
 
-def quicklook_wf(wf, logAmp=True, show=True, title=None):
+def quicklook_wf(wf, logZ=True, show=True, title=None):
+    """
+    Produces a figure with an image of amplitude and one of phase as well as 1D slices through these images
+
+    :param wf: optics.Wavefront
+    :param logZ: bool logarithmic Z scaling
+    :param show: bool display figure now or leave show() to be called by user later on
+    :param title: str
+    :return:
+    """
     after_dm = proper.prop_get_amplitude(wf)
     phase_afterdm = proper.prop_get_phase(wf)
 
@@ -431,7 +440,7 @@ def quicklook_wf(wf, logAmp=True, show=True, title=None):
     ax2 = plt.subplot2grid((3, 2), (0, 1), rowspan=2)
     ax3 = plt.subplot2grid((3, 2), (2, 0))
     ax4 = plt.subplot2grid((3, 2), (2, 1))
-    if logAmp:
+    if logZ:
         ax1.imshow(after_dm, origin='lower', cmap="YlGnBu_r", norm=LogNorm())
     else:
         ax1.imshow(after_dm, origin='lower', cmap="YlGnBu_r")

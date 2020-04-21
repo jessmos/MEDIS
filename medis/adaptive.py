@@ -263,13 +263,12 @@ def open_loop_wfs(wfo, plane_name='wfs'):
     WFS_map = np.zeros((len(star_wf), sp.grid_size, sp.grid_size))
 
     for iw in range(len(star_wf)):
-        # quick2D(proper.prop_get_phase(star_wf[iw]), title='before', colormap='sunlight')
         phasemap = proper.prop_get_phase(star_wf[iw])
+
+        # combination of abs_zeros and masking allows phase unwrap to work without discontiuities sometimes occur
         phasemap = np.ma.masked_equal(phasemap, 0)
-        # quick2D(proper.prop_get_phase(star_wf[iw]), title='before', colormap='sunlight')
         WFS_map[iw] = unwrap_phase(phasemap, wrap_around=[False, False])
 
-        # quick2D(WFS_map[iw], title='after')
     if 'open_loop_wfs' in sp.save_list or sp.closed_loop:
         wfo.save_plane(location='WFS_map')
 

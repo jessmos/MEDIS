@@ -50,13 +50,25 @@ sentinel = None
 
 class RunMedis():
     """
-    collects both the telescope simulator (returns complex fields) and the MKIDs simulator (returns photon lists) into
-    a single class
+    Creates a simulation for calling Telescope or MKIDs to return a seriess of complex electric fields or photons,
+    respectively.
 
+    Upon creation the code checks if a testdir of this name already exists, if it does it then checks if the params
+    match. If the params are identifcal and the desired products are not already created, if it will create them.
+    If the params are different or the testdir does not already exist a new testdir and simulation is created
 
+    File structure:
+    datadir
+        testdir
+            params.pkl
     """
     def __init__(self, params, name='test', product='fields'):
-        """  """
+        """
+
+        :param params:
+        :param name:
+        :param product:
+        """
 
         self.params = params
         self.name = name
@@ -130,7 +142,7 @@ class RunMedis():
 
     def MKIDs(self):
         """
-        this is where Rupert begins the MKIDs related stuff
+        Todo this needs to be migrated to its own class
 
         :return:
         """
@@ -160,13 +172,35 @@ class RunMedis():
 
 class Telescope():
     """
-    main script to organize calls to various aspects of the telescope simulation
+    Creates a simulation for the telescope to create a series of complex electric fields
 
-    initialize different sub-processes, such as atmosphere and aberration maps, MKID device parameters
-    sets up the multiprocessing features
-    returns the observation sequence
+    During initialisation a backup of the pthon PROPER prescription is copied to the testdir, atmisphere maps and
+    aberration maps are created, serialisation and memory requirements are tested, and the cdi vairable initialised
 
-    :return: obs_sequence [n_timesteps, n_saved_planes, n_wavelengths, n_stars/planets, grid_size, grid_size]
+    File structure:
+    datadir
+        testdir
+            params.pkl
+            telescope
+                {prescriptionname}
+                    {prescriptionname}.py
+            aberrations
+                {aberationparams}
+                    {lensname}0.fits
+                    ...
+            atmosphere
+                {atmosphereparams}
+                    {atmos}0.fits
+                    ...
+            fields.h5
+
+    input
+    params dict
+        collection of the objects in params.py
+
+    :return:
+    self.cpx_sequence ndarray
+        complex tensor of dimensions (n_timesteps, n_saved_planes, n_wavelengths, n_stars/planets, grid_size, grid_size)
     """
 
     def __init__(self, params):
@@ -223,9 +257,8 @@ class Telescope():
 
             # check if can do parrallel
             if params['sp'].closed_loop or params['sp'].ao_delay:
-                print(f"Sim can't be parrallelized in time domain. Forcing Simulation_Params.num_processes from "
-                      f"{params['sp'].num_processes} to 1")
-                params['sp'].num_processes = 1
+                print(f"closed loop or ao delay means sim can't be parrallelized in time domain. Forcing serial mode")
+                params['sp'].parrallel = False
 
             # determine if can/should do all in memory
             max_steps = self.max_chunk()
@@ -238,13 +271,15 @@ class Telescope():
                 print('Simulated data too large for dynamic memory. Storing to disk as the sim runs')
                 self.params['sp'].chunking = True
 
+            #todo remove the hard coding
             self.params['sp'].chunking = True
             self.params['sp'].parrallel = False
             self.params['sp'].ao_delay = False
             self.params['sp'].closed_loop = False
 
             self.markov = self.params['sp'].chunking or self.params['sp'].parrallel  # independent timesteps
-            assert np.logical_xor(self.markov, self.params['sp'].ao_delay or self.params['sp'].closed_loop)
+            assert np.logical_xor(self.markov, self.params['sp'].ao_delay or self.params['sp'].closed_loop),\
+                "Confliciting modes. Request requires the timesteps be both dependent and independent"
 
             modes = [self.params['sp'].chunking, self.params['sp'].ao_delay, self.params['sp'].parrallel,
                      self.params['sp'].closed_loop]
@@ -270,6 +305,11 @@ class Telescope():
         return output
 
     def max_chunk(self):
+        """
+        Determines the maximum duration each chunk can be to fit within the memory limit
+
+        :return: integer
+        """
         timestep_size = len(self.params['sp'].save_list) * self.params['ap'].n_wvl_final * \
                         (1 + len(self.params['ap'].contrast)) * self.params['sp'].grid_size**2 * 32
 
