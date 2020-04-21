@@ -7,7 +7,7 @@ import astropy.io.fits as afits
 from medis.params import sp, ap, tp, iop
 
 
-def dprint(message):
+def dprint(*message):
     """
     prints location of code where message is printed from
     """
