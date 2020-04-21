@@ -148,6 +148,7 @@ class Wavefronts():
 
         # Saving complex field data after function is applied
         if plane_name is not None:
+            self.abs_zeros()
             self.save_plane(location=plane_name)
 
     def save_plane(self, location=None):
@@ -199,6 +200,13 @@ class Wavefronts():
 
         return cpx_planes, sampling
 
+    def abs_zeros(self):
+        for iw in range(len(self.wsamples)):
+            for io in range(self.num_bodies):
+                proper.prop_circular_aperture(self.wf_collection[iw, io], tp.entrance_d / 2)
+                bad_locs = np.logical_or(np.real(self.wf_collection[iw, io].wfarr) == -0,
+                                         np.imag(self.wf_collection[iw, io].wfarr) == -0)
+                self.wf_collection[iw, io].wfarr[bad_locs] = 0 + 0j
 
 ####################################################################################################
 # Functions Relating to Processing Complex Cubes
@@ -287,7 +295,7 @@ def add_obscurations(wf, M2_frac=0, d_primary=0, d_secondary=0, legs_frac=0.05, 
     adds central obscuration (secondary shadow) and/or spider legs as spatial mask to the wavefront
 
     :param wf: 2D proper wavefront
-    :param M2_frac: ratio of tp.diam the M2 occupies
+    :param M2_frac: ratio of tp.entrance_d the M2 occupies
     :param d_primary: diameter of the primary mirror
     :param d_secondary: diameter of the secondary mirror
     :param legs_frac: fractional size of spider legs relative to d_primary
@@ -304,8 +312,8 @@ def add_obscurations(wf, M2_frac=0, d_primary=0, d_secondary=0, legs_frac=0.05, 
         else:
             raise ValueError('must either specify M2_frac and d_primary or d_secondary')
         if legs_frac > 0:
-            proper.prop_rectangular_obscuration(wf, legs_frac*d_primary, d_primary*1.3, ROTATION=20)
-            proper.prop_rectangular_obscuration(wf, d_primary*1.3, legs_frac * d_primary, ROTATION=20)
+            proper.prop_rectangular_obscuration(wf, legs_frac*d_primary, d_primary*1.3, ROTATION=-20)
+            proper.prop_rectangular_obscuration(wf, d_primary*1.3, legs_frac * d_primary, ROTATION=-20)
 
 
 def prop_pass_lens(wf, fl_lens, dist):
