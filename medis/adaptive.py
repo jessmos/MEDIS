@@ -23,7 +23,7 @@ from medis.params import sp, tp, ap, cdip
 import medis.CDI as cdi
 from medis.optics import check_sampling
 from medis.utils import dprint
-
+from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
 
 # def ao(wf, WFS_map, theta):
 #     if sp.closed_loop:
@@ -34,10 +34,25 @@ from medis.utils import dprint
 #         deformable_mirror(wf, WFS_map, theta)
 #
 
+def make_speckle_kxy(kx, ky, amp, dm_phase):
+    """given an kx and ky wavevector,
+    generates a NxN flatmap that has
+    a speckle at that position"""
+    N = tp.ao_act
+    dmx, dmy   = np.meshgrid(
+                    np.linspace(-0.5, 0.5, N),
+                    np.linspace(-0.5, 0.5, N))
+
+    xm=dmx*kx*2.0*np.pi
+    ym=dmy*ky*2.0*np.pi
+    # print 'DM phase', dm_phase
+    ret = amp*np.cos(xm + ym +  dm_phase)
+    return ret
+
 ################################################################################
 # Deformable Mirror
 ################################################################################
-def deformable_mirror(wf, WFS_map, iter, plane_name=None):
+def deformable_mirror(wf, WFS_map, iter, previous_output, tp, plane_name=None):
     """
     combine different DM actuator commands into single map to send to prop_dm
 
@@ -59,10 +74,13 @@ def deformable_mirror(wf, WFS_map, iter, plane_name=None):
 
     :param wf: single wavefront
     :param WFS_map: wavefront sensor map, should be in units of phase delay
+    :param previous_output:
     :param iter: the current index of iteration (which timestep this is)
     :param plane_name: name of plane (should be 'woofer' or 'tweeter' for best functionality
     :return: nothing is returned, but the probe map has been applied to the DM via proper.prop_dm
     """
+    assert np.logical_xor(WFS_map is None, previous_output is None)
+
     # AO Actuator Count from DM Type
     if plane_name == 'tweeter' and hasattr('tp','act_tweeter'):
         nact = tp.act_tweeter
@@ -89,7 +107,22 @@ def deformable_mirror(wf, WFS_map, iter, plane_name=None):
     #######
     # AO
     #######
-    dm_map = quick_ao(wf, nact, WFS_map[wf.iw])
+    if previous_output is not None and WFS_map is None:
+        dm_map = update_dm(previous_output)
+    else:
+        dm_map = quick_ao(wf, nact, WFS_map[wf.iw])
+
+    #########
+    # Waffle
+    #########
+
+    if tp.satelite_speck:
+        phase = np.pi / 5.
+        s_amp = 12e-9
+        xloc, yloc = 12, 12
+        waffle = make_speckle_kxy(xloc, yloc, s_amp, phase)
+        waffle += make_speckle_kxy(xloc, -yloc, s_amp, phase)
+        dm_map += waffle
 
     #######
     # CDI
@@ -197,9 +230,23 @@ def quick_ao(wf, nact, WFS_map):
     ao_map = -ao_map * surf_height  # Converts DM map to units of [m] of actuator heights
 
     return ao_map
-            
 
-def open_loop_wfs(wfo):
+def retro_wfs(star_fields, wfo, plane_name='wfs'):
+    WFS_map = np.zeros((len(star_fields), sp.grid_size, sp.grid_size))
+
+    for iw in range(len(star_fields)):
+        quick2D(np.angle(star_fields), title='before mask', colormap='sunlight')
+        phasemap = np.ma.masked_equal(np.angle(star_fields[iw]), 0)
+        quick2D(phasemap, title='before unwrap', colormap='sunlight')
+        WFS_map[iw] = unwrap_phase(phasemap, wrap_around=[False, False])
+        quick2D(WFS_map[iw], title='after')
+    if 'retro_closed_wfs' in sp.save_list:
+        wfo.save_plane(location='WFS_map')
+
+    return WFS_map
+
+
+def open_loop_wfs(wfo, plane_name='wfs'):
     """
     saves the unwrapped phase [arctan2(imag/real)] of the wfo.wf_collection at each wavelength
 
@@ -216,8 +263,13 @@ def open_loop_wfs(wfo):
     WFS_map = np.zeros((len(star_wf), sp.grid_size, sp.grid_size))
 
     for iw in range(len(star_wf)):
-        WFS_map[iw] = unwrap_phase(proper.prop_get_phase(star_wf[iw]))
+        # quick2D(proper.prop_get_phase(star_wf[iw]), title='before', colormap='sunlight')
+        phasemap = proper.prop_get_phase(star_wf[iw])
+        phasemap = np.ma.masked_equal(phasemap, 0)
+        # quick2D(proper.prop_get_phase(star_wf[iw]), title='before', colormap='sunlight')
+        WFS_map[iw] = unwrap_phase(phasemap, wrap_around=[False, False])
 
+        # quick2D(WFS_map[iw], title='after')
     if 'open_loop_wfs' in sp.save_list or sp.closed_loop:
         wfo.save_plane(location='WFS_map')
 
