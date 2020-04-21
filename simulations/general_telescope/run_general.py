@@ -17,6 +17,7 @@ from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
 import medis.medis_main as mm
 
 
+
 #################################################################################################
 #################################################################################################
 #################################################################################################
@@ -25,7 +26,6 @@ iop.update(testname)
 iop.makedir()
 
 tp.prescription = 'general_telescope'
-tp.obscure = True
 
 # Companion
 ap.companion = True
@@ -47,7 +47,7 @@ tp.obscure = False
 tp.use_atmos = True
 tp.use_aber = False
 tp.use_ao = True
-tp.ao_act = 14
+tp.ao_act = 50
 tp.rotate_atmos = False
 tp.rotate_sky = False
 tp.f_lens = 200.0 * tp.entrance_d
@@ -92,11 +92,6 @@ if __name__ == '__main__':
 
     photons, stackcube, sampling = mm.RunMedis().MKIDs()
 
-    # cpx_sequence, sampling = mm.run_medis('Fields')
-
-    # med = mm.Medis()
-    #
-    # cpx_sequence, sampling = mm.RunMedis().telescope()
     fp_sampling = sampling[-1][:]
     print(fp_sampling)
     for o in range(len(ap.contrast)+1):
