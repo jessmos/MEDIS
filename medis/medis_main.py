@@ -18,14 +18,19 @@ field observation sequence.
 Rupert will fill in the overview of the MKIDS part.
 
 """
+import os
 import numpy as np
 import multiprocessing
 import time
 import traceback
 import glob
 import pickle
+import shutil
+from datetime import datetime
+import h5py
 
-from medis.params import iop, ap, tp, sp, cdip, mp
+# from medis.params import iop, ap, tp, sp, cdip, mp
+# from medis.params import params
 import proper
 import medis.atmosphere as atmos
 from medis.plot_tools import view_spectra
@@ -33,6 +38,7 @@ import medis.CDI as cdi
 import medis.utils as mu
 import medis.MKIDs as MKIDs
 import medis.optics as opx
+import medis.aberrations as aber
 from medis.controller import auto_load
 from medis.light import Fields
 
@@ -42,30 +48,6 @@ from medis.light import Fields
 sentinel = None
 
 
-def run_medis(mode='Fields'):
-    """
-    Get either a multidimensional cps_sequence or photon set wrapped in an object. Modified version of auto_load_single
-
-    Parameters
-    ----------
-    mode : str, optional
-           'Fields' or 'Photons'
-
-    Returns
-    -------
-    The light object with data atribute loaded/generated
-    """
-    data_product = eval(mode)()
-    if data_product.can_load():
-        data_product.data = data_product.load()
-    else:
-        data_product.data = data_product.generate()
-        if data_product.use_cache:
-            data_product.save()
-
-    return data_product
-
-
 class RunMedis():
     """
     collects both the telescope simulator (returns complex fields) and the MKIDs simulator (returns photon lists) into
@@ -73,126 +55,78 @@ class RunMedis():
 
 
     """
-    def __init__(self):
-        self.dummy = 1
+    def __init__(self, params, name='test', product='fields'):
+        """  """
 
-    def telescope(self):
-        """
-        main script to organize calls to various aspects of the telescope simulation
+        self.params = params
+        self.name = name
+        self.product = product
 
-        initialize different sub-processes, such as atmosphere and aberration maps, MKID device parameters
-        sets up the multiprocessing features
-        returns the observation sequence
+        self.params['iop'].update(self.name)
 
-        :return: obs_sequence [n_timesteps, n_saved_planes, n_wavelengths, n_stars/planets, grid_size, grid_size]
-        """
-        print('Beginning Telescope Simulation with MEDIS')
-        print('***************************************')
-        start = time.time()
+        if self.params['sp'].debug:
+            for param in [self.params['iop']]:
+                pprint(param.__dict__)
 
-        # =======================================================================
-        # Intialization
-        # =======================================================================
-        # Check for Existing File
-        #todo update this automatic load if exists functionality
+        # always make the top level directory if it doesn't exist yet
+        if not os.path.isdir(self.params['iop'].datadir):
+            print(f"Top level directory... \n\n\t{self.params['iop'].datadir} \n\ndoes not exist yet. Creating")
+            os.makedirs(self.params['iop'].datadir, exist_ok=True)
 
-        # check = mu.check_exists_obs_sequence(plot=False)
-        # if check:
-        #     if iop.obs_seq[-3:] == '.h5':
-        #         obs_sequence = mu.open_obs_sequence_hdf5(iop.obs_seq)
-        #     else:
-        #         obs_sequence = mu.open_obs_sequence(iop.obs_seq)
-        #
-        #     return obs_sequence
-
-        if ap.companion is False:
-            ap.contrast = []
-
-        # Initialize CDI probes
-        if cdip.use_cdi is True:
-            theta_series = cdi.gen_CDI_phase_stream()
+        if not os.path.exists(self.params['iop'].testdir):
+            print(f"No simulation data found at... \n\n\t{self.params['iop'].testdir} \n\n A new test simulation"
+                  f" will be started")
+            self.make_testdir()
         else:
-            theta_series = np.zeros(sp.numframes) * np.nan  # string of Nans
+            params_match = self.check_params()
+            exact_match = all(params_match.values())
+            if exact_match:
+                print(f"Configuration files match. Initialization over")
+            else:
+                print(f"Configuration files differ. Creating a new test directory")
+                now = datetime.now().strftime("%m:%d:%Y_%H-%M-%S")
+                self.params['iop'].update(self.name+'_newsim_'+now)
+                self.make_testdir()
 
-        # Initialize Obs Sequence
-        self.cpx_sequence = np.zeros((sp.numframes, len(sp.save_list), ap.n_wvl_init, 1 + len(ap.contrast),
-                                      sp.grid_size, sp.grid_size), dtype=np.complex)
-        self.sampling = np.zeros((len(sp.save_list), ap.n_wvl_init))
+    def make_testdir(self):
+        if not os.path.isdir(self.params['iop'].testdir):
+            os.makedirs(self.params['iop'].testdir, exist_ok=True)
 
-        # =======================================================================================================
-        # Closed-Loop- No Multiprocessing
-        # =======================================================================================================
-        if sp.closed_loop:
-            ##########################
-            # Generating Timeseries
-            ##########################
-            for t in range(sp.numframes):
-                kwargs = {'iter': t, 'params': [ap, tp, iop, sp],
-                          'WFS_map':self.cpx_sequence[t-sp.ao_delay]}
-                self.cpx_sequence[t], self.sampling = proper.prop_run(tp.prescription, 1, sp.grid_size,
-                                                                         PASSVALUE=kwargs,
-                                                                         VERBOSE=False,
-                                                                         TABLE=False)  # 1 is dummy wavelength
+        with open(self.params['iop'].params_logs, 'wb') as handle:
+            pickle.dump(self.params, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+    def check_params(self):
+        """ Check all param classes apart from mp since that is not relevant at this stage """
 
-        # =======================================================================================================
-        # Open-Loop- Uses Multiprocessing
-        # =======================================================================================================
-        else:
-            try:
-                multiprocessing.set_start_method('spawn')
-            except RuntimeError:
-                pass
+        with open(self.params['iop'].params_logs, 'rb') as handle:
+            loaded_params = pickle.load(handle)
 
-            # Multiprocessing Settings
-            time_idx = multiprocessing.Queue()  # time indicies that begin each timestep calculation
-            out_chunk = multiprocessing.Queue()  # tuple of planes and sampling after each chunk is calculated
-            jobs = []
+        match_params = {}
+        for p in ['ap','tp','atmp','cdip','iop','sp']:  # vars(self.params).keys()
+            matches = []
+            for (this_attr, this_val), (load_attr, load_val) in zip(self.params[p].__dict__.items(),
+                                                                    self.params[p].__dict__.items()):
+                matches.append(this_attr == load_attr and np.all(load_val == this_val))
 
-            # Everything initialised in Timeseries is available to us in this obj. planes etc need to be accessed using a queue
-            mt = MutliTime(time_idx, out_chunk)
+            match = np.all(matches)
+            print(f"param: {p}, match: {match}")
+            match_params[p] = match
 
-            # Create the processes
-            for i in range(sp.num_processes):
-                p = multiprocessing.Process(target=mt.gen_timeseries, args=())
-                jobs.append(p)
-                p.start()
+        return match_params
 
-            # Populate the time indicies and start the simulation
-            for t in range(sp.startframe, sp.startframe + sp.numframes):
-                time_idx.put(t)
+        # return {'ap':False, 'tp':True, 'atmp':True, 'cdip':True, 'iop':True, 'sp':True}
 
-            # Tell the simulation to stop after the final time index is reached
-            for i in range(sp.num_processes):
-                time_idx.put(sentinel)
+    def __call__(self, *args, **kwargs):
+        if self.product == 'fields':
+            telescope_sim = Telescope(self.params)
+            output = telescope_sim()
+            # output = self.telescope()
+        elif self.product == 'photons':
+            camera_sim = Camera(self.params)
+            output = camera_sim()
+            # output = self.MKIDs()
 
-            # ========================
-            # Read Obs Sequence
-            # ========================
-            # Getting Returned Variables from gen_timeseries
-            for it in range(int(np.ceil(mt.num_chunks))):
-                fields_chunk, sampling = out_chunk.get()
-                self.cpx_sequence[it*mt.chunk_steps - sp.startframe :
-                             (it+1)*mt.chunk_steps - sp.startframe, :, :, :, :, :] = fields_chunk
-            self.sampling = sampling
-
-            # # Ending the gen_timeseries loop via multiprocessing protocol
-            for i, p in enumerate(jobs):
-                p.join()  # Wait for all the jobs to finish and consolidate them here
-
-        if ap.interp_wvl:
-            self.cpx_sequence = opx.interp_wavelength(self.cpx_sequence, ax=2)
-            self.sampling = opx.interp_sampling(self.sampling)
-
-        print('MEDIS Telescope Run Completed')
-        print('**************************************')
-        finish = time.time()
-        print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
-        # print(f"Number of timesteps = {np.shape(cpx_sequence)[0]}")
-
-        mu.display_sequence_shape(self.cpx_sequence)
-
-        return self.cpx_sequence, self.sampling
+        return output
 
     def MKIDs(self):
         """
@@ -203,137 +137,256 @@ class RunMedis():
         # initialize MKIDs
         MKIDs.initialize()
 
-        with open(iop.device_params, 'rb') as handle:
+        with open(self.params['iop'].device, 'rb') as handle:
             dp = pickle.load(handle)
 
         cpx_sequence, sampling = self.telescope()
 
         photons = np.empty((0, 4))
-        stackcube = np.zeros((len(cpx_sequence), ap.n_wvl_final, mp.array_size[1], mp.array_size[0]))
+        stackcube = np.zeros((len(cpx_sequence), self.params['ap'].n_wvl_final, mp.array_size[1], mp.array_size[0]))
         for step in range(len(cpx_sequence)):
             print('step', step)
             spectralcube = np.abs(np.sum(cpx_sequence[step, -1, :, :], axis=1)) ** 2
+            # view_spectra(spectralcube, logZ=True)
             step_packets = MKIDs.get_packets(spectralcube, step, dp, mp)
             photons = np.vstack((photons, step_packets))
+            cube = MKIDs.make_datacube_from_list(step_packets, (self.params['ap'].n_wvl_final, dp.array_size[0], dp.array_size[1]))
+            stackcube[step] = cube
 
-        # with open(iop.form_photons, 'wb') as handle:
+        # with open(self.params['iop'].form_photons, 'wb') as handle:
         #     pickle.dump((photons, stackcube), handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-        return photons, stackcube, sampling
+        return {'photons': photons, 'stackcube': stackcube, 'sampling': sampling}
 
-
-
-
-class MutliTime():
+class Telescope():
     """
-    multiprocessing class for running open-loop telescope simulations
+    main script to organize calls to various aspects of the telescope simulation
 
-    generates observation sequence by...
+    initialize different sub-processes, such as atmosphere and aberration maps, MKID device parameters
+    sets up the multiprocessing features
+    returns the observation sequence
 
-    is the time loop wrapper for the proper prescription, so multiple calls to the proper prescription as aberrations
-        or atmosphere evolve
-    this is where the detector observes the wavefront created by proper, thus creating the observation sequence
-        of spectral cubes at each timestep (for MKIDs, the probability distribution of the observed parameters
-        is saved instead)
-
-    :param time_ind: time index for parallelization (used by multiprocess)
-    :param out_chunk: used for returning complex planes and sampling
-    :param sp.memory_limit : number of bytes for sixcube of complex fields before chunking happens
-    :param checkpointing : int or None number of timesteps before complex fields sixcube is saved
-                            minimum of this and max allowed steps for memory reasons takes priority
-    :type time_ind: mp.Queue
-    :type conf_obj_tup: tuple
-
-    :return: returns the observation sequence, but through the multiprocessing tools, not through more standard
-      return protocols.
-      :intensity_seq is the intensity data in the focal plane only, with shape [timestep, wavelength, x, y]
-      :cpx_seq is the complex-valued E-field in the planes specified by sp.save_list.
-            has shape [timestep, planes, wavelength, astronomical bodies, x, y]
-      :sampling is the final sampling per wavelength in the focal plane
+    :return: obs_sequence [n_timesteps, n_saved_planes, n_wavelengths, n_stars/planets, grid_size, grid_size]
     """
-    def __init__(self, time_idx, out_chunk):
-        self.time_idx = time_idx
-        self.out_chunk = out_chunk
 
-        self.sampling = None
-        max_steps = self.max_chunk()
-        checkpoint_steps = max_steps if sp.checkpointing is None else sp.checkpointing
-        self.chunk_steps = min([max_steps, sp.numframes, checkpoint_steps])
-        if sp.verbose: print(f'Using chunks of size {self.chunk_steps}')
-        self.num_chunks = sp.numframes/self.chunk_steps
-        self.init_fields_chunk()
-        self.final_chunk_size = sp.numframes % self.chunk_steps
+    def __init__(self, params):
+        # if not initialise atmosphere
+        # aberrations etc
 
-    def init_fields_chunk(self):
-        self.fields_chunk = np.empty((self.chunk_steps, len(sp.save_list), ap.n_wvl_init, 1 + len(ap.contrast),
-                                      sp.grid_size, sp.grid_size), dtype=np.complex64)
-        self.seen_substeps = np.zeros((self.chunk_steps))
+        self.params = params
+
+        self.save_exists = True if os.path.exists(self.params['iop'].fields) else False
+
+        if not self.save_exists:
+            # copy over the prescription
+            self.params['iop'].prescdir = self.params['iop'].prescdir.format(self.params['tp'].prescription)
+            target = os.path.join(self.params['iop'].prescdir, self.params['tp'].prescription+'.py')
+            if os.path.exists(target):
+                print(f"Prescription already exists at \n\n\t{target} \n\n... skipping copying\n\n")
+            else:
+                prescriptions = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'simulations')
+                fullprescription = os.path.join(prescriptions,
+                                                self.params['tp'].prescription,
+                                                self.params['tp'].prescription+'.py')
+                print(f"Copying over prescription {fullprescription}")
+                if not os.path.exists(fullprescription):
+                    raise FileNotFoundError
+
+                if not os.path.isdir(self.params['iop'].prescdir):
+                    os.makedirs(self.params['iop'].prescdir, exist_ok=True)
+                shutil.copyfile(fullprescription, target)
+
+            # initialize atmosphere
+            self.params['iop'].atmosdir = self.params['iop'].atmosdir.format(params['sp'].grid_size,
+                                                                             params['sp'].beam_ratio,
+                                                                             params['sp'].numframes)
+            if glob.glob(self.params['iop'].atmosdir+'/*.fits'):
+                print(f"Atmosphere maps already exist at \n\n\t{self.params['iop'].atmosdir}"
+                      f" \n\n... skipping generation\n\n")
+            else:
+                if not os.path.isdir(self.params['iop'].atmosdir):
+                    os.makedirs(self.params['iop'].atmosdir, exist_ok=True)
+                atmos.gen_atmos()
+
+            # initialize aberrations
+            self.params['iop'].aberdir = self.params['iop'].aberdir.format(params['sp'].grid_size,
+                                                                             params['sp'].beam_ratio,
+                                                                             params['sp'].numframes)
+            if glob.glob(self.params['iop'].aberdir + '/*.fits'):
+                print(f"Aberration maps already exist at \n\n\t{self.params['iop'].aberdir} "
+                      f"\n\n... skipping generation\n\n")
+            else:
+                if not os.path.isdir(self.params['iop'].aberdir):
+                    os.makedirs(self.params['iop'].aberdir, exist_ok=True)
+                for lens in params['tp'].lens_params:
+                    aber.generate_maps(lens['aber_vals'], lens['diam'], lens['name'])
+
+            # check if can do parrallel
+            if params['sp'].closed_loop or params['sp'].ao_delay:
+                print(f"Sim can't be parrallelized in time domain. Forcing Simulation_Params.num_processes from "
+                      f"{params['sp'].num_processes} to 1")
+                params['sp'].num_processes = 1
+
+            # determine if can/should do all in memory
+            max_steps = self.max_chunk()
+            checkpoint_steps = max_steps if self.params['sp'].checkpointing is None else self.params['sp'].checkpointing
+            self.chunk_steps = int(min([max_steps, self.params['sp'].numframes, checkpoint_steps]))
+            if self.params['sp'].verbose: print(f'Using time chunks of size {self.chunk_steps}')
+            self.num_chunks = self.params['sp'].numframes / self.chunk_steps
+
+            if self.num_chunks > 1:
+                print('Simulated data too large for dynamic memory. Storing to disk as the sim runs')
+                self.params['sp'].chunking = True
+
+            self.params['sp'].chunking = True
+            self.params['sp'].parrallel = False
+            self.params['sp'].ao_delay = False
+            self.params['sp'].closed_loop = False
+
+            self.markov = self.params['sp'].chunking or self.params['sp'].parrallel  # independent timesteps
+            assert np.logical_xor(self.markov, self.params['sp'].ao_delay or self.params['sp'].closed_loop)
+
+            modes = [self.params['sp'].chunking, self.params['sp'].ao_delay, self.params['sp'].parrallel,
+                     self.params['sp'].closed_loop]
+
+            # assert sum(np.int_(modes)) <= 1
+            # self.mode = ['chunking',  'ao_delay', 'parrallel', 'closed_loop'][modes==True]
+
+            # ensure contrast is set properly
+            if self.params['ap'].companion is False:
+                self.params['ap'].contrast = []
+
+            # Initialize CDI probes
+            if self.params['cdip'].use_cdi is True:
+                self.theta_series = cdi.gen_CDI_phase_stream()
+            else:
+                self.theta_series = np.zeros(self.params['sp'].numframes) * np.nan  # string of Nans
+
+    def __call__(self, *args, **kwargs):
+        if self.save_exists:
+            output = self.load_fields()
+        else:
+            output = self.create_fields()
+        return output
 
     def max_chunk(self):
-        timestep_size = len(sp.save_list) * ap.n_wvl_final * (1 + len(ap.contrast)) * sp.grid_size**2 * 8
+        timestep_size = len(self.params['sp'].save_list) * self.params['ap'].n_wvl_final * \
+                        (1 + len(self.params['ap'].contrast)) * self.params['sp'].grid_size**2 * 32
 
-        max_chunk = sp.memory_limit // timestep_size
-        print(f'Each timestep is predicted to be {timestep_size/1000.} MB, requiring sim to be split into '
-              f'{max_chunk} chunks')
+        max_chunk = self.params['sp'].memory_limit // timestep_size
+        print(f'Each timestep is predicted to be {timestep_size/1.e6} MB, requiring sim to be split into '
+              f'{max_chunk} time chunks')
 
         return max_chunk
 
-    def gen_timeseries(self):
-        """
-        Time loop wrapper for prescriptions.
-
-        :param inqueue: time index for parallelization (used by multiprocess)
-        :param out_queue: series of intensity images (spectral image cube) in the multiprocessing format
-
-        :return: returns the observation sequence, but through the multiprocessing tools, not through more standard
-          return protocols.
-
-        :timestep_field is the complex-valued E-field in the planes specified by sp.save_list.
-            has shape [timestep, planes, wavelength, objects, x, y]
-        :sampling is the final sampling per wavelength in the focal plane
-        """
+    def create_fields(self, mode='chunking'):
+        print('Beginning Telescope Simulation with MEDIS')
+        print('***************************************')
         start = time.time()
 
-        for it, t in enumerate(iter(self.time_idx.get, sentinel)):
-            kwargs = {'iter': t, 'params': [iop, sp, ap, tp, cdip]}
-            timestep_field, sampling = proper.prop_run(tp.prescription, 1, sp.grid_size, PASSVALUE=kwargs,
-                                                       VERBOSE=False, TABLE=False)  # 1 is dummy wavelength
+        t0 = self.params['sp'].startframe
+        self.kwargs = {'params': self.params, 'theta_series': self.theta_series}
+        self.cpx_sequence = None
 
-            chunk_ind = it % self.chunk_steps
+        if self.markov:  # time steps are independent
+            for ichunk in range(int(np.ceil(self.num_chunks))):
+                cpx_sequence = np.empty((self.chunk_steps, len(self.params['sp'].save_list),
+                                        self.params['ap'].n_wvl_init, 1 + len(self.params['ap'].contrast),
+                                        self.params['sp'].grid_size, self.params['sp'].grid_size),
+                                        dtype=np.complex64)
+                chunk_range = ichunk * self.chunk_steps + t0 + np.arange(self.chunk_steps)
+                if self.params['sp'].num_processes == 1:
+                    seq_samp_list = [self.run_timestep(t) for t in chunk_range]
+                else:
+                    pool = multiprocessing.Pool(processes=self.params['sp'].num_processes)
+                    seq_samp_list = [pool.apply(self.run_timestep, args=(t,)) for t in chunk_range]
+                self.cpx_sequence = [tup[0] for tup in seq_samp_list]
+                self.sampling = seq_samp_list[0][1]
 
-            self.fields_chunk[chunk_ind] = timestep_field
-            self.seen_substeps[chunk_ind] = 1
+                if self.params['ap'].n_wvl_init < self.params['ap'].n_wvl_final:
+                    self.cpx_sequence = opx.interp_wavelength(self.cpx_sequence, ax=2)
+                    self.sampling = opx.interp_sampling(self.sampling)
 
-            chunk_seen = np.all(self.seen_substeps)
-            final_chunk_seen = it == sp.numframes-1 and np.all(self.seen_substeps[:self.final_chunk_size])
-            while (chunk_ind == self.chunk_steps-1 and not chunk_seen) or \
-                  (chunk_ind == self.final_chunk_size-1 and not final_chunk_seen):
-                print(f'Waiting for chunk {it//self.chunk_steps} to finish being poplulated before saving') #if sp.verbose
-                time.sleep(1)
+                if self.params['sp'].save_to_disk: self.save(self.cpx_sequence)
 
-            if chunk_seen or final_chunk_seen:  # chunk completed or simulation finished
-                self.out_chunk.put((self.fields_chunk, sampling))
-                if sp.save_to_disk:
-                    self.save(self.fields_chunk, sampling)
+        else:
+            print('*** This is untested ***')
+            self.cpx_sequence = np.zeros((self.params['sp'].numframes, len(self.params['sp'].save_list),
+                                          self.params['ap'].n_wvl_init, 1 + len(self.params['ap'].contrast),
+                                          self.params['sp'].grid_size, self.params['sp'].grid_size), dtype=np.complex)
+            self.sampling = np.zeros((len(self.params['sp'].save_list), self.params['ap'].n_wvl_init))
 
-                if sp.debug:
-                    view_spectra(np.sum(np.abs(self.fields_chunk) ** 2, axis=(0, 1))[:, 0],
-                                 title='Chunk Spectral Cube')
+            for it, t in enumerate(range(t0, self.params['sp'].numframes + t0)):
+                self.kwargs['iter'] = t
+                WFS_ind = ['wfs' in plane for plane in self.params['sp'].save_list]
+                if t > self.params['sp'].ao_delay:
+                    self.kwargs['WFS_field'] = self.cpx_sequence[it - self.params['sp'].ao_delay, WFS_ind, :, 0]
+                    self.kwargs['AO_field'] =  self.cpx_sequence[it - self.params['sp'].ao_delay, AO_ind, :, 0]
+                else:
+                    self.kwargs['WFS_field'] = np.zeros((self.params['ap'].n_wvl_init, self.params['sp'].grid_size,
+                                                    self.params['sp'].grid_size), dtype=np.complex)
+                    self.kwargs['AO_field'] = np.zeros((self.params['ap'].n_wvl_init, self.params['sp'].grid_size,
+                                                        self.params['sp'].grid_size), dtype=np.complex)
+                self.cpx_sequence[it], sampling = proper.prop_run(self.params['tp'].prescription, 1,  # 1 is dummy wavelength
+                                                                      self.params['sp'].grid_size, PASSVALUE=self.kwargs)
+            print('************************')
+            if self.params['sp'].save_to_disk: self.save(self.cpx_sequence)
 
-                self.init_fields_chunk()
+        print('MEDIS Telescope Run Completed\n**************************************')
+        finish = time.time()
+        print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
 
+        self.pretty_sequence_shape()
 
-        now = time.time()
-        elapsed = float(now - start)
-        each_iter = float(elapsed) / (sp.numframes + 1)
+        return {'fields': np.array(self.cpx_sequence), 'sampling': self.sampling}
 
-        print('***********************************')
-        print(f'{elapsed/60.:.2f} minutes elapsed, each time step took {each_iter:.2f} minutes')
+    def run_timestep(self, t):
+        self.kwargs['iter'] = t
+        return proper.prop_run(self.params['tp'].prescription, 1,  # 1 is dummy wavelength
+                        self.params['sp'].grid_size, PASSVALUE=self.kwargs)
+
+    def pretty_sequence_shape(self):
+
+        """
+        displays data format easier
+
+        :param cpx_sequence: the 6D complex sequence generated by run_medis.telescope
+        :return: nicely parsed string of 6D shape--human readable output
+        """
+        samps = ['timesteps', 'save planes', 'wavelengths', 'num obj', 'x', 'y']
+        delim = ', '
+        print(f"Shape of cpx_sequence = " \
+            f"{delim.join([samp + ':' + str(length) for samp, length in zip(samps, np.shape(self.cpx_sequence))])}")
+
+    def save(self, fields):
+        with h5py.File(self.params['iop'].fields, mode='a') as hdf:
+            print(f"Saving observation data at {self.params['iop'].fields}")
+            dims = np.shape(fields)
+            keys = list(hdf.keys())
+            print('dims', dims, keys)
+            if 'data' not in keys:
+                dset = hdf.create_dataset('data', dims, maxshape=(None,) + dims[1:],
+                                          dtype=np.complex64, chunks=dims, compression="gzip")
+                dset[:] = fields
+            else:
+                hdf['data'].resize((hdf["data"].shape[0] + len(fields)), axis = 0)
+                hdf["data"][-len(fields):] = fields
+
+    def load_fields(self):
+        with h5py.File(self.params['iop'].fields, 'r') as hdf:
+            keys = list(hdf.keys())
+            if 'data' in keys:
+                self.cpx_sequence = hdf.get('data')[:]
+        self.pretty_sequence_shape()
+
+        return {'fields': self.cpx_sequence, 'sampling': None}
 
 
 if __name__ == '__main__':
-    # testname = input("Please enter test name: ")
-    testname = 'dummy1'
-    iop.update(testname)
-    iop.makedir()
-    RunMedis.telescope()
+    #todo update this code
+    pass
+#     # testname = input("Please enter test name: ")
+#     testname = 'dummy1'
+#     self.params['iop'].update(testname)
+#     self.params['iop'].makedir()
+#     RunMedis.telescope()

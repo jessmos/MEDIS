@@ -26,33 +26,36 @@ class IO_params:
     to be generated, so are also included in filenames
     """
 
-    def __init__(self, testname='dummy'):  # you can update the testname with iop.update('your_testname')
+    def __init__(self, testname='example1'):  # you can update the testname with iop.update('your_testname')
                                             # and then run iop.mkdir()
-        self.rootdir = '/home/captainkay/mazinlab/MKIDSim/'
-        self.datadir = '/home/captainkay/mazinlab/MKIDSim/CDIsim_data/'
-        # self.rootdir = '/Users/dodkins/mazinlab/MKIDSim/miniMEDIS/'
-        # self.datadir = '/Users/dodkins/mazinlab/MKIDSim/CDIsim_data/'
+        # self.datadir = '/home/captainkay/mazinlab/MKIDSim/CDIsim_data/'
+        self.datadir = '/Users/dodkins/MKIDSim/mkid_param_invest/'
 
         # Unprocessed Science Data
         self.testname = testname  # set this up in the definition line, but can update it with iop.update('newname')
         self.testdir = os.path.join(self.datadir,
                                   self.testname)  # Save results in new sub-directory
-        self.obs_seq = os.path.join(self.testdir,
-                                  'ObsSeq.h5')  # a x/y/t/w cube of data
-        self.fields = os.path.join(self.testdir, 'fields.h5')
-        self.obs_table = os.path.join(self.testdir,
-                                    'ObsTable.h5')  # a photon table with 4 columns
+        self.params_logs = os.path.join(self.testdir, 'params.pkl')
+
+        self.fields = os.path.join(self.testdir, 'fields.h5')  # a x/y/t/w cube of data
+        self.obs_table = os.path.join(self.testdir, 'ObsTable.h5')  # a photon table with 4 columns
+
+        self.atmosroot = 'atmos'
+        atmosdir = "gridsz{}_bmratio{}_tsteps{}"  # fill in variable names later
+        self.atmosdir = os.path.join(self.testdir, self.atmosroot, atmosdir)  # full path to FITS files
 
         # Aberration Metadata
         self.aberroot = 'aberrations'
-        self.aberdata = f"gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
+        aberdir = "gridsz{}_bmratio{}_tsteps{}"
+        self.aberdir = os.path.join(self.testdir, self.aberroot, aberdir)  # full path to FITS files
 
-        self.config = os.path.join(self.testdir,
-                                  'telescope.h5')
+        self.prescroot = 'telescope'
+        prescdir = "{}"
+        self.prescdir = os.path.join(self.testdir, self.prescroot, prescdir)  # copy of the prescription
 
-        self.device_params = os.path.join(self.testdir, 'device_params.pkl')  # detector metadata
+        self.device = os.path.join(self.testdir, 'device.pkl')  # detector metadata
 
-    def update(self, new_name='example1'):
+    def update(self, new_name='example2'):
         self.__init__(testname=new_name)
 
     def makedir(self):
@@ -68,7 +71,6 @@ class IO_params:
 
     def __name__(self):
         return self.__str__().split(' ')[0].split('.')[-1]
-
 
 class Simulation_params:
     """
@@ -112,6 +114,8 @@ class Simulation_params:
         self.memory_limit = 10e9  # number of bytes for sixcube of complex fields before chunking happens
         self.checkpointing = None  # int or None number of timesteps before complex fields sixcube is saved
                                  # minimum of this and max allowed steps for memory reasons takes priority
+        self.continuous_save = True
+
         self.verbose = True
         self.debug = False
         # self.usecache = True  # if save file exists then load, otherwise create a new sim
@@ -166,6 +170,15 @@ class Telescope_params:
         self.fnum_primary = 12  # f-number of primary
         self.flen_primary = 25  # [m] focal length of primary
 
+        self.lens_params = [{'aber_vals': [7.2e-17, 0.8, 3.1],  # power at low spatial frequencies (m4), correlation length (b/2pi defines knee)
+                            'diam': 0.2,  # m  diamater of AO1
+                            'focal_length': 1.2,  # m  focal length OAP1
+                            'dist' : 1.345,  # m distance OAP1 to DM
+                            'name': 'CPA'},
+
+                            {'aber_vals': [7.2e-17, 0.8, 3.1], 'diam': 0.2, 'focal_length': 1.2, 'dist': 1.345, 'name': 'NCPA'}
+                            ]
+
         # AO System Settings
         self.use_ao = True
         self.ao_act = 60  # number of actuators on the DM on one axis (proper only models nxn square DMs)
@@ -175,7 +188,7 @@ class Telescope_params:
         # Ideal Detector Params (not bothering with MKIDs yet)
         self.detector = 'ideal'  # 'MKIDs'
         self.array_size = np.array([129, 129])  # np.array([125,80])
-        self.wavecal_coeffs = [1. / 12, -157]  # assume linear for now 800nm = -90deg, 1500nm = -30deg
+        self.wavecal_coeffs = [1.e9 / 12, -157]  # assume linear for now 800nm = -90deg, 1500nm = -30deg
                                                 # used to make phase cubes. I assume this has something to do with the
                                                 # QE of MKIDs at different wavelengths?
         self.pix_shift = [0, 0]  # False?  Shifts the central star to off-axis (mimics conex mirror, tip/tilt error)
@@ -211,7 +224,7 @@ class MKID_params:
         self.bad_pix = False
         # self.interp_sample=True # avoids the quantization error in creating the datacube
         self.QE_map = None
-        self.wavecal_coeffs = [1./12, -157]  # assume linear for now 800nm = -90deg, 1500nm = -30deg
+        self.wavecal_coeffs = [1.e9/12, -157]  # assume linear for now 800nm = -90deg, 1500nm = -30deg
         self.phase_uncertainty = False  # True
         self.phase_background = False
         self.QE_var = False
@@ -335,7 +348,6 @@ class Atmos_params():
     def __name__(self):
         return self.__str__().split(' ')[0].split('.')[-1]
 
-
 # Creating class structures
 ap = Astro_params()
 tp = Telescope_params()
@@ -352,55 +364,4 @@ proper.use_cubic_conv = True
 # print(proper.__version__)
 # proper.prop_init_savestate()
 
-class Configuration():
-    """
-    Class responsible for getting and saving configuration data
-
-    """
-
-    def __init__(self):
-        self.debug = True
-        self.ap=ap
-        self.tp=tp
-        self.atmp=atmp
-        self.cdip=cdip
-        self.iop=iop
-        self.sp=sp
-
-    def generate(self):
-        print('No data to generate for Configuration')
-
-    def can_load(self):
-        if self.use_cache:
-            file_exists = os.path.exists(iop.fields)
-            if file_exists:
-                configs_match = self.configs_match()
-                if configs_match:
-                    return True
-
-        return False
-
-    def configs_match(self):
-        cur_config = self.__dict__
-        cache_config = self.load()
-        configs_match = cur_config == cache_config
-        return configs_match
-
-    def save(self):
-        with h5py.File(self.config.iop.config, mode='a') as hdf:
-            print(f'Saving observation data at {self.config.iop.config}')
-            dset = hdf.create_dataset('iop', tuple(shape), maxshape=tuple(shape), dtype=np.complex64,
-                                      chunks=tuple(chunk),
-                                      compression="gzip")
-
-            dset[t] = self.config.iop
-
-    def load(self):
-        with h5py.File(self.config.iop.config, 'r') as hf:
-            # fields = hf.get('data')[:]
-            config = hf.get('config')[:]
-        return config
-
-    def view(self):
-        for param in [ap, cp, tp, mp, sp]:
-            pprint.pprint(param.__dict__)
+params = {'ap':ap, 'tp':tp, 'atmp':atmp, 'cdip':cdip, 'iop':iop, 'sp':sp, 'mp':mp}
