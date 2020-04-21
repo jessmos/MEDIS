@@ -10,6 +10,7 @@ from matplotlib.colors import LogNorm, SymLogNorm
 import matplotlib.ticker as ticker
 import matplotlib.gridspec as gridspec
 import warnings
+import proper
 
 from medis.params import tp, sp, iop, ap, cdip
 from medis.utils import dprint
@@ -18,8 +19,9 @@ import medis.colormaps as cmaps
 
 plt.register_cmap(name='viridis', cmap=cmaps.viridis)
 plt.register_cmap(name='plasma', cmap=cmaps.plasma)
-plt.register_cmap(name='inferno', cmap=cmaps.plasma)
+plt.register_cmap(name='inferno', cmap=cmaps.inferno)
 plt.register_cmap(name='magma', cmap=cmaps.plasma)
+from medis.twilight_colormaps import sunlight
 
 # MEDIUM_SIZE = 17
 # plt.rc('font', size=MEDIUM_SIZE)  # controls default text sizes
@@ -45,6 +47,8 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=N
     :param colormap: specify colormap as string
     :return:
     """
+    if colormap=='sunlight':
+        colormap = sunlight
     # Create figure & adjust subplot number, layout, size, whitespace
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -88,7 +92,7 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=N
 
 
 def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vlim=(None,None), subplt_cols=3,
-                  dx=None):
+                  dx=None, extract_center=False):
     """
     view plot of intensity in each wavelength bin at a single (last) timestep
 
@@ -114,7 +118,7 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
     # Title
     if title is None:
         warnings.warn("Plots without titles: Don't Do It!")
-        title = input("Please Enter Title: ")
+        # title = input("Please Enter Title: ")
         pass
     fig.suptitle(title, fontweight='bold', fontsize=16)
 
@@ -123,6 +127,7 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
 
     for w in range(n_colors):
         ax = fig.add_subplot(gs[w])
+        ax.set_title(r'$\lambda$ = ' + f"{w_string[w]} nm")
 
         # X,Y lables
         if dx is not None:
@@ -138,24 +143,26 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
             # plt.xlabel('[um]', fontsize=8)
             # plt.ylabel('[um]', fontsize=8)
 
+        if extract_center:
+            slice = opx.extract_center(datacube[w])
+        else:
+            slice = datacube[w]
+
         # Z-axis scale
         if logZ:
-            if vlim[0] is not None and vlim[0] <= 0:
-                ax.set_title(r'$\lambda$ = '+f"{w_string[w]} nm")
-                im = ax.imshow(opx.extract_center(datacube[w]), interpolation='none', origin='lower',
+            if np.min(slice) < 0:
+                im = ax.imshow(slice, interpolation='none', origin='lower',
                                vmin=vlim[0], vmax=vlim[1],
                                norm=SymLogNorm(linthresh=1e-5),
                                cmap="YlGnBu_r")
                 clabel = "Log Normalized Intensity"
             else:
-                ax.set_title(r'$\lambda$ = '+f"{w_string[w]} nm")
-                im = ax.imshow(opx.extract_center(datacube[w]), interpolation='none', origin='lower',
+                im = ax.imshow(slice, interpolation='none', origin='lower',
                                vmin=vlim[0], vmax=vlim[1], norm=LogNorm(),
                                cmap="YlGnBu_r")
                 clabel = "Log Normalized Intensity"
         else:
-            ax.set_title(r'$\lambda$ = '+f"{w_string[w]} nm")
-            im = ax.imshow(opx.extract_center(datacube[w]),
+            im = ax.imshow(slice,
                            interpolation='none', origin='lower', vmin=vlim[0], vmax=vlim[1], cmap="YlGnBu_r")
             clabel = "Normalized Intensity"
 
@@ -414,6 +421,37 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
 
     plt.show(block=True)
 
+
+def quicklook_wf(wf, logAmp=True, show=True, title=None):
+    after_dm = proper.prop_get_amplitude(wf)
+    phase_afterdm = proper.prop_get_phase(wf)
+
+    fig = plt.figure(figsize=(14, 10))
+    ax1 = plt.subplot2grid((3, 2), (0, 0), rowspan=2)
+    ax2 = plt.subplot2grid((3, 2), (0, 1), rowspan=2)
+    ax3 = plt.subplot2grid((3, 2), (2, 0))
+    ax4 = plt.subplot2grid((3, 2), (2, 1))
+    if logAmp:
+        ax1.imshow(after_dm, origin='lower', cmap="YlGnBu_r", norm=LogNorm())
+    else:
+        ax1.imshow(after_dm, origin='lower', cmap="YlGnBu_r")
+    ax2.imshow(phase_afterdm, origin='lower', cmap=sunlight)  # , vmin=-0.5, vmax=0.5)
+
+    ax3.plot(after_dm[int(sp.grid_size / 2)])
+    ax3.plot(np.sum(np.eye(sp.grid_size) * after_dm, axis=1))
+
+    # plt.plot(np.sum(after_dm,axis=1)/after_dm[128,128])
+
+    ax4.plot(phase_afterdm[int(sp.grid_size / 2)])
+    # ax4.plot(np.sum(np.eye(ap.grid_size)*phase_afterdm,axis=1))
+    plt.xlim([0, proper.prop_get_gridsize(wf)])
+    if title:
+        fig.suptitle(title, fontsize=18)
+
+    fig.set_tight_layout(True)
+
+    if show:
+        plt.show(block=True)
 
 # def grid(datacube, nrows=2, logZ=False, axis=None, width=None, titles=None, ctitles=None, annos=None,
 #          scale=1, vmins=None, vmaxs=None, show=True):
