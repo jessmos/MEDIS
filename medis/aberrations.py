@@ -59,9 +59,11 @@ def generate_maps(aber_vals, lens_diam, lens_name='lens'):
     aber_cube = np.zeros((sp.numframes, sp.grid_size, sp.grid_size   ))
 
     # Randomly select a value from the range of values for each constant
-    rms_error = np.random.normal(aber_vals['a'][0], aber_vals['a'][1])
-    c_freq = np.random.normal(aber_vals['b'][0], aber_vals['b'][1])  # correlation frequency (cycles/meter)
-    high_power = np.random.normal(aber_vals['c'][0], aber_vals['c'][1])  # high frequency falloff (r^-high_power)
+    # rms_error = np.random.normal(aber_vals['a'][0], aber_vals['a'][1])
+    # c_freq = np.random.normal(aber_vals['b'][0], aber_vals['b'][1])  # correlation frequency (cycles/meter)
+    # high_power = np.random.normal(aber_vals['c'][0], aber_vals['c'][1])  # high frequency falloff (r^-high_power)
+
+    rms_error, c_freq, high_power = aber_vals
 
     perms = np.random.rand(sp.numframes, sp.grid_size, sp.grid_size)-0.5
     perms *= 1e-7
@@ -105,28 +107,28 @@ def add_aber(wf, d_lens, aber_params, aber_vals, step=0, lens_name=None):
     :return returns nothing but will act upon a given wavefront and apply new or loaded-in aberration map
     """
     # TODO this does not currently loop over time, so it is not using quasi-static abberations.
-    if tp.use_aber is False:
-        pass  # don't do anything. Putting this type of check here allows universal toggling on/off rather than
-              # commenting/uncommenting in the proper perscription
-    else:
-        # dprint("Adding Abberations")
+    # if tp.use_aber is False:
+    #     pass  # don't do anything. Putting this type of check here allows universal toggling on/off rather than
+    #           # commenting/uncommenting in the proper perscription
+    # else:
+    # dprint("Adding Abberations")
 
-        # Load in or Generate Aberration Map
-        iop.aberdata = f"gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
-        iop.aberdir = os.path.join(iop.testdir, iop.aberroot, iop.aberdata)
-        filename = f"{iop.aberdir}/t{step}_{lens_name}.fits"
-        if not os.path.isfile(filename):
-            generate_maps(aber_vals, d_lens, lens_name)
+    # Load in or Generate Aberration Map
+    iop.aberdata = f"gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
+    iop.aberdir = os.path.join(iop.testdir, iop.aberroot, iop.aberdata)
+    filename = f"{iop.aberdir}/t{step}_{lens_name}.fits"
+    if not os.path.isfile(filename):
+        generate_maps(aber_vals, d_lens, lens_name)
 
-        if aber_params['Phase']:
-            phase_map = readFITS(filename)
+    if aber_params['Phase']:
+        phase_map = readFITS(filename)
 
-            # Add Phase Map
-            proper.prop_add_phase(wf, phase_map)
+        # Add Phase Map
+        proper.prop_add_phase(wf, phase_map)
 
-        if aber_params['Amp']:
-            dprint("Outdated code-please update")
-            raise NotImplementedError
+    if aber_params['Amp']:
+        dprint("Outdated code-please update")
+        raise NotImplementedError
 
 
 def add_zern_ab(wf, zern_order=[2,3,4], zern_vals=np.array([175,-150,200])*1.0e-9):
