@@ -118,14 +118,14 @@ class Wavefronts():
         """
         if 'plane_name' in kwargs:
             plane_name = kwargs.pop('plane_name')  # remove plane_name from **kwargs
-            if plane_name in sp.save_list:
-                pass
-            else:
+            if plane_name not in sp.save_list:
                 plane_name = None
         elif func.__name__ in sp.save_list:
             plane_name = func.__name__
         else:
             plane_name = None
+
+        zero_outside = kwargs.pop('zero_outside') if 'zero_outside' in kwargs else False
 
         # manipulator_output is a way to store the values of a function passed into loop_collections.
         # EG you could use this as a way to save your WFS map if desired. The WFS map would be returned
@@ -146,9 +146,12 @@ class Wavefronts():
             else:
                 setattr(self, func.__name__, manipulator_output)
 
+        if zero_outside:
+            print(f'Zeroing outside the beam after {func.__name__}')
+            self.abs_zeros()
+
         # Saving complex field data after function is applied
         if plane_name is not None:
-            # self.abs_zeros()
             self.save_plane(location=plane_name)
 
     def save_plane(self, location=None):

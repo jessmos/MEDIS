@@ -65,7 +65,7 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     #  the array from infinity. The delay length thus corresponds to a different
     #  phase offset at a particular frequency.
     if params['tp'].use_atmos:
-        wfo.loop_collection(atmos.add_atmos, PASSVALUE['iter'], plane_name='atmosphere')
+        wfo.loop_collection(atmos.add_atmos, PASSVALUE['iter'], plane_name='atmosphere', zero_outside=True)
 
     wfo.abs_zeros()
 
@@ -88,7 +88,7 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     #######################################
     # Abberations before AO
 
-    wfo.loop_collection(aber.add_aber, params['tp'].aber_params, PASSVALUE['iter'], lens_name='CPA')
+    wfo.loop_collection(aber.add_aber, params['tp'].aber_params, PASSVALUE['iter'], lens_name='CPA', zero_outside=True)
     # wfo.loop_collection(proper.prop_circular_aperture, **{'radius': params['tp'].entrance_d / 2})
     # wfo.wf_collection = aber.abs_zeros(wfo.wf_collection)
     wfo.abs_zeros()
@@ -101,15 +101,15 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
         if params['sp'].closed_loop:
             previous_output = ao.retro_wfs(PASSVALUE['AO_field'], wfo)  # unwrap a previous steps phase map
             wfo.loop_collection(ao.deformable_mirror, WFS_map=None, iter=PASSVALUE['iter'],
-                                previous_output=previous_output, plane_name='deformable mirror')
+                                previous_output=previous_output, plane_name='deformable mirror', zero_outside=True)
         elif params['sp'].ao_delay > 0:
             WFS_map = ao.retro_wfs(PASSVALUE['WFS_field'], wfo)  # unwrap a previous steps phase map
             wfo.loop_collection(ao.deformable_mirror, WFS_map, iter=PASSVALUE['iter'], previous_output=None,
-                                plane_name='deformable mirror')
+                                plane_name='deformable mirror', zero_outside=True)
         else:
             WFS_map = ao.open_loop_wfs(wfo)  # just uwraps this steps measured phase_map
             wfo.loop_collection(ao.deformable_mirror, WFS_map, iter=PASSVALUE['iter'], previous_output=None,
-                                tp=params['tp'], plane_name='deformable mirror')
+                                tp=params['tp'], plane_name='deformable mirror', zero_outside=True)
 
     # Obscure Baffle
     if params['tp'].obscure:
@@ -120,7 +120,7 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     # #######################################
     # Abberations after the AO Loop
 
-    wfo.loop_collection(aber.add_aber, params['tp'].aber_params, PASSVALUE['iter'], lens_name='NCPA')
+    wfo.loop_collection(aber.add_aber, params['tp'].aber_params, PASSVALUE['iter'], lens_name='NCPA', zero_outside=True)
     wfo.loop_collection(proper.prop_circular_aperture, **{'radius': params['tp'].entrance_d / 2})
     # TODO does this need to be here?
     # wfo.loop_collection(opx.add_obscurations, params['tp'].entrance_d/4, legs=False)
