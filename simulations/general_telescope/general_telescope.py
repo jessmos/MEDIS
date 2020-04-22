@@ -65,7 +65,8 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     #  the array from infinity. The delay length thus corresponds to a different
     #  phase offset at a particular frequency.
     if params['tp'].use_atmos:
-        wfo.loop_collection(atmos.add_atmos, PASSVALUE['iter'], plane_name='atmosphere', zero_outside=True)
+        wfo.loop_collection(atmos.add_atmos, PASSVALUE['iter'], spatial_zoom=True, plane_name='atmosphere',
+                            zero_outside=True)
 
     wfo.abs_zeros()
 
