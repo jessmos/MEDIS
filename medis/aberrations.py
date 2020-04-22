@@ -94,7 +94,7 @@ def generate_maps(aber_vals, lens_diam, lens_name='lens'):
             saveFITS(aber_cube[0], filename)
 
 
-def add_aber(wf, d_lens, aber_params, aber_vals, step=0, lens_name=None):
+def add_aber(wf, aber_params, step=0, lens_name=None):
     """
     loads a phase error map and adds aberrations using proper.prop_add_phase
     if no aberration file exists, creates one for specific lens using generate_maps
@@ -114,11 +114,13 @@ def add_aber(wf, d_lens, aber_params, aber_vals, step=0, lens_name=None):
     # dprint("Adding Abberations")
 
     # Load in or Generate Aberration Map
-    iop.aberdata = f"gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
-    iop.aberdir = os.path.join(iop.testdir, iop.aberroot, iop.aberdata)
+    # iop.aberdata = f"gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
+    # iop.aberdir = os.path.join(iop.testdir, iop.aberroot, iop.aberdata)
     filename = f"{iop.aberdir}/t{step}_{lens_name}.fits"
-    if not os.path.isfile(filename):
-        generate_maps(aber_vals, d_lens, lens_name)
+    print(f'Adding Abberations from {filename}')
+
+    # if not os.path.isfile(filename):
+    #     generate_maps(aber_vals, d_lens, lens_name)
 
     if aber_params['Phase']:
         phase_map = readFITS(filename)

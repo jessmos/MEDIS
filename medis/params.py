@@ -174,15 +174,6 @@ class Telescope_params:
         self.fnum_primary = 12  # f-number of primary
         self.flen_primary = 25  # [m] focal length of primary
 
-        self.lens_params = [{'aber_vals': [7.2e-17, 0.8, 3.1],  # power at low spatial frequencies (m4), correlation length (b/2pi defines knee)
-                            'diam': 0.2,  # m  diamater of AO1
-                            'focal_length': 1.2,  # m  focal length OAP1
-                            'dist' : 1.345,  # m distance OAP1 to DM
-                            'name': 'CPA'},
-
-                            {'aber_vals': [7.2e-17, 0.8, 3.1], 'diam': 0.2, 'focal_length': 1.2, 'dist': 1.345, 'name': 'NCPA'}
-                            ]
-
         self.use_atmos = True
         self.obscure = False
 
@@ -191,6 +182,7 @@ class Telescope_params:
         self.ao_act = 60  # number of actuators on the DM on one axis (proper only models nxn square DMs)
         self.piston_error = False  # flag for allowing error on DM surface shape
         self.fit_dm = True  # flag to use DM surface fitting (see proper manual pg 52, the FIT switch)
+        self.satelite_speck = False
 
         # Ideal Detector Params (not bothering with MKIDs yet)
         self.detector = 'ideal'  # 'MKIDs'
@@ -205,23 +197,8 @@ class Telescope_params:
         self.servo_error = [0, 1]  # [0,1] # False # No delay and rate of 1/frame_time
         self.abertime = 0.5  # time scale of optic aberrations in seconds
 
-        self.aber_params = {'Phase': True,
-                            'Amp': False}
-                            # Coefficients used to calcuate PSD errormap in Proper (see pg 56 in manual)
-                            # only change these if making new aberration maps
-        self.aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4)
-                          'b': [0.8, 0.2],  # correlation length (b/2pi defines knee)
-                          'c': [3.1, 0.5],  #
-                          'a_amp': [0.05, 0.01]}
-
-        self.lens_params = [{'aber_vals': [7.2e-17, 0.8, 3.1],  # power at low spatial frequencies (m4), correlation length (b/2pi defines knee)
-                            'diam': 0.2,  # m  diamater of AO1
-                            'focal_length': 1.2,  # m  focal length OAP1
-                            'dist' : 1.345,  # m distance OAP1 to DM
-                            'name': 'CPA'},
-
-                            {'aber_vals': [7.2e-17, 0.8, 3.1], 'diam': 0.2, 'focal_length': 1.2, 'dist': 1.345, 'name': 'NCPA'}
-                            ]
+        self.aber_params = {'Phase': True, 'Amp': False}
+        self.lens_params = None
 
         # Zernike Settings- see pg 192 for details
         self.zernike_orders = [2, 3, 4]  # Order of Zernike Polynomials to include

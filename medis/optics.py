@@ -148,7 +148,7 @@ class Wavefronts():
 
         # Saving complex field data after function is applied
         if plane_name is not None:
-            self.abs_zeros()
+            # self.abs_zeros()
             self.save_plane(location=plane_name)
 
     def save_plane(self, location=None):

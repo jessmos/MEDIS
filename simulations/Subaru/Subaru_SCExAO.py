@@ -35,7 +35,6 @@ import medis.adaptive as ao
 import medis.atmosphere as atmos
 import medis.coronagraphy as cg
 
-
 #################################################################################################
 #################################################################################################
 #################################################################################################
@@ -69,8 +68,7 @@ tp.flen_primary = tp.flen_nsmyth
 # Effective Primary Aberrations
 primary_aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4)
                      'b': [0.8, 0.2],  # correlation length (b/2pi defines knee)
-                     'c': [3.1, 0.5],  #
-                     'a_amp': [0.05, 0.01]}
+                     'c': [3.1, 0.5]}
 # ----------------------------
 # AO188 DM
 tp.act_woofer = 14  # approximately a 188 DM (14*14=169)
@@ -84,8 +82,7 @@ tp.fl_ao1 = 1.201  # m  focal length OAP1
 tp.dist_ao1_dm = 1.345  # m distance OAP1 to DM
 OAP1_aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4)
                   'b': [0.8, 0.2],  # correlation length (b/2pi defines knee)
-                  'c': [3.1, 0.5],  #
-                  'a_amp': [0.05, 0.01]}
+                  'c': [3.1, 0.5]}
 
 # ----------------------------
 # AO188 OAP2
@@ -95,8 +92,7 @@ tp.fl_ao2 = 1.201  # m  focal length AO2
 tp.dist_oap2_focus = 1.261
 OAP2_aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4)
                   'b': [0.8, 0.2],  # correlation length (b/2pi defines knee)
-                  'c': [3.1, 0.5],  #
-                  'a_amp': [0.05, 0.01]}
+                  'c': [3.1, 0.5]}
 
 # ------------------------------
 # Coronagraph
@@ -119,6 +115,31 @@ tp.dist_sl1_scexao = 0.1345  # m
 tp.dist_scexao_sl2 = 0.2511 - tp.dist_sl1_scexao  # m
 tp.dist_sl2_focus = 0.1261  # m
 
+#todo the code above and in the prescription are redudnat. Switch to just using tp.lens_params
+# e.g.
+#   primary = tp.lens_params[0]
+#   wfo.loop_collection(aber.add_aber, primary['diam'], primary['aber_vals'],
+#                              step=PASSVALUE['iter'], lens_name=primary['name'])
+#   wfo.loop_collection(opx.prop_pass_lens, primary['fl'], primary['dist'])
+
+tp.lens_params = [{'aber_vals': [7.2e-17, 0.8, 3.1],
+                   'diam': tp.entrance_d,
+                   'fl': tp.flen_nsmyth,
+                   'dist': tp.dist_nsmyth_ao1,
+                   'name': 'effective-primary'},
+
+                  {'aber_vals': [7.2e-17, 0.8, 3.1],
+                   'diam': tp.d_ao1,
+                   'fl': tp.fl_ao1,
+                   'dist': tp.dist_ao1_dm,
+                   'name': 'ao188-OAP1'},
+
+                  {'aber_vals': [7.2e-17, 0.8, 3.1],
+                   'diam': tp.d_ao2,
+                   'fl': tp.fl_ao2,
+                   'dist': tp.dist_oap2_focus,
+                   'name': 'ao188-OAP2'}
+                    ]
 
 #################################################################################################
 #################################################################################################
@@ -169,8 +190,7 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     #######################################
     # Effective Primary
     # CPA from Effective Primary
-    wfo.loop_collection(aber.add_aber, tp.entrance_d, tp.aber_params, primary_aber_vals,
-                           step=PASSVALUE['iter'], lens_name='effective-primary')
+    wfo.loop_collection(aber.add_aber, tp.aber_params, step=PASSVALUE['iter'], lens_name='effective-primary')
     # Zernike Aberrations- Low Order
     # wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
     wfo.loop_collection(opx.prop_pass_lens, tp.flen_nsmyth, tp.dist_nsmyth_ao1)
@@ -179,20 +199,18 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     # AO188 Propagation
     ########################################
     # # AO188-OAP1
-    wfo.loop_collection(aber.add_aber, tp.d_ao1, tp.aber_params, OAP1_aber_vals,
-                           step=PASSVALUE['iter'], lens_name='ao188-OAP1')
+    wfo.loop_collection(aber.add_aber, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP1')
     wfo.loop_collection(opx.prop_pass_lens, tp.fl_ao1, tp.dist_ao1_dm)
 
     # AO System
     if tp.use_ao:
         WFS_map = ao.open_loop_wfs(wfo)
-        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], plane_name='woofer')  # don't use PASSVALUE['WFS_map'] here because open loop
+        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'],  None, tp, plane_name='woofer')  # don't use PASSVALUE['WFS_map'] here because open loop
     # ------------------------------------------------
     wfo.loop_collection(proper.prop_propagate, tp.dist_dm_ao2)
 
     # AO188-OAP2
-    wfo.loop_collection(aber.add_aber, tp.d_ao2, tp.aber_params, OAP2_aber_vals,
-                           step=PASSVALUE['iter'], lens_name='ao188-OAP2')
+    wfo.loop_collection(aber.add_aber, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP2')
     # wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)
     wfo.loop_collection(opx.prop_pass_lens, tp.fl_ao2, tp.dist_oap2_focus)
 
@@ -209,7 +227,7 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     # AO System
     if tp.use_ao:
         WFS_map = ao.open_loop_wfs(wfo)
-        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], plane_name='tweeter')
+        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], None, tp, plane_name='tweeter')
     # ------------------------------------------------
     wfo.loop_collection(proper.prop_propagate, tp.fl_sl)
 

@@ -21,6 +21,7 @@ Rupert will fill in the overview of the MKIDS part.
 import os
 import sys
 import numpy as np
+import importlib
 import multiprocessing
 import time
 import traceback
@@ -216,25 +217,32 @@ class Telescope():
             # copy over the prescription
             self.params['iop'].prescopydir = self.params['iop'].prescopydir.format(self.params['tp'].prescription)
             self.target = os.path.join(self.params['iop'].prescopydir, self.params['tp'].prescription+'.py')
+
+            prescriptions = self.params['iop'].prescriptions_root
+            fullprescription = glob.glob(os.path.join(prescriptions, '**', self.params['tp'].prescription+'.py'),
+                                         recursive=True)
+            if len(fullprescription) == 0:
+                raise FileNotFoundError
+            elif len(fullprescription) > 1:
+                print(f'Multiple precriptions at {fullprescription}')
+                raise FileExistsError
+
+            fullprescription = fullprescription[0]
+            print(f'Using prescription {fullprescription}')
             if os.path.exists(self.target):
                 print(f"Prescription already exists at \n\n\t{self.target} \n\n... skipping copying\n\n")
             else:
-                prescriptions = self.params['iop'].prescriptions_root
-                fullprescription = glob.glob(os.path.join(prescriptions, '**', self.params['tp'].prescription+'.py'),
-                                             recursive=True)
-                if len(fullprescription) == 0:
-                    raise FileNotFoundError
-                elif len(fullprescription) > 1:
-                    print(f'Multiple precriptions at {fullprescription}')
-                    raise FileExistsError
-
-                fullprescription = fullprescription[0]
                 print(f"Copying over prescription {fullprescription}")
 
                 if not os.path.isdir(self.params['iop'].prescopydir):
                     os.makedirs(self.params['iop'].prescopydir, exist_ok=True)
                 shutil.copyfile(fullprescription, self.target)
-                sys.path.insert(0, os.path.dirname(self.target))
+
+            #import prescription params
+            # sys.path.insert(0, os.path.dirname(self.target))
+            sys.path.insert(0, os.path.dirname(fullprescription))
+            pres_module = importlib.import_module(params['tp'].prescription)
+            self.params['tp'].__dict__.update(pres_module.tp)
 
             # initialize atmosphere
             self.params['iop'].atmosdir = self.params['iop'].atmosdir.format(params['sp'].grid_size,
@@ -250,8 +258,8 @@ class Telescope():
 
             # initialize aberrations
             self.params['iop'].aberdir = self.params['iop'].aberdir.format(params['sp'].grid_size,
-                                                                             params['sp'].beam_ratio,
-                                                                             params['sp'].numframes)
+                                                                           params['sp'].beam_ratio,
+                                                                           params['sp'].numframes)
             if glob.glob(self.params['iop'].aberdir + '/*.fits'):
                 print(f"Aberration maps already exist at \n\n\t{self.params['iop'].aberdir} "
                       f"\n\n... skipping generation\n\n")
@@ -284,7 +292,7 @@ class Telescope():
             self.params['sp'].closed_loop = False
 
             self.markov = self.params['sp'].chunking or self.params['sp'].parrallel  # independent timesteps
-            assert np.logical_xor(self.markov, self.params['sp'].ao_delay or self.params['sp'].closed_loop),\
+            assert np.logical_xor(self.markov, self.params['sp'].ao_delay or self.params['sp'].closed_loop), \
                 "Confliciting modes. Request requires the timesteps be both dependent and independent"
 
             modes = [self.params['sp'].chunking, self.params['sp'].ao_delay, self.params['sp'].parrallel,
