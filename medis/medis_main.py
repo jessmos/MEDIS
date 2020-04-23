@@ -143,43 +143,6 @@ class RunMedis():
 
         return dataproduct
 
-    def MKIDs(self):
-        """
-        Todo this needs to be migrated to its own class
-
-        :return:
-        """
-
-        from medis.MKIDs import Detector
-
-        det = Detector(mp)
-        # initialize MKIDs
-        MKIDs.initialize()
-
-        with open(self.params['iop'].device, 'rb') as handle:
-            dp = pickle.load(handle)
-
-        # cpx_sequence, sampling = self.telescope()
-        telescope_sim = Telescope(self.params)
-        output = telescope_sim()
-        cpx_sequence = output['fields']
-
-        photons = np.empty((0, 4))
-        stackcube = np.zeros((len(cpx_sequence), self.params['ap'].n_wvl_final, mp.array_size[1], mp.array_size[0]))
-        for step in range(len(cpx_sequence)):
-            print('step', step)
-            spectralcube = np.abs(np.sum(cpx_sequence[step, -1, :, :], axis=1)) ** 2
-            # view_spectra(spectralcube, logZ=True)
-            step_packets = MKIDs.get_packets(spectralcube, step, dp, mp)
-            photons = np.vstack((photons, step_packets))
-            cube = MKIDs.make_datacube_from_list(step_packets, (self.params['ap'].n_wvl_final, dp.array_size[0], dp.array_size[1]))
-            stackcube[step] = cube
-
-        # with open(self.params['iop'].form_photons, 'wb') as handle:
-        #     pickle.dump((photons, stackcube), handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-        return {'photons': photons, 'stackcube': stackcube, 'sampling': sampling}
-
 
 if __name__ == '__main__':
     from medis.params import params
