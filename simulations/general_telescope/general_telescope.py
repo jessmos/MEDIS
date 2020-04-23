@@ -126,15 +126,15 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     # TODO does this need to be here?
     # wfo.loop_collection(opx.add_obscurations, params['tp'].entrance_d/4, legs=False)
     # wfo.wf_collection = aber.abs_zeros(wfo.wf_collection)
-    wfo.loop_collection(opx.prop_pass_lens, params['tp'].f_lens, params['tp'].f_lens, plane_name='pre_coron')
+    wfo.loop_collection(opx.prop_pass_lens, params['tp'].lens_params[0]['focal_length'],
+                        params['tp'].lens_params[0]['focal_length'], plane_name='pre_coron')
 
     ########################################
     # Coronagraph
     ########################################
     # there are additional un-aberated optics in the coronagraph module
 
-    if params['tp'].use_coronagraph:
-        wfo.loop_collection(coronagraph, occulter_mode=params['tp'].cg_type, plane_name='coronagraph')
+    wfo.loop_collection(coronagraph, occulter_mode=params['tp'].cg_type, plane_name='coronagraph')
 
     ########################################
     # Focal Plane

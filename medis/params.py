@@ -206,6 +206,12 @@ class Telescope_params:
         self.zernike_vals = np.array([175, -150, 200])*1.0e-9  # value of Zernike order in nm,
                                                                # must be same length as zernike_orders
 
+        self.cg_type = 'Gaussian'
+        self.cg_size = 3  # physical size or lambda/D size
+        self.cg_size_units = "l/D"  # "m" or "l/D"
+        self.lyot_size = 0.75  # units are in fraction of surface blocked
+        self.fl_cg_lens = 200 * self.entrance_d  # m
+
     def __iter__(self):
         for attr, value in self.__dict__.items():
             yield attr, value
