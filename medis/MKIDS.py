@@ -6,16 +6,136 @@ is a function under run_medis class
 Rupert adds all of his stuff here.
 """
 
+import os
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy import interpolate
 import pickle
 import random
-import h5py
+
 from .distribution import *
 from medis.params import mp, ap, tp, iop, dp, sp
 from medis.utils import dprint
 from medis.plot_tools import view_spectra
+from medis.telescope import Telescope
+
+
+class Camera():
+    def __init__(self, params):
+        """
+        Creates a simulation for the MKID Camera to create a series of photons
+
+        During initialisation a backup of the pthon PROPER prescription is copied to the testdir, atmisphere maps and
+        aberration maps are created, serialisation and memory requirements are tested, and the cdi vairable initialised
+
+        Resulting file structure:
+        datadir
+            testdir
+                params.pkl         <--- input
+                fields.h5          <--- input
+                camera             <--- new
+                    devicesave.pkl <--- new
+                photonlist.h5      <--- output
+
+
+        input
+        params dict
+            collection of the objects in params.py
+        fields ndarray complex
+            complex tensor of dimensions (n_timesteps, n_saved_planes, n_wavelengths, n_stars/planets, grid_size, grid_size)
+
+        :return:
+        either photon list or rebinned cube
+
+        """
+        self.params = params
+
+        self.save_exists = True if os.path.exists(self.params['iop'].camera) else False
+
+        if self.save_exists:
+            with open(self.params['iop'].camera, 'rb') as handle:
+                load = pickle.load(handle)
+                self.__dict__ = load.__dict__
+                self.save_exists = True
+
+        else:
+            # create fields
+            telescope_sim = Telescope(self.params)
+            dataproduct = telescope_sim()
+            self.fields = dataproduct['fields']
+
+            # create device
+            self.dp = self.create_device()
+
+
+    def create_device(self):
+        # det = Detector(params['mp'])  # either loads or initialises dp
+        # output = det(fields)  # loops over time and calls get_packets on each one
+        # self.QE_map = None
+        # self.Rs = None
+        # self.sigs = None
+        # self.basesDeg = None
+        # self.hot_pix = None
+        # self.dark_pix_frac = None
+        # dp = device()
+        self.platescale = mp.platescale
+        self.array_size = mp.array_size
+        self.dark_pix_frac = mp.dark_pix_frac
+        self.hot_pix = mp.hot_pix
+        self.lod = mp.lod
+        self.QE_map_all = array_QE(plot=False)
+        self.responsivity_error_map = responvisity_scaling_map(plot=False)
+        if mp.pix_yield == 1:
+            mp.bad_pix = False
+        if mp.bad_pix == True:
+            self.QE_map = create_bad_pix(self.QE_map_all)
+            # self.QE_map = create_hot_pix(self.QE_map)
+            # quick2D(self.QE_map_all)
+            if mp.dark_counts:
+                self.dark_per_step = sp.sample_time * mp.dark_bright * mp.array_size[0] * mp.array_size[
+                    1] * self.dark_pix_frac
+                self.dark_locs = create_false_pix(mp, amount=int(
+                    mp.dark_pix_frac * mp.array_size[0] * mp.array_size[1]))
+            if mp.hot_pix:
+                self.hot_per_step = sp.sample_time * mp.hot_bright * self.hot_pix
+                self.hot_locs = create_false_pix(mp, amount=mp.hot_pix)
+            # self.QE_map = create_bad_pix_center(self.QE_map)
+        self.Rs = assign_spectral_res(plot=False)
+        self.sigs = get_R_hyper(self.Rs, plot=False)
+        # get_phase_distortions(plot=True)
+        if mp.phase_background:
+            self.basesDeg = assign_phase_background(plot=False)
+        else:
+            self.basesDeg = np.zeros((mp.array_size))
+        with open(iop.device, 'wb') as handle:
+            pickle.dump(dp, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        print('Initialized MKID array parameters')
+
+        return dp
+
+
+    def __call__(self, *args, **kwargs):
+        if not self.save_exists:
+
+            photons = np.empty((0, 4))
+            stackcube = np.zeros((len(self.fields), self.params['ap'].n_wvl_final, mp.array_size[1], mp.array_size[0]))
+            for step in range(len(self.fields)):
+                print('step', step)
+                spectralcube = np.abs(np.sum(self.fields[step, -1, :, :], axis=1)) ** 2
+                # view_spectra(spectralcube, logZ=True)
+                step_packets = self.get_packets(spectralcube, step, dp, mp)
+                photons = np.vstack((photons, step_packets))
+                cube = self.make_datacube_from_list(step_packets, (self.params['ap'].n_wvl_final, dp.array_size[0], dp.array_size[1]))
+                stackcube[step] = cube
+
+            with open(self.params['iop'].photons, 'wb') as handle:
+                pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        dataproduct = {'photons': self.photons, 'stackcube': self.stackcube}
+
+        return dataproduct
+
 
 
 class Detector():
@@ -388,52 +508,52 @@ class Detector():
 
         return datacube
 
-    def load_fields(fields_file):
-        """
-        Take the continuously saved sequence of fivecubes and load a sixcube into memory
-        :return:
-        """
-        with h5py.File(fields_file, 'r') as hf:
-            keys = list(hf.keys())
-            if 'data' in keys:
-                dprint('File in old format. Loading fields straight in')
-                fields = hf.get('data')[:]
-            else:
-                try:
-                    step_shape = hf.get('t0').shape
-                except AttributeError:
-                    print(f'Time 0 dataset does not exist for {fields_file}. Try recreating it')
-                    raise AttributeError
-                fields = np.zeros(
-                    (len(keys), step_shape[0], step_shape[1], step_shape[2], step_shape[3], step_shape[4]),
-                    dtype=np.complex64)
-                for t in range(len(keys)):
-                    timestep = hf.get(f't{t}')
-                    # from medis.Utils.plot_tools import view_datacube
-                    # view_datacube(np.abs(timestep[-1,:,0]) ** 2, logAmp=True)
-                    fields[t] = timestep
-            if sp.verbose: print(f'fields sixcube has shape: {fields.shape}')
-        return fields
-
-    def save_fields(e_fields_sequence, fields_file='hyper.pkl'):
-
-        dprint((fields_file, fields_file[-3:], fields_file[-3:] == '.h5'))
-        if fields_file[-3:] == 'pkl':
-            with open(fields_file, 'wb') as handle:
-                pickle.dump(e_fields_sequence, handle, protocol=pickle.HIGHEST_PROTOCOL)
-        elif fields_file[-3:] == 'hdf' or fields_file[-3:] == '.h5':
-            with h5py.File(fields_file, 'w') as hf:
-                hf.create_dataset('data', data=e_fields_sequence)
-                # for param in [iop, cp, tp, mp, sp, iop, dp, fp]:
-                #     for key, value in dict(param).items():
-                #         if type(value) == str or value is None:
-                #             value = np.string_(value)
-                #         try:
-                #             hf.attrs.create(f'{param.__name__()}.{key}', value)
-                #         except TypeError:
-                #             print('WARNING skipping some attributes - probably the aber dictionaries or save locs')
-        else:
-            print('Extension not recognised')
+    # def load_fields(fields_file):
+    #     """
+    #     Take the continuously saved sequence of fivecubes and load a sixcube into memory
+    #     :return:
+    #     """
+    #     with h5py.File(fields_file, 'r') as hf:
+    #         keys = list(hf.keys())
+    #         if 'data' in keys:
+    #             dprint('File in old format. Loading fields straight in')
+    #             fields = hf.get('data')[:]
+    #         else:
+    #             try:
+    #                 step_shape = hf.get('t0').shape
+    #             except AttributeError:
+    #                 print(f'Time 0 dataset does not exist for {fields_file}. Try recreating it')
+    #                 raise AttributeError
+    #             fields = np.zeros(
+    #                 (len(keys), step_shape[0], step_shape[1], step_shape[2], step_shape[3], step_shape[4]),
+    #                 dtype=np.complex64)
+    #             for t in range(len(keys)):
+    #                 timestep = hf.get(f't{t}')
+    #                 # from medis.Utils.plot_tools import view_datacube
+    #                 # view_datacube(np.abs(timestep[-1,:,0]) ** 2, logAmp=True)
+    #                 fields[t] = timestep
+    #         if sp.verbose: print(f'fields sixcube has shape: {fields.shape}')
+    #     return fields
+    #
+    # def save_fields(e_fields_sequence, fields_file='hyper.pkl'):
+    #
+    #     dprint((fields_file, fields_file[-3:], fields_file[-3:] == '.h5'))
+    #     if fields_file[-3:] == 'pkl':
+    #         with open(fields_file, 'wb') as handle:
+    #             pickle.dump(e_fields_sequence, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    #     elif fields_file[-3:] == 'hdf' or fields_file[-3:] == '.h5':
+    #         with h5py.File(fields_file, 'w') as hf:
+    #             hf.create_dataset('data', data=e_fields_sequence)
+    #             # for param in [iop, cp, tp, mp, sp, iop, dp, fp]:
+    #             #     for key, value in dict(param).items():
+    #             #         if type(value) == str or value is None:
+    #             #             value = np.string_(value)
+    #             #         try:
+    #             #             hf.attrs.create(f'{param.__name__()}.{key}', value)
+    #             #         except TypeError:
+    #             #             print('WARNING skipping some attributes - probably the aber dictionaries or save locs')
+    #     else:
+    #         print('Extension not recognised')
 
     def get_packets(datacube, step, dp, mp, plot=False):
         if plot: view_spectra(datacube, logZ=True, extract_center=False, title='pre')
