@@ -29,7 +29,6 @@ class IO_params:
     def __init__(self, testname='example1'):  # you can update the testname with iop.update('your_testname')
                                             # and then run iop.mkdir()
         self.datadir = '/home/captainkay/mazinlab/MKIDSim/CDIsim_data/'
-        # self.datadir = '/Users/dodkins/MKIDSim/mkid_param_invest/'
         # self.datadir = '/Users/dodkins/MKIDSim/'
 
         self.prescriptions_root = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -42,7 +41,9 @@ class IO_params:
         self.params_logs = os.path.join(self.testdir, 'params.pkl')
 
         self.fields = os.path.join(self.testdir, 'fields.h5')  # a x/y/t/w cube of data
-        self.obs_table = os.path.join(self.testdir, 'ObsTable.h5')  # a photon table with 4 columns
+        self.photons = os.path.join(self.testdir, 'photons.pkl')  # a photon table with 4 columns
+        self.camera = os.path.join(self.testdir, 'camera.pkl')  # a photon table with 4 columns
+        self.telescope = os.path.join(self.testdir, 'telescope.pkl')  # a photon table with 4 columns
 
         self.atmosroot = 'atmos'
         atmosdir = "gridsz{}_bmratio{}_tsteps{}"  # fill in variable names later
@@ -53,7 +54,7 @@ class IO_params:
         aberdir = "gridsz{}_bmratio{}_tsteps{}"
         self.aberdir = os.path.join(self.testdir, self.aberroot, aberdir)  # full path to FITS files
 
-        self.prescopyroot = 'telescope'
+        self.prescopyroot = 'prescription'
         prescopydir = "{}"
         self.prescopydir = os.path.join(self.testdir, self.prescopyroot, prescopydir)  # copy of the prescription
 
