@@ -13,7 +13,7 @@ from scipy import interpolate
 import pickle
 import random
 
-from .distribution import *
+from medis.distribution import *
 # from medis.params import mp, ap, tp, iop, dp, sp
 from medis.utils import dprint
 from medis.plot_tools import view_spectra
@@ -21,7 +21,7 @@ from medis.telescope import Telescope
 
 
 class Camera():
-    def __init__(self, params):
+    def __init__(self, params, fields=None):
         """
         Creates a simulation for the MKID Camera to create a series of photons
 
@@ -59,10 +59,13 @@ class Camera():
                 self.save_exists = True
 
         else:
-            # create fields
-            telescope_sim = Telescope(self.params)
-            dataproduct = telescope_sim()
-            self.fields = dataproduct['fields']
+            if not fields:
+                # make fields (or load if it already exists)
+                telescope_sim = Telescope(self.params)
+                dataproduct = telescope_sim()
+                self.fields = dataproduct['fields']
+            else:
+                self.fields = fields
 
             # create device
             self.create_device()
@@ -94,11 +97,11 @@ class Camera():
             if self.params['mp'].dark_counts:
                 self.dark_per_step = self.params['sp'].sample_time * self.params['mp'].dark_bright * self.array_size[0] * self.array_size[
                     1] * self.dark_pix_frac
-                self.dark_locs = self.create_false_pix(self.params['mp'], amount=int(
+                self.dark_locs = self.create_false_pix(amount=int(
                     self.params['mp'].dark_pix_frac * self.array_size[0] * self.array_size[1]))
             if self.params['mp'].hot_pix:
                 self.hot_per_step = self.params['sp'].sample_time * self.params['mp'].hot_bright * self.hot_pix
-                self.hot_locs = self.create_false_pix(self.params['mp'], amount=self.params['mp'].hot_pix)
+                self.hot_locs = self.create_false_pix(amount=self.params['mp'].hot_pix)
             # self.QE_map = create_bad_pix_center(self.QE_map)
         self.Rs = self.assign_spectral_res(plot=False)
         self.sigs = self.get_R_hyper(self.Rs, plot=False)
@@ -115,16 +118,16 @@ class Camera():
     def __call__(self, *args, **kwargs):
         if not self.save_exists:
 
-            photons = np.empty((0, 4))
-            stackcube = np.zeros((len(self.fields), self.params['ap'].n_wvl_final, self.array_size[1], self.array_size[0]))
+            self.photons = np.empty((0, 4))
+            self.stackcube = np.zeros((len(self.fields), self.params['ap'].n_wvl_final, self.array_size[1], self.array_size[0]))
             for step in range(len(self.fields)):
                 print('step', step)
                 spectralcube = np.abs(np.sum(self.fields[step, -1, :, :], axis=1)) ** 2
                 # view_spectra(spectralcube, logZ=True)
                 step_packets = self.get_packets(spectralcube, step)
-                photons = np.vstack((photons, step_packets))
+                self.photons = np.vstack((self.photons, step_packets))
                 cube = self.make_datacube_from_list(step_packets, (self.params['ap'].n_wvl_final, self.array_size[0], self.array_size[1]))
-                stackcube[step] = cube
+                self.stackcube[step] = cube
 
             with open(self.params['iop'].photons, 'wb') as handle:
                 pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -560,11 +563,11 @@ class Camera():
                     # sep = events[:, 0] - np.roll(events[:, 0], 1, 0)
         return photons.T
 
-    def get_packets(self, datacube, step, plot=False):
+    def get_packets(self, datacube, step, plot=True):
         if plot: view_spectra(datacube, logZ=True, extract_center=False, title='pre')
 
         if self.params['mp'].resamp:
-            nyq_sampling = self.params['ap'].wvl_range[0]*360*3600/(4*np.pi*tp.entrance_d)
+            nyq_sampling = self.params['ap'].wvl_range[0]*360*3600/(4*np.pi*self.params['tp'].entrance_d)
             sampling = nyq_sampling*self.params['sp'].beam_ratio*2  # nyq sampling happens at self.params['sp'].beam_ratio = 0.5
             x = np.arange(-self.params['sp'].grid_size*sampling/2, self.params['sp'].grid_size*sampling/2, sampling)
             xnew = np.arange(-self.array_size[0]*self.platescale/2, self.array_size[0]*self.platescale/2, self.platescale)
@@ -671,3 +674,10 @@ class Camera():
         # print("Measured photons with MKIDs")
 
         return photons.T
+
+if __name__ == '__main__':
+    from medis.params import params
+
+    cam = Camera(params)
+    dataproduct = cam()
+    print(dataproduct.keys())
