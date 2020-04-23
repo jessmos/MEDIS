@@ -50,16 +50,18 @@ class Camera():
         """
         self.params = params
 
-        self.save_exists = True if os.path.exists(self.params['iop'].camera) else False
+        self.name = self.params['iop'].camera
+
+        self.save_exists = True if os.path.exists(self.name) else False
 
         if self.save_exists:
-            with open(self.params['iop'].camera, 'rb') as handle:
+            with open(self.name, 'rb') as handle:
                 load = pickle.load(handle)
                 self.__dict__ = load.__dict__
                 self.save_exists = True
 
         else:
-            if not fields:
+            if fields is None:
                 # make fields (or load if it already exists)
                 telescope_sim = Telescope(self.params)
                 dataproduct = telescope_sim()
@@ -126,15 +128,18 @@ class Camera():
                 # view_spectra(spectralcube, logZ=True)
                 step_packets = self.get_packets(spectralcube, step)
                 self.photons = np.vstack((self.photons, step_packets))
-                cube = self.make_datacube_from_list(step_packets, (self.params['ap'].n_wvl_final, self.array_size[0], self.array_size[1]))
+                cube = self.make_datacube_from_list(step_packets)
                 self.stackcube[step] = cube
 
-            with open(self.params['iop'].photons, 'wb') as handle:
-                pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            self.save()
 
         dataproduct = {'photons': self.photons, 'stackcube': self.stackcube}
 
         return dataproduct
+
+    def save(self):
+        with open(self.name, 'wb') as handle:
+            pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     # class Detector():
     #     def __init__(self, mp):
@@ -497,11 +502,11 @@ class Camera():
 
         return photons
 
-    def make_datacube_from_list(self, packets, shape):
+    def make_datacube_from_list(self, packets):
         phase_band = self.phase_cal(self.params['ap'].wvl_range)
-        bins = [np.linspace(phase_band[0], phase_band[1], shape[0] + 1),
-                range(shape[1]+1),
-                range(shape[2]+1)]
+        bins = [np.linspace(phase_band[0], phase_band[1], self.params['ap'].n_wvl_final + 1),
+                range(self.array_size[0]+1),
+                range(self.array_size[1]+1)]
         datacube, _ = np.histogramdd(packets[:,1:], bins)
 
         return datacube
@@ -599,7 +604,7 @@ class Camera():
         photons = self.assign_calibtime(photons, step)
 
         if plot:
-            cube = self.make_datacube_from_list(photons.T, (self.params['ap'].n_wvl_final, self.array_size[0], self.array_size[1]))
+            cube = self.make_datacube_from_list(photons.T)
             print(cube.shape)
             # view_spectra(cube, logZ=True)
 
@@ -620,7 +625,7 @@ class Camera():
         # view_spectra(cube, logZ=True, vmin=0.01)
 
         if plot:
-            cube = self.make_datacube_from_list(photons.T, (self.params['ap'].n_wvl_final, self.array_size[0], self.array_size[1]))
+            cube = self.make_datacube_from_list(photons.T)
             print(cube.shape)
             view_spectra(cube, logZ=True, title='hot pix')
 
@@ -658,7 +663,7 @@ class Camera():
             photons = self.ungroup(stem)
 
         if plot:
-            cube = self.make_datacube_from_list(photons.T, (self.params['ap'].n_wvl_final, self.array_size[0], self.array_size[1]))
+            cube = self.make_datacube_from_list(photons.T)
             print(cube.shape)
             view_spectra(cube, logZ=True, use_axis=False, title='remove close')
         # This step was taking a long time
