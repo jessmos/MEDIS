@@ -224,7 +224,7 @@ class Telescope():
                     self.cpx_sequence = opx.interp_wavelength(self.cpx_sequence, ax=2)
                     self.sampling = opx.interp_sampling(self.sampling)
 
-                if self.params['sp'].save_to_disk: self.save(self.cpx_sequence)
+                if self.params['sp'].save_to_disk: self.save_fields(self.cpx_sequence)
 
         else:
             print('*** This is untested ***')
@@ -246,7 +246,7 @@ class Telescope():
                 self.cpx_sequence[it], sampling = self.run_timestep(t)
 
             print('************************')
-            if self.params['sp'].save_to_disk: self.save(self.cpx_sequence)
+            if self.params['sp'].save_to_disk: self.save_fields(self.cpx_sequence)
 
 
 
@@ -269,15 +269,24 @@ class Telescope():
         print(f"Shape of cpx_sequence = " \
             f"{delim.join([samp + ':' + str(length) for samp, length in zip(samps, np.shape(self.cpx_sequence))])}")
 
-    def save(self, fields):
+    def save_fields(self, fields):
+        """
+        Option to save fields separately from the class pickle save since fields can be huge if the user requests
+
+        :param fields:
+            dtype ndarray of complex or float
+            fields can be any shape but the h5 dataset can only extended along axis 0
+        :return:
+        """
         with h5py.File(self.params['iop'].fields, mode='a') as hdf:
             print(f"Saving observation data at {self.params['iop'].fields}")
             dims = np.shape(fields)
             keys = list(hdf.keys())
-            print('dims', dims, keys)
+            fields = np.array(fields)
+            print('dims', dims, keys, fields.dtype)
             if 'data' not in keys:
                 dset = hdf.create_dataset('data', dims, maxshape=(None,) + dims[1:],
-                                          dtype=np.complex64, chunks=dims, compression="gzip")
+                                          dtype=fields.dtype, chunks=dims, compression="gzip")
                 dset[:] = fields
             else:
                 hdf['data'].resize((hdf["data"].shape[0] + len(fields)), axis = 0)
