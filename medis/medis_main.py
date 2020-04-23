@@ -24,21 +24,21 @@ import numpy as np
 import importlib
 import multiprocessing
 import time
-import traceback
 import glob
 import pickle
 import shutil
 from datetime import datetime
 import h5py
 
-# from medis.params import iop, ap, tp, sp, cdip, mp
-# from medis.params import params
+
 import proper
 import medis.atmosphere as atmos
 from medis.plot_tools import view_spectra
 import medis.CDI as cdi
 import medis.utils as mu
 import medis.MKIDs as MKIDs
+from medis.telescope import Telescope
+from medis.MKIDs import Camera
 import medis.optics as opx
 import medis.aberrations as aber
 from medis.controller import auto_load
@@ -52,20 +52,22 @@ sentinel = None
 
 class RunMedis():
     """
-    Creates a simulation for calling Telescope or MKIDs to return a seriess of complex electric fields or photons,
+    Creates a simulation for calling Telescope or MKIDs to return a series of complex electric fields or photons,
     respectively.
+
+    This class is a wrapper for Telescope and Camera that handles the checking of testdir and params existance
 
     Upon creation the code checks if a testdir of this name already exists, if it does it then checks if the params
     match. If the params are identifcal and the desired products are not already created, if it will create them.
     If the params are different or the testdir does not already exist a new testdir and simulation is created
 
-    File structure:
-    datadir
-        testdir
-            params.pkl
     """
     def __init__(self, params, name='test', product='fields'):
         """
+        File structure:
+        datadir
+            testdir          <--- output
+                params.pkl   <--- output
 
         :param params:
         :param name:
@@ -75,6 +77,7 @@ class RunMedis():
         self.params = params
         self.name = name
         self.product = product
+        assert self.product in ['fields', 'photons'], f"Requested data product {self.product} not supported"
 
         self.params['iop'].update(self.name)
 
@@ -132,15 +135,15 @@ class RunMedis():
 
     def __call__(self, *args, **kwargs):
         if self.product == 'fields':
-            telescope_sim = Telescope(self.params)
-            output = telescope_sim()
-            # output = self.telescope()
-        elif self.product == 'photons':
-            camera_sim = Camera(self.params)
-            output = camera_sim()
-            # output = self.MKIDs()
+            telescope_sim = Telescope(self.params)  # checking of class's cache etc is left to the class
+            dataproduct = telescope_sim()
 
-        return output
+        if self.product == 'photons':
+            camera_sim = Camera(self.params)  # creating fields is left to Camera since fields only needs to be created
+                                              # if camera.pkl does not exist
+            dataproduct = camera_sim()
+
+        return dataproduct
 
     def MKIDs(self):
         """
@@ -148,13 +151,20 @@ class RunMedis():
 
         :return:
         """
+
+        from medis.MKIDs import Detector
+
+        det = Detector(mp)
         # initialize MKIDs
         MKIDs.initialize()
 
         with open(self.params['iop'].device, 'rb') as handle:
             dp = pickle.load(handle)
 
-        cpx_sequence, sampling = self.telescope()
+        # cpx_sequence, sampling = self.telescope()
+        telescope_sim = Telescope(self.params)
+        output = telescope_sim()
+        cpx_sequence = output['fields']
 
         photons = np.empty((0, 4))
         stackcube = np.zeros((len(cpx_sequence), self.params['ap'].n_wvl_final, mp.array_size[1], mp.array_size[0]))
@@ -179,22 +189,23 @@ class Telescope():
     During initialisation a backup of the pthon PROPER prescription is copied to the testdir, atmisphere maps and
     aberration maps are created, serialisation and memory requirements are tested, and the cdi vairable initialised
 
-    File structure:
+    Resulting file structure:
     datadir
         testdir
-            params.pkl
-            telescope
-                {prescriptionname}
-                    {prescriptionname}.py
-            aberrations
-                {aberationparams}
-                    {lensname}0.fits
-                    ...
-            atmosphere
-                {atmosphereparams}
-                    {atmos}0.fits
-                    ...
-            fields.h5
+            params.pkl                     <--- input
+            prescription                   <--- new
+                {prescriptionname}         <--- new
+                    {prescriptionname}.py  <--- new
+            aberrations                    <--- new
+                {aberationparams}          <--- new
+                    {lensname}0.fits       <--- new
+                    ...                    <--- new
+            atmosphere                     <--- new
+                {atmosphereparams}         <--- new
+                    {atmos}0.fits          <--- new
+                    ...                    <--- new
+            fields.h5                      <--- output
+
 
     input
     params dict
@@ -211,9 +222,16 @@ class Telescope():
 
         self.params = params
 
-        self.save_exists = True if os.path.exists(self.params['iop'].fields) else False
+        self.save_exists = True if os.path.exists(self.params['iop'].telescope) else False
 
-        if not self.save_exists:
+        if self.save_exists:
+            print(f"\nLoading telescope instance from\n\n\t{self.params['iop'].telescope}\n")
+            with open(self.params['iop'].telescope, 'rb') as handle:
+                load = pickle.load(handle)
+                self.__dict__ = load.__dict__
+                self.save_exists = True
+        else:
+            print(f"\nInitialising new telescope instance\n")
             # copy over the prescription
             self.params['iop'].prescopydir = self.params['iop'].prescopydir.format(self.params['tp'].prescription)
             self.target = os.path.join(self.params['iop'].prescopydir, self.params['tp'].prescription+'.py')
@@ -298,9 +316,6 @@ class Telescope():
             modes = [self.params['sp'].chunking, self.params['sp'].ao_delay, self.params['sp'].parrallel,
                      self.params['sp'].closed_loop]
 
-            # assert sum(np.int_(modes)) <= 1
-            # self.mode = ['chunking',  'ao_delay', 'parrallel', 'closed_loop'][modes==True]
-
             # ensure contrast is set properly
             if self.params['ap'].companion is False:
                 self.params['ap'].contrast = []
@@ -312,11 +327,25 @@ class Telescope():
                 self.theta_series = np.zeros(self.params['sp'].numframes) * np.nan  # string of Nans
 
     def __call__(self, *args, **kwargs):
-        if self.save_exists:
-            output = self.load_fields()
-        else:
-            output = self.create_fields()
-        return output
+        if not self.save_exists:
+            print('\n\n\tBeginning Telescope Simulation with MEDIS\n\n')
+            start = time.time()
+
+            self.create_fields()
+
+            print('\n\n\tMEDIS Telescope Run Completed\n')
+            finish = time.time()
+            print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
+
+            self.pretty_sequence_shape()
+
+            self.save_exists = True
+            print(f"\nSaving telescope instance at\n\n\t{self.params['iop'].telescope}\n")
+            with open(self.params['iop'].telescope, 'wb') as handle:
+                pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        dataproduct = {'fields': np.array(self.cpx_sequence), 'sampling': self.sampling}
+        return dataproduct
 
     def max_chunk(self):
         """
@@ -333,10 +362,7 @@ class Telescope():
 
         return max_chunk
 
-    def create_fields(self, mode='chunking'):
-        print('Beginning Telescope Simulation with MEDIS')
-        print('***************************************')
-        start = time.time()
+    def create_fields(self):
 
         t0 = self.params['sp'].startframe
         self.kwargs = {'params': self.params, 'theta_series': self.theta_series}
@@ -385,13 +411,9 @@ class Telescope():
             print('************************')
             if self.params['sp'].save_to_disk: self.save(self.cpx_sequence)
 
-        print('MEDIS Telescope Run Completed\n**************************************')
-        finish = time.time()
-        print(f'Time elapsed: {(finish - start) / 60:.2f} minutes')
 
-        self.pretty_sequence_shape()
 
-        return {'fields': np.array(self.cpx_sequence), 'sampling': self.sampling}
+        # return {'fields': np.array(self.cpx_sequence), 'sampling': self.sampling}
 
     def run_timestep(self, t):
         self.kwargs['iter'] = t
@@ -439,6 +461,6 @@ if __name__ == '__main__':
 
     sim = RunMedis(params=params, name='example1', product='fields')
     observation = sim()
-    cpx_sequence = observation['fields']
-    sampling = observation['sampling']
+    print(observation.keys())
+
 
