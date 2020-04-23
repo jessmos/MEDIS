@@ -17,8 +17,6 @@ import medis.CDI as cdi
 import medis.utils as mu
 import medis.optics as opx
 import medis.aberrations as aber
-from medis.controller import auto_load
-from medis.light import Fields
 
 
 class Telescope():

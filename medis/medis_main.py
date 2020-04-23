@@ -41,8 +41,6 @@ from medis.telescope import Telescope
 from medis.MKIDs import Camera
 import medis.optics as opx
 import medis.aberrations as aber
-from medis.controller import auto_load
-from medis.light import Fields
 
 ################################################################################################################
 ################################################################################################################
@@ -186,7 +184,7 @@ class RunMedis():
 if __name__ == '__main__':
     from medis.params import params
 
-    sim = RunMedis(params=params, name='example1', product='fields')
+    sim = RunMedis(params=params, name='example1', product='photons')
     observation = sim()
     print(observation.keys())
 

@@ -15,12 +15,6 @@ import proper
 from medis.params import tp, sp, iop, ap, cdip
 from medis.utils import dprint
 import medis.optics as opx
-import medis.colormaps as cmaps
-
-plt.register_cmap(name='viridis', cmap=cmaps.viridis)
-plt.register_cmap(name='plasma', cmap=cmaps.plasma)
-plt.register_cmap(name='inferno', cmap=cmaps.inferno)
-plt.register_cmap(name='magma', cmap=cmaps.plasma)
 from medis.twilight_colormaps import sunlight
 
 # MEDIUM_SIZE = 17
