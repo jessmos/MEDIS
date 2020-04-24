@@ -84,6 +84,29 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=N
     cb.set_label(clabel)
     plt.show(block=True)
 
+def body_spectra(fields, title='body spectra', logZ=True, show=True):
+    fields = np.array(fields)  # just in case its a list
+    if isinstance(fields, np.complex64):
+        fields = np.abs(fields)**2  # convert to intensity if complex
+    if len(fields.shape) == 6:
+        fields = fields[:, -1]  # slice out detector plane if not done already
+    if len(fields.shape) == 5:
+        fields = fields[0]  # slice out first timestep
+    while len(fields.shape) < 4:
+        fields = fields[np.newaxis]
+    nwave, nobj, x, y = fields.shape
+
+    fig, axs = plt.subplots(nwave, nobj)
+    if len(axs.shape) == 1:
+        axs = axs[np.newaxis]
+    fig.suptitle(title)
+    norm = LogNorm() if logZ else None
+    for x in range(nwave):
+        for y in range(nobj):
+            axs[x,y].imshow(fields[x,y], norm=norm)
+
+    if show:
+        plt.show(block=True)
 
 def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vlim=(None,None), subplt_cols=3,
                   dx=None, extract_center=False):
