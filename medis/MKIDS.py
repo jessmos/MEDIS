@@ -462,8 +462,8 @@ class Camera():
     def remove_bad(self, frame, QE):
         bad_map = np.ones((self.params['sp'].grid_size,self.params['sp'].grid_size))
         bad_map[QE[:-1,:-1]==0] = 0
-        # quick2D(QE, logAmp =False)
-        # quick2D(bad_map, logAmp =False)
+        # quick2D(QE, logZ =False)
+        # quick2D(bad_map, logZ =False)
         frame = frame*bad_map
         return frame
 
@@ -568,7 +568,7 @@ class Camera():
                     # sep = events[:, 0] - np.roll(events[:, 0], 1, 0)
         return photons.T
 
-    def get_packets(self, datacube, step, plot=True):
+    def get_packets(self, datacube, step, plot=False):
         if plot: view_spectra(datacube, logZ=True, extract_center=False, title='pre')
 
         if self.params['mp'].resamp:

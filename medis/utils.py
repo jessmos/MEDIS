@@ -136,7 +136,7 @@ def clipped_zoom(img, zoom_factor, **kwargs):
         left = (w - zw) // 2
         from medis.Utils.plot_tools import quicklook_im
         out = zoom(img[top:top+zh, left:left+zw], zoom_tuple, **kwargs)
-        # quicklook_im(out, logAmp=True)
+        # quicklook_im(out, logZ=True)
         # `out` might still be slightly larger than `img` due to rounding, so
         # trim off any extra pixels at the edges
         trim_top = ((out.shape[0] - h) // 2)
@@ -149,7 +149,7 @@ def clipped_zoom(img, zoom_factor, **kwargs):
             out = temp
         else:
             out = out[trim_top:trim_top+h, trim_left:trim_left+w]
-        # quicklook_im(out, logAmp=False)
+        # quicklook_im(out, logZ=False)
     # If zoom_factor == 1, just return the input array
     else:
         out = img
