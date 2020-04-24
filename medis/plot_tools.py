@@ -29,7 +29,7 @@ rcParams['font.family'] = 'DejaVu Sans'
 # rcParams['mathtext.bf'] = 'Bitstream Vera Sans:bold'
 
 
-def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=None):
+def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=None, show=True):
     """
     Looks at a 2D array, has bunch of handles for plot.imshow
 
@@ -82,9 +82,11 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=N
     plt.title(title, fontweight='bold', fontsize=16)
     cb = plt.colorbar(cax)
     cb.set_label(clabel)
-    plt.show(block=True)
+    if show:
+        plt.show(block=True)
 
 def body_spectra(fields, title='body spectra', logZ=True, show=True):
+    import matplotlib as mpl
     fields = np.array(fields)  # just in case its a list
     if isinstance(fields, np.complex64):
         fields = np.abs(fields)**2  # convert to intensity if complex
@@ -96,14 +98,25 @@ def body_spectra(fields, title='body spectra', logZ=True, show=True):
         fields = fields[np.newaxis]
     nwave, nobj, x, y = fields.shape
 
-    fig, axs = plt.subplots(nwave, nobj)
-    if len(axs.shape) == 1:
+    print(nwave, nobj, x, y, 'fields shape')
+    fig, axs = plt.subplots(nobj, nwave)
+    if nwave == 1:
+        axs = axs[:, np.newaxis]
+    if nobj == 1:
         axs = axs[np.newaxis]
+    print(axs.shape, 'axs shape')
     fig.suptitle(title)
     norm = LogNorm() if logZ else None
     for x in range(nwave):
         for y in range(nobj):
-            axs[x,y].imshow(fields[x,y], norm=norm)
+            if x == 0 and y == 0:
+                im = axs[y,x].imshow(fields[x,y], norm=norm)
+                clim = im.properties()['clim']
+            else:
+                axs[y, x].imshow(fields[x, y], norm=norm, clim=clim)
+
+    cax, kw = mpl.colorbar.make_axes([ax for ax in axs.flat])
+    plt.colorbar(im, cax=cax, **kw)
 
     if show:
         plt.show(block=True)
