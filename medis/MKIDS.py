@@ -18,10 +18,11 @@ from medis.distribution import *
 from medis.utils import dprint
 from medis.plot_tools import view_spectra
 from medis.telescope import Telescope
+from medis.plot_tools import body_spectra
 
 
 class Camera():
-    def __init__(self, params, fields=None):
+    def __init__(self, params, fields=None, save=False):
         """
         Creates a simulation for the MKID Camera to create a series of photons
 
@@ -49,16 +50,16 @@ class Camera():
 
         """
         self.params = params
-
         self.name = self.params['iop'].camera
+        self.usesave = save
 
         self.save_exists = True if os.path.exists(self.name) else False
 
-        if self.save_exists:
+        if self.save_exists and self.usesave:
             with open(self.name, 'rb') as handle:
                 load = pickle.load(handle)
                 self.__dict__ = load.__dict__
-                self.save_exists = True
+                self.save_exists = True  # just in case the saved obj didn't have this set to True
 
         else:
             if fields is None:
@@ -72,30 +73,17 @@ class Camera():
             # create device
             self.create_device()
 
-
     def create_device(self):
-        # det = Detector(params['mp'])  # either loads or initialises dp
-        # output = det(fields)  # loops over time and calls get_packets on each one
-
-        # self.QE_map = None
-        # self.Rs = None
-        # self.sigs = None
-        # self.basesDeg = None
-        # self.hot_pix = None
-        # self.dark_pix_frac = None
         self.platescale = self.params['mp'].platescale
         self.array_size = self.params['mp'].array_size
         self.dark_pix_frac = self.params['mp'].dark_pix_frac
         self.hot_pix = self.params['mp'].hot_pix
         self.lod = self.params['mp'].lod
-        self.QE_map_all = self.array_QE(plot=False)
+        self.QE_map = self.array_QE(plot=False)
         self.responsivity_error_map = self.responvisity_scaling_map(plot=False)
-        if self.params['mp'].pix_yield == 1:
-            self.params['mp'].bad_pix = False
         if self.params['mp'].bad_pix == True:
-            self.QE_map = self.create_bad_pix(self.QE_map_all)
-            # self.QE_map = create_hot_pix(self.QE_map)
-            # quick2D(self.QE_map_all)
+            if self.params['mp'].pix_yield != 1:
+                self.QE_map = self.create_bad_pix(self.QE_map)
             if self.params['mp'].dark_counts:
                 self.dark_per_step = self.params['sp'].sample_time * self.params['mp'].dark_bright * self.array_size[0] * self.array_size[
                     1] * self.dark_pix_frac
@@ -104,16 +92,14 @@ class Camera():
             if self.params['mp'].hot_pix:
                 self.hot_per_step = self.params['sp'].sample_time * self.params['mp'].hot_bright * self.hot_pix
                 self.hot_locs = self.create_false_pix(amount=self.params['mp'].hot_pix)
-            # self.QE_map = create_bad_pix_center(self.QE_map)
         self.Rs = self.assign_spectral_res(plot=False)
         self.sigs = self.get_R_hyper(self.Rs, plot=False)
+
         # get_phase_distortions(plot=True)
         if self.params['mp'].phase_background:
             self.basesDeg = self.assign_phase_background(plot=False)
         else:
             self.basesDeg = np.zeros((self.array_size))
-        # with open(iop.device, 'wb') as handle:
-        #     pickle.dump(dp, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
         print('\nInitialized MKID device parameters\n')
 
@@ -131,7 +117,8 @@ class Camera():
                 cube = self.make_datacube_from_list(step_packets)
                 self.stackcube[step] = cube
 
-            self.save()
+            if self.usesave:
+                self.save()
 
         dataproduct = {'photons': self.photons, 'stackcube': self.stackcube}
 
@@ -140,49 +127,6 @@ class Camera():
     def save(self):
         with open(self.name, 'wb') as handle:
             pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    # class Detector():
-    #     def __init__(self, mp):
-    #         # self.QE_map = None
-    #         # self.Rs = None
-    #         # self.sigs = None
-    #         # self.basesDeg = None
-    #         # self.hot_pix = None
-    #         # self.dark_pix_frac = None
-    #         # dp = device()
-    #         self.platescale = self.params['mp'].platescale
-    #         self.array_size = self.array_size
-    #         self.dark_pix_frac = self.params['mp'].dark_pix_frac
-    #         self.hot_pix = self.params['mp'].hot_pix
-    #         self.lod = self.params['mp'].lod
-    #         self.QE_map_all = array_QE(plot=False)
-    #         self.responsivity_error_map = responvisity_scaling_map(plot=False)
-    #         if self.params['mp'].pix_yield == 1:
-    #             self.params['mp'].bad_pix = False
-    #         if self.params['mp'].bad_pix == True:
-    #             self.QE_map = create_bad_pix(self.QE_map_all)
-    #             # self.QE_map = create_hot_pix(self.QE_map)
-    #             # quick2D(self.QE_map_all)
-    #             if self.params['mp'].dark_counts:
-    #                 self.dark_per_step = self.params['sp'].sample_time * self.params['mp'].dark_bright * self.array_size[0] * self.array_size[1] * self.dark_pix_frac
-    #                 self.dark_locs = create_false_pix(self.params['mp'], amount = int(self.params['mp'].dark_pix_frac*self.array_size[0]*self.array_size[1]))
-    #             if self.params['mp'].hot_pix:
-    #                 self.hot_per_step = self.params['sp'].sample_time * self.params['mp'].hot_bright * self.hot_pix
-    #                 self.hot_locs = create_false_pix(self.params['mp'], amount = self.params['mp'].hot_pix)
-    #             # self.QE_map = create_bad_pix_center(self.QE_map)
-    #         self.Rs = assign_spectral_res(plot=False)
-    #         self.sigs = get_R_hyper(self.Rs, plot=False)
-    #         # get_phase_distortions(plot=True)
-    #         if self.params['mp'].phase_background:
-    #             self.basesDeg = assign_phase_background(plot=False)
-    #         else:
-    #             self.basesDeg = np.zeros((self.array_size))
-    #         with open(iop.device, 'wb') as handle:
-    #             pickle.dump(dp, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    #
-    #         print('Initialized MKID array parameters')
-    #
-    #         return dp
 
     def arange_into_cube(self, packets, size):
         # print 'Sorting packets into xy grid (no phase or time sorting)'
@@ -376,7 +320,7 @@ class Camera():
         return basesDeg
 
 
-    def create_bad_pix(self, QE_map_all, plot=False):
+    def create_bad_pix(self, QE_map, plot=False):
         amount = int(self.array_size[0]*self.array_size[1]*(1.-self.params['mp'].pix_yield))
 
         bad_ind = random.sample(list(range(self.array_size[0]*self.array_size[1])), amount)
@@ -389,7 +333,7 @@ class Camera():
         bad_x = bad_ind % self.array_size[1]
 
         # print(f"responsivity shape  = {responsivities.shape}")
-        QE_map = np.array(QE_map_all)
+        QE_map = np.array(QE_map)
 
         QE_map[bad_x, bad_y] = 0
         if plot:
@@ -627,7 +571,7 @@ class Camera():
         if plot:
             cube = self.make_datacube_from_list(photons.T)
             print(cube.shape)
-            view_spectra(cube, logZ=True, title='hot pix')
+            body_spectra(cube, logZ=True, title='sampled')
 
         if self.params['mp'].phase_uncertainty:
             photons[1] *= self.responsivity_error_map[np.int_(photons[2]), np.int_(photons[3])]
