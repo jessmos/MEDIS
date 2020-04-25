@@ -85,7 +85,8 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=N
     if show:
         plt.show(block=True)
 
-def body_spectra(fields, title='body spectra', logZ=True, show=True):
+def body_spectra(fields, title='body spectra', logZ=False, show=True):
+    from mpl_toolkits.axes_grid1 import ImageGrid
     import matplotlib as mpl
     fields = np.array(fields)  # just in case its a list
     if isinstance(fields, np.complex64):
@@ -95,28 +96,34 @@ def body_spectra(fields, title='body spectra', logZ=True, show=True):
     if len(fields.shape) == 5:
         fields = fields[0]  # slice out first timestep
     while len(fields.shape) < 4:
-        fields = fields[np.newaxis]
+        fields = fields[:,np.newaxis]
     nwave, nobj, x, y = fields.shape
 
-    print(nwave, nobj, x, y, 'fields shape')
-    fig, axs = plt.subplots(nobj, nwave)
-    if nwave == 1:
-        axs = axs[:, np.newaxis]
-    if nobj == 1:
-        axs = axs[np.newaxis]
-    print(axs.shape, 'axs shape')
+    std = np.std(fields)
+    mean = np.mean(fields)
+    vmin, vmax = mean - std/2, mean + std/2
+
+    fig = plt.figure(figsize=(9.75, 3))
     fig.suptitle(title)
     norm = LogNorm() if logZ else None
-    for x in range(nwave):
-        for y in range(nobj):
-            if x == 0 and y == 0:
-                im = axs[y,x].imshow(fields[x,y], norm=norm)
-                clim = im.properties()['clim']
-            else:
-                axs[y, x].imshow(fields[x, y], norm=norm, clim=clim)
 
-    cax, kw = mpl.colorbar.make_axes([ax for ax in axs.flat])
-    plt.colorbar(im, cax=cax, **kw)
+    grid = ImageGrid(fig, 111,  # as in plt.subplot(111)
+                     nrows_ncols=(nobj, nwave),
+                     axes_pad=0.15,
+                     share_all=True,
+                     cbar_location="right",
+                     cbar_mode="single",
+                     cbar_size="7%",
+                     cbar_pad=0.15,
+                     )
+    for i, ax in enumerate(grid):
+        x, y = i % nwave, i // nwave
+        im = ax.imshow(fields[x, y], norm=norm, vmin=vmin, vmax=vmax)
+
+    ax.cax.colorbar(im)
+    ax.cax.toggle_label(True)
+
+    plt.tight_layout()
 
     if show:
         plt.show(block=True)
