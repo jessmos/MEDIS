@@ -18,11 +18,11 @@ from medis.distribution import *
 from medis.utils import dprint
 from medis.plot_tools import view_spectra
 from medis.telescope import Telescope
-from medis.plot_tools import body_spectra
+from medis.plot_tools import body_spectra, quick2D
 
 
 class Camera():
-    def __init__(self, params, fields=None, save=False):
+    def __init__(self, params, fields=None, usesave=False):
         """
         Creates a simulation for the MKID Camera to create a series of photons
 
@@ -51,7 +51,7 @@ class Camera():
         """
         self.params = params
         self.name = self.params['iop'].camera
-        self.usesave = save
+        self.usesave = usesave
 
         self.save_exists = True if os.path.exists(self.name) else False
 
@@ -79,11 +79,11 @@ class Camera():
         self.dark_pix_frac = self.params['mp'].dark_pix_frac
         self.hot_pix = self.params['mp'].hot_pix
         self.lod = self.params['mp'].lod
-        self.QE_map = self.array_QE(plot=False)
+        self.QE_map_all = self.array_QE(plot=False)
         self.responsivity_error_map = self.responvisity_scaling_map(plot=False)
         if self.params['mp'].bad_pix == True:
-            if self.params['mp'].pix_yield != 1:
-                self.QE_map = self.create_bad_pix(self.QE_map)
+            self.QE_map = self.create_bad_pix(self.QE_map_all) if self.params['mp'].pix_yield != 1 else self.QE_map_all
+
             if self.params['mp'].dark_counts:
                 self.dark_per_step = self.params['sp'].sample_time * self.params['mp'].dark_bright * self.array_size[0] * self.array_size[
                     1] * self.dark_pix_frac
