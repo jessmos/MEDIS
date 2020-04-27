@@ -88,7 +88,7 @@ class RunMedis():
             print(f"Top level directory... \n\n\t{self.params['iop'].datadir} \n\ndoes not exist yet. Creating")
             os.makedirs(self.params['iop'].datadir, exist_ok=True)
 
-        if not os.path.exists(self.params['iop'].testdir):
+        if not os.path.exists(self.params['iop'].testdir) or not os.path.exists(self.params['iop'].params_logs):
             print(f"No simulation data found at... \n\n\t{self.params['iop'].testdir} \n\n A new test simulation"
                   f" will be started")
             self.make_testdir()
