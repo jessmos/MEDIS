@@ -16,18 +16,15 @@ import medis.adaptive as ao
 import medis.aberrations as aber
 import medis.optics as opx
 from medis.coronagraphy import coronagraph
-from medis.params import tp
 
+class Telescope_Params(object):
+    def __init__(self, dict):
+        self.__dict__ = dict
 
-tp.lens_params = [{'aber_vals': [7.2e-17, 0.8, 3.1],  # power at low spatial frequencies (m4), correlation length (b/2pi defines knee)
-                    'diam': 0.2,  # m  diamater of AO1
-                    'focal_length': 1.2,  # m  focal length OAP1
-                    'dist' : 1.345,  # m distance OAP1 to DM
-                    'name': 'CPA'},
-
-                    {'aber_vals': [7.2e-17, 0.8, 3.1], 'diam': 0.2, 'focal_length': 1.2, 'dist': 1.345, 'name': 'NCPA'}
-                    ]
-
+tp = Telescope_Params({'lens_params': [{'aber_vals': [7.2e-17, 0.8, 3.1], 'diam': 0.2,  'focal_length': 1.2, 'dist' : 1.345,
+                       'name': 'CPA'},
+                    {'aber_vals': [7.2e-17, 0.8, 3.1], 'diam': 0.2, 'focal_length': 1.2, 'dist': 1.345,
+                     'name': 'NCPA'}]})
 
 def general_telescope(empty_lamda, grid_size, PASSVALUE):
     """
@@ -65,8 +62,9 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     #  the array from infinity. The delay length thus corresponds to a different
     #  phase offset at a particular frequency.
     if params['tp'].use_atmos:
-        wfo.loop_collection(atmos.add_atmos, PASSVALUE['iter'], spatial_zoom=True, plane_name='atmosphere',
-                            zero_outside=True)
+        wfo.loop_collection(atmos.add_atmos, PASSVALUE['iter'],
+                            (params['iop'].atmosdir, params['sp'].sample_time, params['atmp'].model),
+                            spatial_zoom=True, plane_name='atmosphere', zero_outside=True)
 
     wfo.abs_zeros()
 

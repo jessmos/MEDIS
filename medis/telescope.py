@@ -97,7 +97,7 @@ class Telescope():
             # sys.path.insert(0, os.path.dirname(self.target))
             sys.path.insert(0, os.path.dirname(fullprescription))
             pres_module = importlib.import_module(params['tp'].prescription)
-            self.params['tp'].__dict__.update(pres_module.tp)
+            self.params['tp'].__dict__.update(pres_module.tp.__dict__)
 
             # initialize atmosphere
             self.params['iop'].atmosdir = self.params['iop'].atmosdir.format(params['sp'].grid_size,
