@@ -109,7 +109,7 @@ class Telescope():
             else:
                 if not os.path.isdir(self.params['iop'].atmosdir):
                     os.makedirs(self.params['iop'].atmosdir, exist_ok=True)
-                atmos.gen_atmos()
+                atmos.gen_atmos(params)
 
             # initialize aberrations
             self.params['iop'].aberdir = self.params['iop'].aberdir.format(params['sp'].grid_size,
