@@ -386,8 +386,8 @@ def offset_companion(wf):
                     *  ap.wvl_range[0] / wf.lamda  # / (2*np.pi)   * (-1)**(iw%2)
         else:
             # Scaling Happens Naturally!
-            xloc = ap.companion_xy[wf.ib-1][0]
-            yloc = ap.companion_xy[wf.ib-1][1]
+            xloc = ap.companion_xy[wf.ib-1][0]*1e-6
+            yloc = ap.companion_xy[wf.ib-1][1]*1e-6
         proper.prop_zernikes(wf, [2, 3], np.array([xloc, yloc]))  # zernike[2,3] = x,y tilt
 
         ##############################################
