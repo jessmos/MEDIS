@@ -117,7 +117,7 @@ def body_spectra(fields, title='body spectra', logZ=False, show=True):
 
     vmin, vmax = mean - std/2, mean + std/2
 
-    fig = plt.figure(figsize=(12, 9))
+    fig = plt.figure(figsize=(16, 9))
     fig.suptitle(title)
     norm = None if not logZ else (LogNorm() if vmin > 0 else SymLogNorm(1e-7))
 
@@ -138,6 +138,7 @@ def body_spectra(fields, title='body spectra', logZ=False, show=True):
     ax.cax.toggle_label(True)
 
     plt.tight_layout()
+    plt.subplots_adjust(right=0.9)
 
     if show:
         plt.show(block=True)
