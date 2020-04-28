@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm, SymLogNorm
 import matplotlib.ticker as ticker
 import matplotlib.gridspec as gridspec
+from mpl_toolkits.axes_grid1 import ImageGrid
 import warnings
 import proper
 
@@ -86,8 +87,16 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=N
         plt.show(block=True)
 
 def body_spectra(fields, title='body spectra', logZ=False, show=True):
-    from mpl_toolkits.axes_grid1 import ImageGrid
-    import matplotlib as mpl
+    """
+    General purpose plotter for multi-dimensional input tensors from 2D up to 6D. The tensor will be converted to 4D
+    and plot as a grid of 2D images
+
+    :param fields:
+    :param title:
+    :param logZ:
+    :param show:
+    :return:
+    """
     fields = np.array(fields)  # just in case its a list
     if isinstance(fields, np.complex64):
         fields = np.abs(fields)**2  # convert to intensity if complex
@@ -99,13 +108,18 @@ def body_spectra(fields, title='body spectra', logZ=False, show=True):
         fields = fields[:,np.newaxis]
     nwave, nobj, x, y = fields.shape
 
-    std = np.std(fields)
-    mean = np.mean(fields)
+    try:
+        std = np.std(fields)
+        mean = np.mean(fields)
+    except ValueError:
+        std = np.std(fields[0])
+        mean = np.mean(fields[0])
+
     vmin, vmax = mean - std/2, mean + std/2
 
-    fig = plt.figure(figsize=(9.75, 3))
+    fig = plt.figure(figsize=(12, 9))
     fig.suptitle(title)
-    norm = LogNorm() if logZ else None
+    norm = None if not logZ else (LogNorm() if vmin > 0 else SymLogNorm(1e-7))
 
     grid = ImageGrid(fig, 111,  # as in plt.subplot(111)
                      nrows_ncols=(nobj, nwave),
