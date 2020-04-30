@@ -98,7 +98,7 @@ def body_spectra(fields, title='body spectra', logZ=False, show=True):
     :return:
     """
     fields = np.array(fields)  # just in case its a list
-    if isinstance(fields, np.complex64):
+    if isinstance(fields.flat[0], np.complex):
         fields = np.abs(fields)**2  # convert to intensity if complex
     if len(fields.shape) == 6:
         fields = fields[:, -1]  # slice out detector plane if not done already
