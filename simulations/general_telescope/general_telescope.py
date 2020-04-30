@@ -87,7 +87,8 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     #######################################
     # Abberations before AO
 
-    wfo.loop_collection(aber.add_aber, params['tp'].aber_params, PASSVALUE['iter'], lens_name='CPA', zero_outside=True)
+    wfo.loop_collection(aber.add_aber, params['tp'].aber_params, params['iop'].aberdir, PASSVALUE['iter'],
+                        lens_name='CPA', zero_outside=True)
     # wfo.loop_collection(proper.prop_circular_aperture, **{'radius': params['tp'].entrance_d / 2})
     # wfo.wf_collection = aber.abs_zeros(wfo.wf_collection)
     wfo.abs_zeros()
@@ -119,7 +120,8 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     # #######################################
     # Abberations after the AO Loop
 
-    wfo.loop_collection(aber.add_aber, params['tp'].aber_params, PASSVALUE['iter'], lens_name='NCPA', zero_outside=True)
+    wfo.loop_collection(aber.add_aber, params['tp'].aber_params, params['iop'].aberdir, PASSVALUE['iter'],
+                        lens_name='NCPA', zero_outside=True)
     wfo.loop_collection(proper.prop_circular_aperture, **{'radius': params['tp'].entrance_d / 2})
     # TODO does this need to be here?
     # wfo.loop_collection(opx.add_obscurations, params['tp'].entrance_d/4, legs=False)
