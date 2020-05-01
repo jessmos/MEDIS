@@ -12,7 +12,7 @@ import h5py
 
 import proper
 import medis.atmosphere as atmos
-from medis.plot_tools import view_spectra
+from medis.plot_tools import body_spectra
 import medis.CDI as cdi
 import medis.utils as mu
 import medis.optics as opx
@@ -133,6 +133,10 @@ class Telescope():
                 print(f"closed loop or ao delay means sim can't be parrallelized in time domain. Forcing serial mode")
                 params['sp'].parrallel = False
 
+            # ensure contrast is set properly
+            if self.params['ap'].companion is False:
+                self.params['ap'].contrast = []
+
             # determine if can/should do all in memory
             max_steps = self.max_chunk()
             self.fieldssize = self.timestep_size * self.params['sp'].numframes
@@ -159,10 +163,6 @@ class Telescope():
 
             modes = [self.params['sp'].chunking, self.params['sp'].ao_delay, self.params['sp'].parrallel,
                      self.params['sp'].closed_loop]
-
-            # ensure contrast is set properly
-            if self.params['ap'].companion is False:
-                self.params['ap'].contrast = []
 
             # Initialize CDI probes
             if self.params['cdip'].use_cdi is True:
@@ -296,7 +296,7 @@ class Telescope():
             dims = np.shape(fields)
             keys = list(hdf.keys())
             fields = np.array(fields)
-            print('dims', dims, keys, fields.dtype)
+            print(f'Saving fields dims with dimensions {dims} and type {fields.dtype}')
             if 'data' not in keys:
                 dset = hdf.create_dataset('data', dims, maxshape=(None,) + dims[1:],
                                           dtype=fields.dtype, chunks=dims, compression="gzip")
@@ -317,7 +317,9 @@ class Telescope():
 
 if __name__ == '__main__':
     from medis.params import params
+    params['iop'].update('test')
 
     telescope_sim = Telescope(params)
     dataproduct = telescope_sim()
     print(dataproduct.keys())
+    body_spectra(dataproduct['fields'], logZ=True, nstd=5)
