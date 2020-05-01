@@ -214,12 +214,18 @@ class Telescope():
         self.cpx_sequence = None
 
         if self.markov:  # time steps are independent
-            for ichunk in range(int(np.ceil(self.num_chunks))):
-                cpx_sequence = np.empty((self.chunk_steps, len(self.params['sp'].save_list),
+            ceil_num_chunks = int(np.ceil(self.num_chunks))
+            # remainder = integer_num_chunks%self.num_chunks
+            final_chunk_size = self.params['sp'].numframes-int(np.floor(self.num_chunks))*self.chunk_steps
+            for ichunk in range(ceil_num_chunks):
+                fractional_step = final_chunk_size != 0 and ichunk == ceil_num_chunks-1
+                chunk_steps = final_chunk_size if fractional_step else self.chunk_steps
+
+                cpx_sequence = np.empty((chunk_steps, len(self.params['sp'].save_list),
                                         self.params['ap'].n_wvl_init, 1 + len(self.params['ap'].contrast),
                                         self.params['sp'].grid_size, self.params['sp'].grid_size),
                                         dtype=np.complex64)
-                chunk_range = ichunk * self.chunk_steps + t0 + np.arange(self.chunk_steps)
+                chunk_range = ichunk * self.chunk_steps + t0 + np.arange(chunk_steps)
                 if self.params['sp'].num_processes == 1:
                     seq_samp_list = [self.run_timestep(t) for t in chunk_range]
                 else:
