@@ -512,6 +512,24 @@ class Camera():
                     # sep = events[:, 0] - np.roll(events[:, 0], 1, 0)
         return photons.T
 
+    def get_ideal_cube(self, datacube):
+        if self.params['mp'].resamp:
+            nyq_sampling = self.params['ap'].wvl_range[0]*360*3600/(4*np.pi*self.params['tp'].entrance_d)
+            sampling = nyq_sampling*self.params['sp'].beam_ratio*2  # nyq sampling happens at self.params['sp'].beam_ratio = 0.5
+            x = np.arange(-self.params['sp'].grid_size*sampling/2, self.params['sp'].grid_size*sampling/2, sampling)
+            xnew = np.arange(-self.array_size[0]*self.platescale/2, self.array_size[0]*self.platescale/2, self.platescale)
+            mkid_cube = np.zeros((len(datacube), self.array_size[0], self.array_size[1]))
+            for s, slice in enumerate(datacube):
+                f = interpolate.interp2d(x, x, slice, kind='cubic')
+                mkid_cube[s] = f(xnew, xnew)
+            mkid_cube = mkid_cube*np.sum(datacube)/np.sum(mkid_cube)
+            # view_spectra(mkid_cube, logZ=True, show=True, extract_center=False, title='post')
+            datacube = mkid_cube
+
+        datacube[datacube < 0] *= -1
+        datacube *= int(self.params['ap'].star_flux * self.params['sp'].sample_time * np.sum(datacube))
+        return datacube
+
     def get_packets(self, datacube, step, plot=False):
         if plot: view_spectra(datacube, logZ=True, extract_center=False, title='pre')
 
@@ -554,6 +572,7 @@ class Camera():
 
         if self.params['mp'].dark_counts:
             dark_photons = self.get_bad_packets(step, type='dark')
+            # dprint(dark_photons.shape, 'dark')
             photons = np.hstack((photons, dark_photons))
 
         if self.params['mp'].hot_pix:
