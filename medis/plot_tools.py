@@ -86,7 +86,7 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=N
     if show:
         plt.show(block=True)
 
-def body_spectra(fields, title='body spectra', logZ=False, show=True):
+def body_spectra(fields, title='body spectra', logZ=False, show=True, nstd=1):
     """
     General purpose plotter for multi-dimensional input tensors from 2D up to 6D. The tensor will be converted to 4D
     and plot as a grid of 2D images
@@ -98,7 +98,8 @@ def body_spectra(fields, title='body spectra', logZ=False, show=True):
     :return:
     """
     fields = np.array(fields)  # just in case its a list
-    if isinstance(fields.flat[0], np.complex):
+    assert fields.ndim > 2
+    if np.iscomplex(fields.flat[0]):
         fields = np.abs(fields)**2  # convert to intensity if complex
     if len(fields.shape) == 6:
         fields = fields[:, -1]  # slice out detector plane if not done already
@@ -115,7 +116,7 @@ def body_spectra(fields, title='body spectra', logZ=False, show=True):
         std = np.std(fields[0])
         mean = np.mean(fields[0])
 
-    vmin, vmax = mean - std/2, mean + std/2
+    vmin, vmax = mean - nstd*std, mean + nstd*std
 
     fig = plt.figure(figsize=(16, 9))
     fig.suptitle(title)
