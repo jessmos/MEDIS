@@ -16,15 +16,17 @@ import medis.adaptive as ao
 import medis.aberrations as aber
 import medis.optics as opx
 from medis.coronagraphy import coronagraph
+from medis.plot_tools import quicklook_wf
 
 class Telescope_Params(object):
     def __init__(self, dict):
         self.__dict__ = dict
 
-tp = Telescope_Params({'lens_params': [{'aber_vals': [7.2e-17, 0.8, 3.1], 'diam': 0.2,  'focal_length': 1.2, 'dist' : 1.345,
+tp = Telescope_Params({'lens_params': [{'aber_vals': [5e-18, 2.0, 3.1], 'diam': 0.2,  'focal_length': 1.2, 'dist' : 1.345,
                        'name': 'CPA'},
-                    {'aber_vals': [7.2e-17, 0.8, 3.1], 'diam': 0.2, 'focal_length': 1.2, 'dist': 1.345,
+                    {'aber_vals': [5e-18, 2.0, 3.1], 'diam': 0.2, 'focal_length': 1.2, 'dist': 1.345,
                      'name': 'NCPA'}]})
+
 
 def general_telescope(empty_lamda, grid_size, PASSVALUE):
     """
@@ -113,7 +115,8 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
 
     # Obscure Baffle
     if params['tp'].obscure:
-        wfo.loop_collection(opx.add_obscurations, M2_frac=1/8, d_primary=params['tp'].entrance_d, legs_frac=params['tp'].legs_frac)
+        wfo.loop_collection(opx.add_obscurations, M2_frac=1/8, d_primary=params['tp'].entrance_d,
+                            legs_frac=params['tp'].legs_frac)
 
    ########################################
     # Post-AO Telescope Distortions
@@ -122,10 +125,13 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
 
     wfo.loop_collection(aber.add_aber, params['tp'].aber_params, params['iop'].aberdir, PASSVALUE['iter'],
                         lens_name='NCPA', zero_outside=True)
+    # quicklook_wf(wfo.wf_collection[0, 0], title='NCPA and obscure')
     wfo.loop_collection(proper.prop_circular_aperture, **{'radius': params['tp'].entrance_d / 2})
     # TODO does this need to be here?
     # wfo.loop_collection(opx.add_obscurations, params['tp'].entrance_d/4, legs=False)
     # wfo.wf_collection = aber.abs_zeros(wfo.wf_collection)
+
+    [quicklook_wf(wfo.wf_collection[i, 0], title=f'circ apertures {i}') for i in range(params['ap'].n_wvl_init)]
     wfo.loop_collection(opx.prop_pass_lens, params['tp'].lens_params[0]['focal_length'],
                         params['tp'].lens_params[0]['focal_length'], plane_name='pre_coron')
 
