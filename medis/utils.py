@@ -22,7 +22,6 @@ def phase_cal(wavelengths):
     phase = tp.wavecal_coeffs[0] * wavelengths + tp.wavecal_coeffs[1]
     return phase
 
-
 ####################################################################################################
 # Functions Relating to Reading, Loading, and Saving Data #
 ####################################################################################################
@@ -159,7 +158,7 @@ def clipped_zoom(img, zoom_factor, **kwargs):
     # plt.hist(img.flatten(), bins =100, alpha=0.5)
     # plt.show()
 
-    print(np.sum(img), np.sum(out))
+    # print(np.sum(img), np.sum(out))
     # out = out*np.sum(img)/np.sum(out)
     # out = out*4
     return out
