@@ -41,7 +41,7 @@ class IO_params:
         self.params_logs = os.path.join(self.testdir, 'params.pkl')
 
         self.fields = os.path.join(self.testdir, 'fields.h5')  # a x/y/t/w cube of data
-        self.photons = os.path.join(self.testdir, 'photons.pkl')  # a photon table with 4 columns
+        # self.photons = os.path.join(self.testdir, 'photons.pkl')  # a photon table with 4 columns
         self.camera = os.path.join(self.testdir, 'camera.pkl')  # a photon table with 4 columns
         self.telescope = os.path.join(self.testdir, 'telescope.pkl')  # a photon table with 4 columns
 
@@ -177,6 +177,7 @@ class Telescope_params:
 
         self.use_atmos = True
         self.obscure = False
+        self.legs_frac = 0.03
 
         # AO System Settings
         self.use_ao = True
