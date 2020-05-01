@@ -21,9 +21,9 @@ import proper
 
 from medis.params import sp, tp, ap, cdip
 import medis.CDI as cdi
-from medis.optics import check_sampling
+from medis.optics import check_sampling, apodize_pupil
 from medis.utils import dprint
-from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
+from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes, quicklook_wf
 
 # def ao(wf, WFS_map, theta):
 #     if sp.closed_loop:
@@ -52,7 +52,7 @@ def make_speckle_kxy(kx, ky, amp, dm_phase):
 ################################################################################
 # Deformable Mirror
 ################################################################################
-def deformable_mirror(wf, WFS_map, iter, previous_output, tp, plane_name=None):
+def deformable_mirror(wf, WFS_map, iter, previous_output, tp, apodize=True, plane_name=None):
     """
     combine different DM actuator commands into single map to send to prop_dm
 
@@ -144,13 +144,15 @@ def deformable_mirror(wf, WFS_map, iter, previous_output, tp, plane_name=None):
     #########################
     # proper.prop_dm
     #########################
-    proper.prop_dm(wf, dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
-    # proper.prop_dm(wfo, dm_map, dm_xc, dm_yc, N_ACT_ACROSS_PUPIL=nact, FIT=True)  #
+    dmap = proper.prop_dm(wf, dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
 
     # check_sampling(0, wfo, "E-Field after DM", getframeinfo(stack()[0][0]), units='um')  # check sampling from optics.py
 
-    return
+    # apodize_pupil = True
+    if apodize:
+        apodize_pupil(wf)
 
+    return dmap
 
 ################################################################################
 # Ideal AO
@@ -204,10 +206,10 @@ def quick_ao(wf, nact, WFS_map):
     #  using the scaled beam_ratios when the wfo was created
     # dprint(f"{WFS_map[0,0,0]}")
     ao_map = WFS_map[
-             sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2):
-             sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+1,
-             sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2):
-             sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+1]
+             sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2)+1:
+             sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+2,
+             sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2)+1:
+             sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+2]
 
     ########################################################
     # Interpolating the WFS map onto the actuator spacing
@@ -218,9 +220,10 @@ def quick_ao(wf, nact, WFS_map):
     sigma = [nyquist_dm/2.355, nyquist_dm/2.355]  # assume we want sigma to be twice the HWHM
     ao_map = ndimage.gaussian_filter(ao_map, sigma=sigma, mode='nearest')
 
-    f = interpolate.interp2d(range(ao_map.shape[0]), range(ao_map.shape[0]), ao_map, kind='cubic')
-    ao_map = f(np.linspace(0,ao_map.shape[0],nact), np.linspace(0,ao_map.shape[0], nact))
-    # dm_map = proper.prop_magnify(dm_map, map_spacing / act_spacing, nact)
+    # f = interpolate.interp2d(range(ao_map.shape[0]), range(ao_map.shape[0]), ao_map, kind='cubic')
+    # ao_map = f(np.linspace(0,ao_map.shape[0],nact), np.linspace(0,ao_map.shape[0], nact))
+    map_spacing = proper.prop_get_sampling(wf)
+    ao_map = proper.prop_magnify(ao_map, map_spacing / act_spacing, nact, QUICK=True)
 
     ################################################
     # Converting phase delay to DM actuator height
@@ -232,13 +235,23 @@ def quick_ao(wf, nact, WFS_map):
     return ao_map
 
 def retro_wfs(star_fields, wfo, plane_name='wfs'):
+    """
+    Retrospective wfs (measure an old field)
+
+    :param star_fields:
+    :param wfo:
+    :param plane_name:
+    :return:
+    """
     WFS_map = np.zeros((len(star_fields), sp.grid_size, sp.grid_size))
 
     for iw in range(len(star_fields)):
         quick2D(np.angle(star_fields), title='before mask', colormap='sunlight')
-        phasemap = np.ma.masked_equal(np.angle(star_fields[iw]), 0)
-        quick2D(phasemap, title='before unwrap', colormap='sunlight')
-        WFS_map[iw] = unwrap_phase(phasemap, wrap_around=[False, False])
+        phasemap = np.angle(star_fields[iw])
+        masked_phase = np.ma.masked_equal(phasemap, 0)
+        quick2D(masked_phase, title='before unwrap', colormap='sunlight')
+        WFS_map[iw] = unwrap_phase(masked_phase, wrap_around=[False, False])
+        WFS_map[iw][phasemap == 0] = 0
         quick2D(WFS_map[iw], title='after')
     if 'retro_closed_wfs' in sp.save_list:
         wfo.save_plane(location='WFS_map')
@@ -264,11 +277,10 @@ def open_loop_wfs(wfo, plane_name='wfs'):
 
     for iw in range(len(star_wf)):
         phasemap = proper.prop_get_phase(star_wf[iw])
-
         # combination of abs_zeros and masking allows phase unwrap to work without discontiuities sometimes occur
-        phasemap = np.ma.masked_equal(phasemap, 0)
-        WFS_map[iw] = unwrap_phase(phasemap, wrap_around=[False, False])
-
+        masked_phase = np.ma.masked_equal(phasemap, 0)
+        WFS_map[iw] = unwrap_phase(masked_phase, wrap_around=[False, False])
+        WFS_map[iw][phasemap==0] = 0
     if 'open_loop_wfs' in sp.save_list or sp.closed_loop:
         wfo.save_plane(location='WFS_map')
 

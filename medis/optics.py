@@ -9,6 +9,7 @@ import numpy as np
 import proper
 import copy
 from scipy.interpolate import interp1d
+from scipy.ndimage import gaussian_filter
 from inspect import getframeinfo, stack
 
 from medis.params import ap, tp, sp
@@ -289,6 +290,30 @@ def extract_center(wf):
                     int(nx/2-EXTRACT/2):int(nx/2+EXTRACT/2)]
     return smaller_wf
 
+def circular_mask(h, w, center=None, radius=None):
+    if center is None: # use the middle of the image
+        center = (int(w/2), int(h/2))
+    if radius is None: # use the smallest distance between the center and image walls
+        radius = min(center[0], center[1], w-center[0], h-center[1])
+
+    Y, X = np.ogrid[:h, :w]
+    dist_from_center = np.sqrt((X - center[0])**2 + (Y-center[1])**2)
+
+    mask = dist_from_center <= radius
+    return mask
+
+def apodize_pupil(wf):
+    phase_map = proper.prop_get_phase(wf)
+    amp_map = proper.prop_get_amplitude(wf)
+    h, w = wf.wfarr.shape[:2]
+    wavelength = wf.lamda
+    scale = ap.wvl_range[0] / wavelength
+    inds = circular_mask(h, w, radius=scale * 0.95 * h * sp.beam_ratio / 2)
+    mask = np.zeros_like(phase_map)
+    mask[inds] = 1
+    smooth_mask = gaussian_filter(mask, 1.5, mode='nearest')
+    smoothed = phase_map * smooth_mask
+    wf.wfarr = proper.prop_shift_center(amp_map * np.cos(smoothed) + 1j * amp_map * np.sin(smoothed))
 
 ################################################################################################################
 # Optics in Proper
@@ -315,8 +340,8 @@ def add_obscurations(wf, M2_frac=0, d_primary=0, d_secondary=0, legs_frac=0.05, 
         else:
             raise ValueError('must either specify M2_frac and d_primary or d_secondary')
         if legs_frac > 0:
-            proper.prop_rectangular_obscuration(wf, legs_frac*d_primary, d_primary*1.3, ROTATION=-20)
-            proper.prop_rectangular_obscuration(wf, d_primary*1.3, legs_frac * d_primary, ROTATION=-20)
+            proper.prop_rectangular_obscuration(wf, legs_frac, 1.3, ROTATION=-20, NORM=True)
+            proper.prop_rectangular_obscuration(wf, 1.3, legs_frac, ROTATION=-20, NORM=True)
 
 
 def prop_pass_lens(wf, fl_lens, dist):
