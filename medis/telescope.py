@@ -140,8 +140,7 @@ class Telescope():
             # determine if can/should do all in memory
             max_steps = self.max_chunk()
             self.fieldssize = self.timestep_size * self.params['sp'].numframes
-            if self.params['sp'].verbose: print(f"File total size should be "
-                                                f"{self.fieldssize * 1e-6} MB")
+            if self.params['sp'].verbose: print(f"File total size should be {self.fieldssize * 1e-6} MB")
             checkpoint_steps = max_steps if self.params['sp'].checkpointing is None else self.params['sp'].checkpointing
             self.chunk_steps = int(min([max_steps, self.params['sp'].numframes, checkpoint_steps]))
             if self.params['sp'].verbose: print(f'Using time chunks of size {self.chunk_steps}')
@@ -189,6 +188,9 @@ class Telescope():
                 with open(self.params['iop'].telescope, 'wb') as handle:
                     pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+        if len(self.cpx_sequence) < self.params['sp'].numframes:
+            print('Returning the final time chunk instead of the full duration. Increase chunk size if you want full '
+                  'duration')
         dataproduct = {'fields': np.array(self.cpx_sequence), 'sampling': self.sampling}
         return dataproduct
 
@@ -199,9 +201,9 @@ class Telescope():
         :return: integer
         """
         self.timestep_size = len(self.params['sp'].save_list) * self.params['ap'].n_wvl_final * \
-                        (1 + len(self.params['ap'].contrast)) * self.params['sp'].grid_size**2 * 32
+                        (1 + len(self.params['ap'].contrast)) * self.params['sp'].grid_size**2 * 32 / 8  # in Bytes
 
-        max_chunk = self.params['sp'].memory_limit // self.timestep_size
+        max_chunk = self.params['sp'].memory_limit*1e9 // self.timestep_size
         print(f'Each timestep is predicted to be {self.timestep_size/1.e6} MB, requiring sim to be split into '
               f'{max_chunk} time chunks')
 
@@ -215,7 +217,6 @@ class Telescope():
 
         if self.markov:  # time steps are independent
             ceil_num_chunks = int(np.ceil(self.num_chunks))
-            # remainder = integer_num_chunks%self.num_chunks
             final_chunk_size = self.params['sp'].numframes-int(np.floor(self.num_chunks))*self.chunk_steps
             for ichunk in range(ceil_num_chunks):
                 fractional_step = final_chunk_size != 0 and ichunk == ceil_num_chunks-1
