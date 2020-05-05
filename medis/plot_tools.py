@@ -64,20 +64,19 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=N
         plt.yticks(tic_spacing, scale)
         plt.xlabel('[um]')
 
+    if vlim == (None, None):
+        nstd = 2
+        std = np.std(image)
+        mean = np.mean(image)
+        vlim = mean - nstd * std, mean + nstd * std
+
     # Setting Logscale
-    if logZ:
-        if np.min(image) <= 0:
-            cax = ax.imshow(image, interpolation='none', origin='lower', vmin=vlim[0], vmax=vlim[1],
-                            norm=LogNorm(),    #norm=SymLogNorm(linthresh=1e-5),
-                            cmap="YlGnBu_r")
-            clabel = "Log Normalized Intensity"
-        else:
-            cax = ax.imshow(image, interpolation='none', origin='lower', vmin=vlim[0], vmax=vlim[1],
-                            norm=LogNorm(), cmap="YlGnBu_r")
-            clabel = "Log Normalized Intensity"
-    else:
-        cax = ax.imshow(image, interpolation='none', origin='lower', vmin=vlim[0], vmax=vlim[1], cmap=colormap)
-        clabel = "Normalized Intensity"
+    norm = None if not logZ else (LogNorm() if vlim[0] > 0 else SymLogNorm(1e-7))
+    # if logZ:
+        # if np.min(image) <= 0:
+    cax = ax.imshow(image, interpolation='none', origin='lower', vmin=vlim[0], vmax=vlim[1],
+                    norm=norm, cmap=colormap)
+    clabel = "Intensity"
 
     # Plotting
     plt.title(title, fontweight='bold', fontsize=16)
@@ -86,7 +85,7 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=N
     if show:
         plt.show(block=True)
 
-def body_spectra(fields, title='body spectra', logZ=False, show=True, nstd=1):
+def body_spectra(fields, title='body spectra', logZ=False, show=True, nstd=1, vlim=(None, None)):
     """
     General purpose plotter for multi-dimensional input tensors from 2D up to 6D. The tensor will be converted to 4D
     and plot as a grid of 2D images
@@ -116,7 +115,10 @@ def body_spectra(fields, title='body spectra', logZ=False, show=True, nstd=1):
         std = np.std(fields[0])
         mean = np.mean(fields[0])
 
-    vmin, vmax = mean - nstd*std, mean + nstd*std
+    if vlim == (None, None):
+        vmin, vmax = mean - nstd*std, mean + nstd*std
+    else:
+        vmin, vmax = vlim
 
     fig = plt.figure(figsize=(16, 9))
     fig.suptitle(title)
