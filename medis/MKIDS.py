@@ -6,7 +6,7 @@ is a function under run_medis class
 Rupert adds all of his stuff here.
 """
 
-import os
+import os, sys
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy import interpolate
@@ -52,12 +52,14 @@ class Camera():
         self.params = params
         self.name = self.params['iop'].camera
         self.usesave = usesave
+        self.stackcube = None
 
         self.save_exists = True if os.path.exists(self.name) else False
 
         if self.save_exists and self.usesave:
-            with open(self.name, 'rb') as handle:
-                load = pickle.load(handle)
+            # with open(self.name, 'rb') as handle:
+            #     load = pickle.load(handle)
+                load = self.load()
                 self.__dict__ = load.__dict__
                 self.save_exists = True  # just in case the saved obj didn't have this set to True
 
@@ -80,13 +82,17 @@ class Camera():
         self.hot_pix = self.params['mp'].hot_pix
         self.lod = self.params['mp'].lod
         self.QE_map_all = self.array_QE(plot=False)
+        # self.max_count = self.params['mp'].max_count
         self.responsivity_error_map = self.responvisity_scaling_map(plot=False)
-        if self.params['mp'].bad_pix == True:
+        if self.params['mp'].bad_pix:
             self.QE_map = self.create_bad_pix(self.QE_map_all) if self.params['mp'].pix_yield != 1 else self.QE_map_all
 
             if self.params['mp'].dark_counts:
                 self.dark_per_step = self.params['sp'].sample_time * self.params['mp'].dark_bright * self.array_size[0] * self.array_size[
                     1] * self.dark_pix_frac
+                dprint('dark_per_step:', self.dark_per_step, 'sample_time: ', self.params['sp'].sample_time,
+                       'dark_bright: ', self.params['mp'].dark_bright, 'pixels: ', self.array_size[0] * self.array_size[1], self.dark_pix_frac)
+                
                 self.dark_locs = self.create_false_pix(amount=int(
                     self.params['mp'].dark_pix_frac * self.array_size[0] * self.array_size[1]))
             if self.params['mp'].hot_pix:
@@ -125,8 +131,35 @@ class Camera():
         return dataproduct
 
     def save(self):
-        with open(self.name, 'wb') as handle:
-            pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        # import sys
+        # print(sys.getsizeof(self), 'size')
+        # with open(c, 'wb') as handle:
+        #     pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        """
+        This is a defensive way to write pickle.write, allowing for very large files on all platforms
+        """
+        max_bytes = 2 ** 31 - 1
+        bytes_out = pickle.dumps(self)
+        n_bytes = sys.getsizeof(bytes_out)
+        with open(self.name, 'wb') as f_out:
+            for idx in range(0, n_bytes, max_bytes):
+                f_out.write(bytes_out[idx:idx + max_bytes])
+
+    def load(self):
+        """
+        This is a defensive way to write pickle.load, allowing for very large files on all platforms
+        """
+        max_bytes = 2 ** 31 - 1
+        try:
+            input_size = os.path.getsize(self.name)
+            bytes_in = bytearray(0)
+            with open(self.name, 'rb') as f_in:
+                for _ in range(0, input_size, max_bytes):
+                    bytes_in += f_in.read(max_bytes)
+            obj = pickle.loads(bytes_in)
+        except:
+            return None
+        return obj
 
     def arange_into_cube(self, packets, size):
         # print 'Sorting packets into xy grid (no phase or time sorting)'
@@ -364,6 +397,7 @@ class Camera():
             n_device_counts = self.hot_per_step
         elif type == 'dark':
             n_device_counts = self.dark_per_step
+            dprint(self.dark_per_step, self.params['mp'].dark_bright, self.params['sp'].sample_time)
         else:
             print("type currently has to be 'hot' or 'dark'")
             raise AttributeError
@@ -455,6 +489,7 @@ class Camera():
 
         return datacube
 
+
     def remove_close(self, stem):
         print('removing close photons')
         for x in range(len(stem)):
@@ -515,8 +550,8 @@ class Camera():
     def get_ideal_cube(self, datacube):
         if self.params['mp'].resamp:
             nyq_sampling = self.params['ap'].wvl_range[0]*360*3600/(4*np.pi*self.params['tp'].entrance_d)
-            sampling = nyq_sampling*self.params['sp'].beam_ratio*2  # nyq sampling happens at self.params['sp'].beam_ratio = 0.5
-            x = np.arange(-self.params['sp'].grid_size*sampling/2, self.params['sp'].grid_size*sampling/2, sampling)
+            self.sampling = nyq_sampling*self.params['sp'].beam_ratio*2  # nyq sampling happens at self.params['sp'].beam_ratio = 0.5
+            x = np.arange(-self.params['sp'].grid_size*self.sampling/2, self.params['sp'].grid_size*self.sampling/2, self.sampling)
             xnew = np.arange(-self.array_size[0]*self.platescale/2, self.array_size[0]*self.platescale/2, self.platescale)
             mkid_cube = np.zeros((len(datacube), self.array_size[0], self.array_size[1]))
             for s, slice in enumerate(datacube):
@@ -535,8 +570,8 @@ class Camera():
 
         if self.params['mp'].resamp:
             nyq_sampling = self.params['ap'].wvl_range[0]*360*3600/(4*np.pi*self.params['tp'].entrance_d)
-            sampling = nyq_sampling*self.params['sp'].beam_ratio*2  # nyq sampling happens at self.params['sp'].beam_ratio = 0.5
-            x = np.arange(-self.params['sp'].grid_size*sampling/2, self.params['sp'].grid_size*sampling/2, sampling)
+            self.sampling = nyq_sampling*self.params['sp'].beam_ratio*2  # nyq sampling happens at self.params['sp'].beam_ratio = 0.5
+            x = np.arange(-self.params['sp'].grid_size*self.sampling/2, self.params['sp'].grid_size*self.sampling/2, self.sampling)
             xnew = np.arange(-self.array_size[0]*self.platescale/2, self.array_size[0]*self.platescale/2, self.platescale)
             mkid_cube = np.zeros((len(datacube), self.array_size[0], self.array_size[1]))
             for s, slice in enumerate(datacube):
@@ -572,7 +607,7 @@ class Camera():
 
         if self.params['mp'].dark_counts:
             dark_photons = self.get_bad_packets(step, type='dark')
-            # dprint(dark_photons.shape, 'dark')
+            dprint(dark_photons.shape, 'dark')
             photons = np.hstack((photons, dark_photons))
 
         if self.params['mp'].hot_pix:
