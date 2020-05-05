@@ -489,6 +489,15 @@ class Camera():
 
         return datacube
 
+    def cut_max_count(self, datacube):
+        image = np.sum(datacube, axis=0)
+        max_counts = self.max_count * self.params['sp'].sample_time
+        maxed = image > max_counts
+        scaling_map = max_counts / image
+        scaling_map[scaling_map > 1] = 1
+        scaled_cube = datacube * scaling_map
+
+        return scaled_cube
 
     def remove_close(self, stem):
         print('removing close photons')
