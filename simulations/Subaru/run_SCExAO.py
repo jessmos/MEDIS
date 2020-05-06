@@ -36,7 +36,7 @@ params['sp'].closed_loop = False
 
 # Grid Parameters
 params['sp'].focused_sys = True
-params['sp'].beam_ratio = 0.2  # parameter dealing with the sampling of the beam in the pupil/focal plane
+params['sp'].beam_ratio = 0.18  # parameter dealing with the sampling of the beam in the pupil/focal plane
 params['sp'].grid_size = 512  # creates a nxn array of samples of the wavefront
 params['sp'].maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
 
