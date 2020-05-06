@@ -36,9 +36,9 @@ import medis.atmosphere as atmos
 from medis.plot_tools import view_spectra
 import medis.CDI as cdi
 import medis.utils as mu
-import medis.MKIDs as MKIDs
+import medis.MKIDS as MKIDs
 from medis.telescope import Telescope
-from medis.MKIDs import Camera
+from medis.MKIDS import Camera
 import medis.optics as opx
 import medis.aberrations as aber
 
