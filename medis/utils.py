@@ -123,7 +123,8 @@ def check_telescope_params():
     """
     A general housekeeping file for params in the telescope end of MEDIS
 
-    :return:
+    :return: nothing explicitly returned, but params are set in good manner for consistency based on
+    settings with highest priority
     """
     # Checking Companion params
     if ap.companion is False:
@@ -133,7 +134,7 @@ def check_telescope_params():
     if not ap.interp_wvl:
         ap.n_wvl_final = ap.n_wvl_init
 
-    # pop DM names from save_list if tp.use_ao is False
+    # remove DM names from save_list if tp.use_ao is False
     if not tp.use_ao:
         if 'woofer' in sp.save_list:
             sp.save_list.remove('woofer')
