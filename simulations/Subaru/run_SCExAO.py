@@ -49,9 +49,9 @@ ap.wvl_range = np.array([800,1400])*1e-9
 
 # Toggles for Aberrations and Control
 tp.obscure = False
-tp.use_atmos = False
+tp.use_atmos = True
 tp.use_aber = False
-tp.use_ao = False
+tp.use_ao = True
 cdip.use_cdi = False
 
 # Plotting
