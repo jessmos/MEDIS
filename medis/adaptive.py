@@ -116,13 +116,14 @@ def deformable_mirror(wf, WFS_map, iter, previous_output, tp, apodize=True, plan
     # Waffle
     #########
 
-    if tp.satelite_speck:
-        phase = np.pi / 5.
-        s_amp = 12e-9
-        xloc, yloc = 12, 12
-        waffle = make_speckle_kxy(xloc, yloc, s_amp, phase)
-        waffle += make_speckle_kxy(xloc, -yloc, s_amp, phase)
-        dm_map += waffle
+    # if tp.satelite_speck and plane_name is not 'woofer':
+        #TODO Rupert don't hardcode params in this file
+        # phase = np.pi / 5.  <-- like this
+        # s_amp = 12e-9 <-- like this
+        # xloc, yloc = 12, 12 <-- like this
+        # waffle = make_speckle_kxy(xloc, yloc, s_amp, phase)
+        # waffle += make_speckle_kxy(xloc, -yloc, s_amp, phase)
+        # dm_map += waffle
 
     #######
     # CDI

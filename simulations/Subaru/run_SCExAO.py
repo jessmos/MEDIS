@@ -49,7 +49,7 @@ params['ap'].companion_xy = [[5, -5]]  # units of this are lambda/params['tp'].e
 params['tp'].obscure = False
 params['tp'].use_atmos = False
 params['tp'].use_aber = False
-params['tp'].use_ao = False
+params['tp'].use_ao = True
 params['cdip'].use_cdi = False
 
 # Plotting
@@ -62,7 +62,7 @@ params['sp'].show_planes = True
 
 # Saving
 params['sp'].save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
-params['sp'].save_list = ['atmosphere', 'entrance_pupil',  'detector']  # list of locations in optics train to save
+params['sp'].save_list = ['atmosphere', 'entrance_pupil','woofer',  'detector']  # list of locations in optics train to save
 
 if __name__ == '__main__':
     # =======================================================================
