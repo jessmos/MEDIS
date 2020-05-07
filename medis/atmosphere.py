@@ -14,7 +14,7 @@ from skimage.restoration import unwrap_phase
 
 from medis.params import iop, ap, tp, sp, atmp
 from medis.utils import dprint, clipped_zoom
-import medis.optics as opx
+from medis.optics import circular_mask
 
 
 def gen_atmos(params, plot=False):
@@ -111,9 +111,15 @@ def add_atmos(wf, it, param_tup=None, spatial_zoom=False):
         atm_map = fits.open(atmos_map)[1].data
         atm_map = unwrap_phase(atm_map)
         atm_map *= wavelength/(2*np.pi)  # converts atmosphere in units of phase delay (rad) into distance (m)
+
         if spatial_zoom:
             scale = ap.wvl_range[0] / wavelength
             atm_map = clipped_zoom(atm_map, scale)
+            h, w = atm_map.shape[:2]
+            mask = circular_mask(h, w, radius=scale * h * sp.beam_ratio / 2)
+            atm_map[~mask] = 0
+            atm_map[mask] -= np.mean(atm_map[mask])  # remove bias from spatial stretching
+
         proper.prop_add_phase(wf, atm_map)
 
 
