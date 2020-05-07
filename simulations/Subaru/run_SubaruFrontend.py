@@ -66,7 +66,6 @@ sp.show_planes = True
 
 # Saving
 sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
-sp.save_fields = True  # toggle to turn saving uniformly on/off
 sp.save_list = ['atmosphere', 'entrance_pupil', 'woofer', 'detector']  # list of locations in optics train to save
 
 
