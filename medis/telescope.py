@@ -134,7 +134,7 @@ class Telescope():
                 params['sp'].parrallel = False
 
             # ensure contrast is set properly
-            if self.params['sp'].quick_companion:
+            if self.params['sp'].quick_companions:
                 # purpose of this code to add option to shift and scale an unocculed star and use that for several sources vastly decreasing compute time
                 raise NotImplementedError
                 self.params['ap'].contrast = range(2)  # give it length two since all the planets will be collapsed into one frame
