@@ -126,7 +126,7 @@ class Telescope():
                 if not os.path.isdir(self.params['iop'].aberdir):
                     os.makedirs(self.params['iop'].aberdir, exist_ok=True)
                 for lens in params['tp'].lens_params:
-                    aber.generate_maps(lens['aber_vals'], lens['diam'], lens['name'])
+                    aber.generate_maps(params['iop'], lens['aber_vals'], lens['diam'], lens['name'])
 
             # check if can do parrallel
             if params['sp'].closed_loop or params['sp'].ao_delay:
@@ -134,6 +134,11 @@ class Telescope():
                 params['sp'].parrallel = False
 
             # ensure contrast is set properly
+            if self.params['sp'].quick_companion:
+                # purpose of this code to add option to shift and scale an unocculed star and use that for several sources vastly decreasing compute time
+                raise NotImplementedError
+                self.params['ap'].contrast = range(2)  # give it length two since all the planets will be collapsed into one frame
+
             if self.params['ap'].companion is False:
                 self.params['ap'].contrast = []
 
