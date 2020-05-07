@@ -10,6 +10,7 @@ import proper
 import copy
 from scipy.interpolate import interp1d
 from scipy.ndimage import gaussian_filter
+from skimage.restoration import unwrap_phase
 import matplotlib.pylab as plt
 from matplotlib.colors import LogNorm
 from inspect import getframeinfo, stack
@@ -253,7 +254,7 @@ class Wavefronts():
         # ax4.plot(np.sum(np.eye(ap.grid_size)*phase_afterdm,axis=1))
         plt.xlim([0, proper.prop_get_gridsize(wf)])
         if title:
-            fig.suptitle(f"{title}, {wf.lamda}, {wf.name}", fontsize=18)
+            fig.suptitle(f"plane: {title}, lambda: {wf.lamda} m, body: {wf.name}", fontsize=18)
 
         plt.subplots_adjust(top=0.9)
 
@@ -504,3 +505,10 @@ def check_sampling(tstep, wfo, location, line_info, units=None):
                 print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling:.3f} rad")
             else:
                 print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling} m")
+
+def unwrap_phase_zeros(phasemap):
+    """ combination of abs_zeros and masking allows phase unwrap to work without discontiuities sometimes occur """
+    masked_phase = np.ma.masked_equal(phasemap, 0)
+    unwrap = unwrap_phase(masked_phase, wrap_around=[False, False])
+    unwrap[phasemap == 0] = 0
+    return unwrap

@@ -14,16 +14,15 @@ TODO
 """
 
 import numpy as np
-from skimage.restoration import unwrap_phase
 from scipy import interpolate, ndimage
 from inspect import getframeinfo, stack
 import proper
 
 from medis.params import sp, tp, ap, cdip
 import medis.CDI as cdi
-from medis.optics import check_sampling, apodize_pupil
+from medis.optics import check_sampling, apodize_pupil, unwrap_phase_zeros as unwrap_phase
 from medis.utils import dprint
-from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes, quicklook_wf
+from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
 
 # def ao(wf, WFS_map, theta):
 #     if sp.closed_loop:
@@ -145,7 +144,23 @@ def deformable_mirror(wf, WFS_map, iter, previous_output, tp, apodize=True, plan
     #########################
     # proper.prop_dm
     #########################
+    if sp.debug: pre_ao = unwrap_phase(proper.prop_get_phase(wf)) * wf.lamda / (2 * np.pi)
+
     dmap = proper.prop_dm(wf, dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
+
+    if sp.debug:
+        import matplotlib.pylab as plt
+        post_ao = unwrap_phase(proper.prop_get_phase(wf)) * wf.lamda / (2 * np.pi)
+        quick2D(dm_map, title='dm_map', show=False)#, vlim=(-0.5e-7,0.5e-7))
+        quick2D(pre_ao, title='pre_ao', show=False)#, vlim=(-0.5e-7,0.5e-7))
+        quick2D(dmap, title='dmap', show=False)#, vlim=(-0.5e-7,0.5e-7))
+        plt.figure()
+        plt.plot(pre_ao[len(pre_ao)//2])
+        plt.plot(2*dmap[len(dmap)//2])
+        plt.plot((pre_ao + (2*dmap))[len(dmap)//2])
+        quick2D(pre_ao + (2*dmap), title='diff', show=False, vlim=(-0.5e-7,0.5e-7))
+        quick2D(post_ao, title='post_ao', show=False, vlim=(-0.5e-7,0.5e-7))
+        quick2D(proper.prop_get_phase(wf), title='post_ao', show=True)
 
     # check_sampling(0, wfo, "E-Field after DM", getframeinfo(stack()[0][0]), units='um')  # check sampling from optics.py
 
@@ -245,7 +260,7 @@ def retro_wfs(star_fields, wfo, plane_name='wfs'):
     :return:
     """
     WFS_map = np.zeros((len(star_fields), sp.grid_size, sp.grid_size))
-
+    from skimage.restoration import unwrap_phase
     for iw in range(len(star_fields)):
         quick2D(np.angle(star_fields), title='before mask', colormap='sunlight')
         phasemap = np.angle(star_fields[iw])
@@ -275,7 +290,7 @@ def open_loop_wfs(wfo, plane_name='wfs'):
     """
     star_wf = wfo.wf_collection[:, 0]
     WFS_map = np.zeros((len(star_wf), sp.grid_size, sp.grid_size))
-
+    from skimage.restoration import unwrap_phase
     for iw in range(len(star_wf)):
         phasemap = proper.prop_get_phase(star_wf[iw])
         # combination of abs_zeros and masking allows phase unwrap to work without discontiuities sometimes occur
