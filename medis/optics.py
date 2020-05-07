@@ -141,9 +141,11 @@ class Wavefronts():
         manipulator_output = [[[] for _ in range(len(self.wsamples))] for _ in range(self.num_bodies)]
         for iw, sources in enumerate(self.wf_collection):
             for io, wavefront in enumerate(sources):
-                manipulator_output[io][iw] = func(wavefront, *args, **kwargs)
+                print(plane_name, sp.skip_planes)
+                if not plane_name in sp.skip_planes:
+                    manipulator_output[io][iw] = func(wavefront, *args, **kwargs)
 
-        if self.debug:
+        if self.debug and not plane_name in sp.skip_planes:
             self.quicklook(title=plane_name)
 
         manipulator_output = np.array(manipulator_output)
