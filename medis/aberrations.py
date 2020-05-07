@@ -21,7 +21,7 @@ from medis.utils import *
 ################################################################################################################
 # Aberrations
 ################################################################################################################
-def generate_maps(aber_vals, lens_diam, lens_name='lens'):
+def generate_maps(iop, aber_vals, lens_diam, lens_name='lens'):
     """
     generate PSD-defined aberration maps for a lens(mirror) using Proper
 
@@ -47,12 +47,12 @@ def generate_maps(aber_vals, lens_diam, lens_name='lens'):
      of quasi-static aberrations)
     """
     # TODO add different timescale aberations
-    dprint('Generating optic aberration maps using Proper')
-    iop.aberdata = f"gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
-    iop.aberdir = os.path.join(iop.testdir, iop.aberroot, iop.aberdata)
+    if sp.verbose: dprint(f'Generating optic aberration maps using Proper at directory {iop.aberdir}')
     if not os.path.isdir(iop.aberdir):
+        # todo remove when all test scripts use the new format
+        raise NotImplementedError
+        print('aberration maps should be created at the beginng, not on the fly')
         os.makedirs(iop.aberdir, exist_ok=True)
-    dprint(f"Abberation directory = {iop.aberdir}")
 
     # create blank lens wavefront for proper to add phase to
     wfo = proper.prop_begin(lens_diam, 1., sp.grid_size, sp.beam_ratio)
