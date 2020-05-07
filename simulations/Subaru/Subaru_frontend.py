@@ -144,7 +144,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     #######################################
     # Effective Primary
     # CPA from Effective Primary
-    wfo.loop_collection(aber.add_aber, tp.entrance_d, tp.aber_params, primary_aber_vals,
+    wfo.loop_collection(aber.add_aber, tp.entrance_d, primary_aber_vals,
                            step=PASSVALUE['iter'], lens_name='effective-primary')
     # Zernike Aberrations- Low Order
     # wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
@@ -154,7 +154,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # AO188 Propagation
     ########################################
     # # AO188-OAP1
-    wfo.loop_collection(aber.add_aber, tp.d_ao1, tp.aber_params, OAP1_aber_vals,
+    wfo.loop_collection(aber.add_aber, tp.d_ao1, OAP1_aber_vals,
                            step=PASSVALUE['iter'], lens_name='ao188-OAP1')
     wfo.loop_collection(opx.prop_pass_lens, tp.fl_ao1, tp.dist_ao1_dm)
 
@@ -167,7 +167,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     wfo.loop_collection(proper.prop_propagate, tp.dist_dm_ao2)
 
     # AO188-OAP2
-    wfo.loop_collection(aber.add_aber, tp.d_ao2, tp.aber_params, OAP2_aber_vals,
+    wfo.loop_collection(aber.add_aber, tp.d_ao2, OAP2_aber_vals,
                            step=PASSVALUE['iter'], lens_name='ao188-OAP2')
     # wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)
     wfo.loop_collection(opx.prop_pass_lens, tp.fl_ao2, tp.dist_oap2_focus)

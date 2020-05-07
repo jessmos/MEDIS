@@ -77,10 +77,6 @@ def Hubble_frontend(empty_lamda, grid_size, PASSVALUE):
     wfo = opx.Wavefronts()
     wfo.initialize_proper()
 
-    # Atmosphere
-    #  There is a line turned on/off as desired in atmos.add_atmos to zero outside of the pupil or not
-    # atmos.add_atmos(wfo, PASSVALUE['iter'])
-
     ########################################
     # Hubble Propagation
     #######################################
@@ -97,13 +93,13 @@ def Hubble_frontend(empty_lamda, grid_size, PASSVALUE):
 
     # Primary
     # CPA from Effective Primary
-    # aber.add_aber(wfo.wf_collection, tp.entrance_d, tp.aber_params, step=PASSVALUE['iter'], lens_name='primary')
+    # aber.add_aber(wfo.wf_collection, tp.entrance_d, step=PASSVALUE['iter'], lens_name='primary')
 
     # wfo.loop_collection(opx.prop_pass_lens, tp.flen_primary, tp.flen_primary)
     wfo.loop_collection(opx.prop_pass_lens, tp.flen_primary, tp.dist_pri_second)
 
     # Secondary
-    # aber.add_aber(wfo.wf_collection, tp.d_secondary, tp.aber_params, step=PASSVALUE['iter'], lens_name='second')
+    # aber.add_aber(wfo.wf_collection, tp.d_secondary, step=PASSVALUE['iter'], lens_name='second')
     # # Zernike Aberrations- Low Order
     # wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, tp.zernike_vals)
     wfo.loop_collection(opx.prop_pass_lens, tp.flen_secondary, tp.dist_second_focus)

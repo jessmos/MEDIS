@@ -16,7 +16,6 @@ import medis.adaptive as ao
 import medis.aberrations as aber
 import medis.optics as opx
 from medis.coronagraphy import coronagraph
-from medis.plot_tools import quicklook_wf
 
 class Telescope_Params(object):
     def __init__(self, dict):
@@ -47,7 +46,7 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     # datacube = []
     params = PASSVALUE['params']
 
-    wfo = opx.Wavefronts()
+    wfo = opx.Wavefronts(debug=params['sp'].debug)
     wfo.initialize_proper()
 
     ###################################################
@@ -89,8 +88,8 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     #######################################
     # Abberations before AO
 
-    wfo.loop_collection(aber.add_aber, params['tp'].aber_params, params['iop'].aberdir, PASSVALUE['iter'],
-                        lens_name='CPA', zero_outside=True)
+    wfo.loop_collection(aber.add_aber, params['iop'].aberdir, PASSVALUE['iter'], lens_name='CPA', zero_outside=True)
+
     # wfo.loop_collection(proper.prop_circular_aperture, **{'radius': params['tp'].entrance_d / 2})
     # wfo.wf_collection = aber.abs_zeros(wfo.wf_collection)
     wfo.abs_zeros()
@@ -101,15 +100,15 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     if params['tp'].use_ao:
 
         if params['sp'].closed_loop:
-            previous_output = ao.retro_wfs(PASSVALUE['AO_field'], wfo)  # unwrap a previous steps phase map
+            previous_output = ao.retro_wfs(PASSVALUE['AO_field'], wfo, plane_name='wfs')  # unwrap a previous steps phase map
             wfo.loop_collection(ao.deformable_mirror, WFS_map=None, iter=PASSVALUE['iter'],
                                 previous_output=previous_output, plane_name='deformable mirror', zero_outside=True)
         elif params['sp'].ao_delay > 0:
-            WFS_map = ao.retro_wfs(PASSVALUE['WFS_field'], wfo)  # unwrap a previous steps phase map
+            WFS_map = ao.retro_wfs(PASSVALUE['WFS_field'], wfo, plane_name='wfs')  # unwrap a previous steps phase map
             wfo.loop_collection(ao.deformable_mirror, WFS_map, iter=PASSVALUE['iter'], previous_output=None,
                                 plane_name='deformable mirror', zero_outside=True)
         else:
-            WFS_map = ao.open_loop_wfs(wfo)  # just uwraps this steps measured phase_map
+            WFS_map = ao.open_loop_wfs(wfo, plane_name='wfs')  # just uwraps this steps measured phase_map
             wfo.loop_collection(ao.deformable_mirror, WFS_map, iter=PASSVALUE['iter'], previous_output=None,
                                 tp=params['tp'], plane_name='deformable mirror', zero_outside=True)
 
@@ -123,15 +122,12 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     # #######################################
     # Abberations after the AO Loop
 
-    wfo.loop_collection(aber.add_aber, params['tp'].aber_params, params['iop'].aberdir, PASSVALUE['iter'],
-                        lens_name='NCPA', zero_outside=True)
-    # quicklook_wf(wfo.wf_collection[0, 0], title='NCPA and obscure')
+    wfo.loop_collection(aber.add_aber, params['iop'].aberdir, PASSVALUE['iter'], lens_name='NCPA', zero_outside=True)
     wfo.loop_collection(proper.prop_circular_aperture, **{'radius': params['tp'].entrance_d / 2})
     # TODO does this need to be here?
     # wfo.loop_collection(opx.add_obscurations, params['tp'].entrance_d/4, legs=False)
     # wfo.wf_collection = aber.abs_zeros(wfo.wf_collection)
 
-    [quicklook_wf(wfo.wf_collection[i, 0], title=f'circ apertures {i}') for i in range(params['ap'].n_wvl_init)]
     wfo.loop_collection(opx.prop_pass_lens, params['tp'].lens_params[0]['focal_length'],
                         params['tp'].lens_params[0]['focal_length'], plane_name='pre_coron')
 

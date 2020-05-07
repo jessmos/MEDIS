@@ -94,14 +94,13 @@ def generate_maps(iop, aber_vals, lens_diam, lens_name='lens'):
             saveFITS(aber_cube[0], filename)
 
 
-def add_aber(wf, aber_params, aberdir=None, step=0, lens_name=None):
+def add_aber(wf, aberdir=None, step=0, lens_name=None):
     """
     loads a phase error map and adds aberrations using proper.prop_add_phase
     if no aberration file exists, creates one for specific lens using generate_maps
 
     :param wf: a single (2D) wfo.wf_collection[iw,io] at one wavelength and object
     :param d_lens: diameter (in m) of lens (only used when generating new aberrations maps)
-    :param aber_params: parameters specified by tp.aber_params
     :param step: is the step number for quasistatic aberrations
     :param lens_name: name of the lens, used to save/read in FITS file of aberration map
     :return returns nothing but will act upon a given wavefront and apply new or loaded-in aberration map
@@ -123,16 +122,8 @@ def add_aber(wf, aber_params, aberdir=None, step=0, lens_name=None):
     # if not os.path.isfile(filename):
     #     generate_maps(aber_vals, d_lens, lens_name)
 
-    if aber_params['Phase']:
-        phase_map = readFITS(filename)
-
-        # Add Phase Map
-        proper.prop_add_phase(wf, phase_map)
-
-    if aber_params['Amp']:
-        dprint("Outdated code-please update")
-        raise NotImplementedError
-
+    phase_map = readFITS(filename)
+    proper.prop_add_phase(wf, phase_map)     # Add Phase Map
 
 def add_zern_ab(wf, zern_order=[2,3,4], zern_vals=np.array([175,-150,200])*1.0e-9):
     """

@@ -198,7 +198,6 @@ class Telescope_params:
         self.servo_error = [0, 1]  # [0,1] # False # No delay and rate of 1/frame_time
         self.abertime = 0.5  # time scale of optic aberrations in seconds
 
-        self.aber_params = {'Phase': True, 'Amp': False}
         self.lens_params = None
 
         # Zernike Settings- see pg 192 for details

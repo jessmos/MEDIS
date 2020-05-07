@@ -190,16 +190,15 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     #######################################
     # Effective Primary
     # CPA from Effective Primary
-    wfo.loop_collection(aber.add_aber, tp.aber_params, step=PASSVALUE['iter'], lens_name='effective-primary')
+    wfo.loop_collection(aber.add_aber, step=PASSVALUE['iter'], lens_name='effective-primary')
     # Zernike Aberrations- Low Order
     # wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
     wfo.loop_collection(opx.prop_pass_lens, tp.flen_nsmyth, tp.dist_nsmyth_ao1)
-
     ########################################
     # AO188 Propagation
     ########################################
     # # AO188-OAP1
-    wfo.loop_collection(aber.add_aber, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP1')
+    wfo.loop_collection(aber.add_aber,  step=PASSVALUE['iter'], lens_name='ao188-OAP1')
     wfo.loop_collection(opx.prop_pass_lens, tp.fl_ao1, tp.dist_ao1_dm)
 
     # AO System
@@ -210,7 +209,7 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     wfo.loop_collection(proper.prop_propagate, tp.dist_dm_ao2)
 
     # AO188-OAP2
-    wfo.loop_collection(aber.add_aber, tp.aber_params, step=PASSVALUE['iter'], lens_name='ao188-OAP2')
+    wfo.loop_collection(aber.add_aber, step=PASSVALUE['iter'], lens_name='ao188-OAP2')
     # wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)
     wfo.loop_collection(opx.prop_pass_lens, tp.fl_ao2, tp.dist_oap2_focus)
 
@@ -219,7 +218,7 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     # #######################################
     # SCExAO DM
     # SXExAO Reimaging 1
-    # wfo.loop_collection(aber.add_aber, tp.d_ao1, tp.aber_params, OAP1_aber_vals,
+    # wfo.loop_collection(aber.add_aber, tp.d_ao1, OAP1_aber_vals,
     #                        step=PASSVALUE['iter'], lens_name='ao188-OAP1')
     wfo.loop_collection(proper.prop_propagate, tp.fl_sl)  # from AO188 focus to S-OAP1
     wfo.loop_collection(opx.prop_pass_lens, tp.fl_sl, tp.fl_sl)
@@ -232,11 +231,10 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     wfo.loop_collection(proper.prop_propagate, tp.fl_sl)
 
     # SXExAO Reimaging 2
-    # wfo.loop_collection(aber.add_aber, tp.d_ao2, tp.aber_params, OAP2_aber_vals,
+    # wfo.loop_collection(aber.add_aber, tp.d_ao2, OAP2_aber_vals,
     #                        step=PASSVALUE['iter'], lens_name='ao188-OAP2')
     # wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)
-    wfo.loop_collection(opx.prop_pass_lens, tp.fl_sl, tp.fl_sl)  #tp.dist_sl2_focus
-
+    wfo.loop_collection(opx.prop_pass_lens, tp.fl_sl, tp.fl_sl, plane_name='focus')  #tp.dist_sl2_focus
     # Coronagraph
     # settings should be put into tp, and are not implicitly passed here
     wfo.loop_collection(cg.coronagraph, occulter_mode=tp.cg_type, plane_name='coronagraph')
