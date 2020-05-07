@@ -15,7 +15,7 @@ TODO
 import numpy as np
 import os
 import proper
-import h5py
+from pathlib import Path
 
 class IO_params:
     """
@@ -28,8 +28,7 @@ class IO_params:
 
     def __init__(self, testname='example1'):  # you can update the testname with iop.update('your_testname')
                                             # and then run iop.mkdir()
-        self.datadir = '/home/captainkay/mazinlab/MKIDSim/CDIsim_data/'
-        # self.datadir = '/Users/dodkins/MKIDSim/'
+        self.datadir = f'{str(Path.home())}/MKIDSim/'
 
         self.prescriptions_root = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                                                'simulations')  # top level of where prescriptions found
@@ -116,7 +115,7 @@ class Simulation_params:
         # Reading/Saving Params
         self.save_to_disk = False  # Saves observation sequence (timestep, wavelength, x, y)
         self.save_list = ['detector']  # list of locations in optics train to save
-        self.memory_limit = 10e9  # number of bytes for sixcube of complex fields before chunking happens
+        self.memory_limit = 10  # number of giga-bytes for sixcube of complex fields before chunking happens
         self.checkpointing = None  # int or None number of timesteps before complex fields sixcube is saved
                                  # minimum of this and max allowed steps for memory reasons takes priority
         self.continuous_save = True
