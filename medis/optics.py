@@ -10,8 +10,11 @@ import proper
 import copy
 from scipy.interpolate import interp1d
 from scipy.ndimage import gaussian_filter
+import matplotlib.pylab as plt
+from matplotlib.colors import LogNorm
 from inspect import getframeinfo, stack
 
+from medis.twilight_colormaps import sunlight
 from medis.params import ap, tp, sp
 from medis.utils import dprint
 
@@ -43,9 +46,10 @@ class Wavefronts():
         we will call each instance of the collection a single wavefront wf
     self.save_E_fields: a matrix of E fields (proper.WaveFront.wfarr) at specified locations in the chain
     """
-    def __init__(self):
+    def __init__(self, debug=False):
 
         # Using Proper to propagate wavefront from primary through optical system, loop over wavelength
+        self.debug = debug
         self.wsamples = np.linspace(ap.wvl_range[0], ap.wvl_range[1], ap.n_wvl_init)  # units set in params (should be m)
         self.num_bodies = 1 + len(ap.contrast) if ap.companion else 1
         # wf_collection is an array of arrays; the wf_collection is (number_wavelengths x number_astro_bodies)
@@ -119,12 +123,12 @@ class Wavefronts():
         """
         if 'plane_name' in kwargs:
             plane_name = kwargs.pop('plane_name')  # remove plane_name from **kwargs
-            if plane_name not in sp.save_list:
-                plane_name = None
-        elif func.__name__ in sp.save_list:
-            plane_name = func.__name__
+            # if plane_name not in sp.save_list:
+            #     plane_name = None
+        elif 'lens_name' in kwargs:
+            plane_name = kwargs['lens_name']
         else:
-            plane_name = None
+            plane_name = func.__name__
 
         zero_outside = kwargs.pop('zero_outside') if 'zero_outside' in kwargs else False
 
@@ -139,20 +143,20 @@ class Wavefronts():
             for io, wavefront in enumerate(sources):
                 manipulator_output[io][iw] = func(wavefront, *args, **kwargs)
 
+        if self.debug:
+            self.quicklook(title=plane_name)
+
         manipulator_output = np.array(manipulator_output)
         # if there's at least one not np.nan element add this array to the Wavefronts obj
         if np.any(manipulator_output != None):
-            if plane_name:
-                setattr(self, plane_name, manipulator_output)
-            else:
-                setattr(self, func.__name__, manipulator_output)
+            setattr(self, plane_name, manipulator_output)
 
         if zero_outside:
-            print(f'Zeroing outside the beam after {func.__name__}')
+            print(f'Zeroing outside the beam after {plane_name}')
             self.abs_zeros()
 
         # Saving complex field data after function is applied
-        if plane_name is not None:
+        if plane_name in sp.save_list:
             self.save_plane(location=plane_name)
 
     def save_plane(self, location=None):
@@ -207,10 +211,53 @@ class Wavefronts():
     def abs_zeros(self):
         for iw in range(len(self.wsamples)):
             for io in range(self.num_bodies):
-                proper.prop_circular_aperture(self.wf_collection[iw, io], tp.entrance_d / 2)
+                proper.prop_circular_aperture(self.wf_collection[iw, io], 1, NORM=True)
                 bad_locs = np.logical_or(np.real(self.wf_collection[iw, io].wfarr) == -0,
                                          np.imag(self.wf_collection[iw, io].wfarr) == -0)
                 self.wf_collection[iw, io].wfarr[bad_locs] = 0 + 0j
+
+    def quicklook(self, wf=None, logZ=True, show=True, title=None):
+        """
+        Produces a figure with an image of amplitude and one of phase as well as 1D slices through these images
+
+        :param wf: optics.Wavefront
+        :param logZ: bool logarithmic Z scaling
+        :param show: bool display figure now or leave show() to be called by user later on
+        :param title: str
+        :return:
+        """
+        if wf == None:
+            wf = self.wf_collection[0,0]
+
+        after_dm = proper.prop_get_amplitude(wf)
+        phase_afterdm = proper.prop_get_phase(wf)
+
+        fig = plt.figure(figsize=(12, 10))
+        ax1 = plt.subplot2grid((3, 2), (0, 0), rowspan=2)
+        ax2 = plt.subplot2grid((3, 2), (0, 1), rowspan=2)
+        ax3 = plt.subplot2grid((3, 2), (2, 0))
+        ax4 = plt.subplot2grid((3, 2), (2, 1))
+        if logZ:
+            ax1.imshow(after_dm, origin='lower', cmap="YlGnBu_r", norm=LogNorm())
+        else:
+            ax1.imshow(after_dm, origin='lower', cmap="YlGnBu_r")
+        ax2.imshow(phase_afterdm, origin='lower', cmap=sunlight)  # , vmin=-0.5, vmax=0.5)
+
+        ax3.plot(after_dm[int(sp.grid_size / 2)])
+        ax3.plot(np.sum(np.eye(sp.grid_size) * after_dm, axis=1))
+
+        # plt.plot(np.sum(after_dm,axis=1)/after_dm[128,128])
+
+        ax4.plot(phase_afterdm[int(sp.grid_size / 2)])
+        # ax4.plot(np.sum(np.eye(ap.grid_size)*phase_afterdm,axis=1))
+        plt.xlim([0, proper.prop_get_gridsize(wf)])
+        if title:
+            fig.suptitle(f"{title}, {wf.lamda}, {wf.name}", fontsize=18)
+
+        plt.subplots_adjust(top=0.9)
+
+        if show:
+            plt.show(block=True)
 
 ####################################################################################################
 # Functions Relating to Processing Complex Cubes

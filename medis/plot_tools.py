@@ -11,7 +11,6 @@ import matplotlib.ticker as ticker
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import ImageGrid
 import warnings
-import proper
 
 from medis.params import tp, sp, iop, ap, cdip
 from medis.utils import dprint
@@ -475,47 +474,6 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
         # fig.tight_layout(pad=50)
 
     plt.show(block=True)
-
-
-def quicklook_wf(wf, logZ=True, show=True, title=None):
-    """
-    Produces a figure with an image of amplitude and one of phase as well as 1D slices through these images
-
-    :param wf: optics.Wavefront
-    :param logZ: bool logarithmic Z scaling
-    :param show: bool display figure now or leave show() to be called by user later on
-    :param title: str
-    :return:
-    """
-    after_dm = proper.prop_get_amplitude(wf)
-    phase_afterdm = proper.prop_get_phase(wf)
-
-    fig = plt.figure(figsize=(14, 10))
-    ax1 = plt.subplot2grid((3, 2), (0, 0), rowspan=2)
-    ax2 = plt.subplot2grid((3, 2), (0, 1), rowspan=2)
-    ax3 = plt.subplot2grid((3, 2), (2, 0))
-    ax4 = plt.subplot2grid((3, 2), (2, 1))
-    if logZ:
-        ax1.imshow(after_dm, origin='lower', cmap="YlGnBu_r", norm=LogNorm())
-    else:
-        ax1.imshow(after_dm, origin='lower', cmap="YlGnBu_r")
-    ax2.imshow(phase_afterdm, origin='lower', cmap=sunlight)  # , vmin=-0.5, vmax=0.5)
-
-    ax3.plot(after_dm[int(sp.grid_size / 2)])
-    ax3.plot(np.sum(np.eye(sp.grid_size) * after_dm, axis=1))
-
-    # plt.plot(np.sum(after_dm,axis=1)/after_dm[128,128])
-
-    ax4.plot(phase_afterdm[int(sp.grid_size / 2)])
-    # ax4.plot(np.sum(np.eye(ap.grid_size)*phase_afterdm,axis=1))
-    plt.xlim([0, proper.prop_get_gridsize(wf)])
-    if title:
-        fig.suptitle(title, fontsize=18)
-
-    fig.set_tight_layout(True)
-
-    if show:
-        plt.show(block=True)
 
 # def grid(datacube, nrows=2, logZ=False, axis=None, width=None, titles=None, ctitles=None, annos=None,
 #          scale=1, vmins=None, vmaxs=None, show=True):
