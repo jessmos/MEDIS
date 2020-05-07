@@ -7,14 +7,25 @@ import astropy.io.fits as afits
 from medis.params import sp, ap, tp, iop
 
 
-def dprint(*message):
+def dprint(*message, path_display=-3):
     """
     prints location of code where message is printed from
 
-    >>> dprint('foo', 'bar')
+    >>> dprint('foo', 5000, (), np.arange(9).reshape(3,3))
+    MEDIS++/medis/optics.py:173 - lol, 5000, (), [[0 1 2]
+    [3 4 5]
+    [6 7 8]]
+
+    path_to_display : integer number of folders back from the module location to display in printed statement
     """
     caller = getframeinfo(stack()[1][0])
-    print("%s:%d - %s" % (caller.filename, caller.lineno, message))
+    message_str = ''
+    for mess in message:
+        message_str += f'{mess}, '
+    message_str = message_str[:-2]
+
+    reduced_filename = '/'.join(caller.filename.split('/')[path_display:])
+    print("%s:%d - %s" % (reduced_filename, caller.lineno, message_str))
 
 
 def phase_cal(wavelengths):
