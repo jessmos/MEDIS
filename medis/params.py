@@ -152,7 +152,7 @@ class Astro_params:
         # given by ap.n_wvl_init. Later, in gen_timeseries(), the 3rd axis of the spectral cube is interpolated so that
         # there are ap.n_wvl_final over the range in ap.wvl_range.
         self.n_wvl_init = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
-        self.n_wvl_final = 5  # final number of wavelength bins in spectral cube after interpolation
+        self.n_wvl_final = None  # final number of wavelength bins in spectral cube after interpolation (None sets equal to n_wvl_init)
         self.interp_wvl = True  # Set to interpolate wavelengths from ap.n_wvl_init to ap.n_wvl_final
         self.wvl_range = np.array([800, 1500]) / 1e9  # wavelength range in [m] (formerly ap.band)
             # eg. DARKNESS band is [800, 1500], J band =  [1100,1400])
