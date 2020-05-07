@@ -51,7 +51,7 @@ params['tp'].occult_loc = [0,0]
 # Saving
 params['sp'].save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
 params['sp'].save_list = ['detector']  # list of locations in optics train to save
-params['sp'].skip_planes = ['coronagraph']  # ['wfs', 'deformable mirror']  # list of locations in optics train to save
+# params['sp'].skip_planes = ['coronagraph']  # ['wfs', 'deformable mirror']  # list of locations in optics train to save
 params['sp'].quick_detect = True
 params['sp'].debug = False
 params['sp'].verbose = True

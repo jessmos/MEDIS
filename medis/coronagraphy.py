@@ -191,12 +191,13 @@ class Vortex():
                 if (Debug_print == True):
                     print ("Charge ", charge)
 
+                f_lens = 200.0 * tp.entrance_d
                 wf1 = proper.prop_begin(tp.entrance_d, wavelength, gridsize, beam_ratio)
                 proper.prop_circular_aperture(wf1, tp.entrance_d / 2)
                 proper.prop_define_entrance(wf1)
-                proper.prop_propagate(wf1, tp.f_lens, 'inizio')  # propagate wavefront
-                proper.prop_lens(wf1, tp.f_lens, 'focusing lens vortex')  # propagate through a lens
-                proper.prop_propagate(wf1, tp.f_lens, 'VC')  # propagate wavefront
+                proper.prop_propagate(wf1, f_lens, 'inizio')  # propagate wavefront
+                proper.prop_lens(wf1, f_lens, 'focusing lens vortex')  # propagate through a lens
+                proper.prop_propagate(wf1, f_lens, 'VC')  # propagate wavefront
 
                 self.writefield(coron_temp, 'zz_psf_' + calib, wf1.wfarr)  # write the pre-vortex field
                 nramp = int(n * ramp_oversamp)  # oversamp
@@ -224,13 +225,13 @@ class Vortex():
                 self.writefield(coron_temp, 'zz_vvc_' + calib, vvc)  # write the theoretical vortex field
 
                 proper.prop_multiply(wf1, vvc)
-                proper.prop_propagate(wf1, tp.f_lens, 'OAP2')
-                proper.prop_lens(wf1, tp.f_lens)
-                proper.prop_propagate(wf1, tp.f_lens, 'forward to Lyot Stop')
+                proper.prop_propagate(wf1, f_lens, 'OAP2')
+                proper.prop_lens(wf1, f_lens)
+                proper.prop_propagate(wf1, f_lens, 'forward to Lyot Stop')
                 proper.prop_circular_obscuration(wf1, 1., NORM=True)  # null the amplitude iside the Lyot Stop
-                proper.prop_propagate(wf1, -tp.f_lens)  # back-propagation
-                proper.prop_lens(wf1, -tp.f_lens)
-                proper.prop_propagate(wf1, -tp.f_lens)
+                proper.prop_propagate(wf1, -f_lens)  # back-propagation
+                proper.prop_lens(wf1, -f_lens)
+                proper.prop_propagate(wf1, -f_lens)
                 self.writefield(coron_temp, 'zz_perf_' + calib, wf1.wfarr)  # write the perfect-result vortex field
 
                 vvc = self.readfield(coron_temp, 'zz_vvc_' + calib)
