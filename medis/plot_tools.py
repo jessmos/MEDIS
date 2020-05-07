@@ -98,7 +98,7 @@ def body_spectra(fields, title='body spectra', logZ=False, show=True, nstd=1, vl
     """
     fields = np.array(fields)  # just in case its a list
     assert fields.ndim > 2
-    if np.iscomplex(fields.flat[0]):
+    if np.iscomplexobj(fields.flat[0]):
         fields = np.abs(fields)**2  # convert to intensity if complex
     if len(fields.shape) == 6:
         fields = fields[:, -1]  # slice out detector plane if not done already
