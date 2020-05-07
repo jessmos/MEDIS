@@ -80,8 +80,9 @@ class RunMedis():
 
         self.params['iop'].update(self.name)
 
-        if self.params['sp'].debug:
-            for param in [self.params['iop']]:
+        if params['sp'].verbose:
+            for param in params.values():
+                print(f'\n\t {param.__name__()}')
                 pprint(param.__dict__)
 
         # always make the top level directory if it doesn't exist yet
