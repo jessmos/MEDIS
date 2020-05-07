@@ -18,7 +18,7 @@ from medis.distribution import *
 from medis.utils import dprint
 from medis.plot_tools import view_spectra
 from medis.telescope import Telescope
-from medis.plot_tools import body_spectra, quick2D
+from medis.plot_tools import grid, quick2D
 
 
 class Camera():
@@ -652,7 +652,7 @@ class Camera():
         if plot:
             cube = self.make_datacube_from_list(photons.T)
             print(cube.shape)
-            body_spectra(cube, logZ=True, title='sampled')
+            grid(cube, logZ=True, title='sampled')
 
         if self.params['mp'].phase_uncertainty:
             photons[1] *= self.responsivity_error_map[np.int_(photons[2]), np.int_(photons[3])]

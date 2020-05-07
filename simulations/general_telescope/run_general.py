@@ -14,7 +14,7 @@ from medis.params import params
 # from medis.params import iop, sp, ap, tp, cdip
 from medis.utils import dprint
 # import medis.optics as opx
-from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes, body_spectra
+from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes, grid
 import medis.medis_main as mm
 
 
@@ -72,4 +72,4 @@ if __name__ == '__main__':
         print(stackcube.shape)
         datacube = stackcube[o]
         print(o, datacube.shape)
-        body_spectra(datacube, logZ=True, title='Spectral Channels')
+        grid(datacube, logZ=True, title='Spectral Channels')

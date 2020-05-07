@@ -12,7 +12,7 @@ import h5py
 
 import proper
 import medis.atmosphere as atmos
-from medis.plot_tools import body_spectra
+from medis.plot_tools import grid
 import medis.CDI as cdi
 import medis.utils as mu
 import medis.optics as opx
@@ -141,6 +141,9 @@ class Telescope():
 
             if self.params['ap'].companion is False:
                 self.params['ap'].contrast = []
+
+            if not isinstance(self.params['ap'].n_wvl_final, int):
+                self.params['ap'].n_wvl_final = self.params['ap'].n_wvl_init
 
             # determine if can/should do all in memory
             max_steps = self.max_chunk()
@@ -334,4 +337,4 @@ if __name__ == '__main__':
     telescope_sim = Telescope(params)
     dataproduct = telescope_sim()
     print(dataproduct.keys())
-    body_spectra(dataproduct['fields'], logZ=True, nstd=5)
+    grid(dataproduct['fields'], logZ=True, nstd=5)

@@ -11,7 +11,7 @@ from matplotlib.colors import LogNorm
 
 from medis.medis_main import RunMedis
 from medis.utils import dprint
-from medis.plot_tools import quick2D, body_spectra
+from medis.plot_tools import quick2D, grid
 from medis.twilight_colormaps import sunlight
 from medis.params import params
 
@@ -21,8 +21,8 @@ params['ap'].n_wvl_init = 1
 params['ap'].n_wvl_final = 1
 params['tp'].cg_type = 'Vortex'
 params['sp'].sample_time = 0.5e-3
-params['sp'].grid_size = 256
-params['sp'].grid_size = 1024
+params['sp'].grid_size = 512
+# params['sp'].grid_size = 1024
 params['sp'].star_flux = 1e9
 params['tp'].satelite_speck = False
 params['sp'].beam_ratio = 0.15
@@ -47,7 +47,7 @@ def investigate_fields():
     print(observation.keys(), )
 
     fields = observation['fields']
-    body_spectra(fields, logZ=True, nstd=2, show=False)
+    grid(fields, logZ=True, nstd=2, show=False)
     spectral_train_phase = np.angle(fields[0, :-2, :, 0])
     spectral_train_amp = np.abs(fields[0, -2:, :, 0] ** 2)
     spectral_train_grid = np.concatenate((spectral_train_phase,spectral_train_amp), axis=0)
@@ -70,7 +70,7 @@ def investigate_stats():
 
     fields = np.abs(observation['fields'][:,-1])**2
     timecube = np.sum(fields[:,0], axis=1)
-    body_spectra([np.sum(timecube, axis=0)], show=False)
+    grid([np.sum(timecube, axis=0)], show=False)
 
     locs = [[210,210], [256,256], [256,206], [256,512-206]]
     names = ['satelite', 'star', 'planet', 'speckle']
@@ -134,7 +134,7 @@ def investigate_quantized():
         params['iop'].aberdir = os.path.join(params['iop'].datadir, name, params['iop'].aberroot, atmosdir)
         observation = sim()
         print(observation.keys(), observation['photons'].shape, observation['stackcube'].shape)
-        body_spectra(observation['stackcube'][0], logZ=True, nstd=10, show=False, vlim=(0,2))
+        grid(observation['stackcube'][0], logZ=True, nstd=10, show=False, vlim=(0,2))
         timecube = np.sum(observation['stackcube'], axis=1)
         # plot_stats(timecube, locs, names)
         bins_list, I_list, timesamps, lc_list = pixel_stats(timecube, locs[2])
