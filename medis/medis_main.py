@@ -29,6 +29,7 @@ import pickle
 import shutil
 from datetime import datetime
 import h5py
+from pprint import pprint
 
 
 import proper
@@ -133,13 +134,13 @@ class RunMedis():
 
     def __call__(self, *args, **kwargs):
         if self.product == 'fields':
-            telescope_sim = Telescope(self.params)  # checking of class's cache etc is left to the class
-            dataproduct = telescope_sim()
+            self.telescope = Telescope(self.params)  # checking of class's cache etc is left to the class
+            dataproduct = self.telescope()
 
         if self.product == 'photons':
-            camera_sim = Camera(self.params)  # creating fields is left to Camera since fields only needs to be created
+            self.camera = Camera(self.params, usesave=True)  # creating fields is left to Camera since fields only needs to be created
                                               # if camera.pkl does not exist
-            dataproduct = camera_sim()
+            dataproduct = self.camera()
 
         return dataproduct
 
