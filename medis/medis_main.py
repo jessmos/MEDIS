@@ -139,7 +139,7 @@ class RunMedis():
             dataproduct = self.telescope()
 
         if self.product == 'photons':
-            self.camera = Camera(self.params, usesave=True)  # creating fields is left to Camera since fields only needs to be created
+            self.camera = Camera(self.params, usesave=self.params['sp'].save_to_disk)  # creating fields is left to Camera since fields only needs to be created
                                               # if camera.pkl does not exist
             dataproduct = self.camera()
 

@@ -104,6 +104,7 @@ class Simulation_params:
         self.ao_delay = 1  # [tstep] number of timesteps of delay for closed loop AO
         self.startframe = 0  # useful for things like RDI
         self.numframes = 1  # number of timesteps in the simulation
+        self.quick_detect = False  # generate mkid spectral cube sequence by spatial scaling and intensity scaling datacube (no photon quantization or arteacts)
 
         # Plotting Params
         self.show_spectra = False  # Plot spectral cube at single timestep

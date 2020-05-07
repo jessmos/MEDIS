@@ -118,9 +118,14 @@ class Camera():
                 print('step', step)
                 spectralcube = np.abs(np.sum(self.fields[step, -1, :, :], axis=1)) ** 2
                 # view_spectra(spectralcube, logZ=True)
-                step_packets = self.get_packets(spectralcube, step)
-                self.photons = np.vstack((self.photons, step_packets))
-                cube = self.make_datacube_from_list(step_packets)
+                if not self.params['sp'].quick_detect:
+                    step_packets = self.get_packets(spectralcube, step)
+                    self.photons = np.vstack((self.photons, step_packets))
+                    cube = self.make_datacube_from_list(step_packets)
+                else:
+                    cube = self.get_ideal_cube(spectralcube)
+                    # self.photons = self.get_ideal_photons(cube, step)
+                    self.photons = np.array([[np.nan, np.nan, np.nan, np.nan]])
                 self.stackcube[step] = cube
 
             if self.usesave:
@@ -555,6 +560,19 @@ class Camera():
                     # events = events[timesort]
                     # sep = events[:, 0] - np.roll(events[:, 0], 1, 0)
         return photons.T
+
+    def get_ideal_photons(self, cube, step):
+        raise NotImplementedError
+        ncounts = np.sum(cube)
+        photons = np.zeros((ncounts, 4))
+        photons[:,0] = step*self.params['sp'].sample_time
+        for iw, slice in enumerate(cube):
+            nslicecounts = np.sum(cube)
+            photons[:, iw*nslicecounts:(iw+1)*nslicecounts] = self.params['ap'].wvl_samp[iw]
+            for x in self.params['mp'].array_size[0]:
+                for y in self.params['mp'].array_size[1]:
+                    npixcounts = slice[x,y]
+                    photons[:,:,x*npixcounts:(x+1)*npixcounts,y*npixcounts:(y+1)*npixcounts] = [x,y]
 
     def get_ideal_cube(self, datacube):
         if self.params['mp'].resamp:
