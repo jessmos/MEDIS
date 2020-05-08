@@ -26,15 +26,15 @@ class IO_params:
     to be generated, so are also included in filenames
     """
 
-    def __init__(self, testname='example1'):  # you can update the testname with iop.update('your_testname')
-                                            # and then run iop.mkdir()
-        self.datadir = f'{str(Path.home())}/MKIDSim/'
+    def __init__(self, datadir=f'{str(Path.home())}/MKIDSim/', testname='example1'):
+        # you can update the datadir and testname with iop.update_testname('your_testname') and then run iop.mkdir()
+        self.datadir = datadir
 
         self.prescriptions_root = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                                                'simulations')  # top level of where prescriptions found
 
         # Unprocessed Science Data
-        self.testname = testname  # set this up in the definition line, but can update it with iop.update('newname')
+        self.testname = testname  # set this up in the definition line, but can update it with iop.update_testname('newname')
         self.testdir = os.path.join(self.datadir,
                                   self.testname)  # Save results in new sub-directory
         self.params_logs = os.path.join(self.testdir, 'params.pkl')
@@ -59,8 +59,13 @@ class IO_params:
 
         self.device = os.path.join(self.testdir, 'device.pkl')  # detector metadata
 
-    def update(self, new_name='example2'):
+    def update_testname(self, new_name='example2'):
         self.__init__(testname=new_name)
+
+    def update_datadir(self, new_root=f'{str(Path.home())}/MKIDSim/'):
+        """Update base directory where  simulation data and output files are saved.
+        Remove old directory tree first if empty"""
+        self.__init__(datadir=new_root)
 
     def makedir(self):
         #print(self.datadir, self.testdir,  self.scidir)
@@ -75,6 +80,7 @@ class IO_params:
 
     def __name__(self):
         return self.__str__().split(' ')[0].split('.')[-1]
+
 
 class Simulation_params:
     """
@@ -349,6 +355,7 @@ class Atmos_params():
 
     def __name__(self):
         return self.__str__().split(' ')[0].split('.')[-1]
+
 
 # Creating class structures
 ap = Astro_params()
