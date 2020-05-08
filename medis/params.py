@@ -29,7 +29,6 @@ class IO_params:
     def __init__(self, datadir=f'{str(Path.home())}/MKIDSim/', testname='example1'):
         # you can update the datadir and testname with iop.update_testname('your_testname') and then run iop.mkdir()
         self.datadir = datadir
-        print(f"updating datadir to {datadir}")
         self.prescriptions_root = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                                                'simulations')  # top level of where prescriptions found
 
