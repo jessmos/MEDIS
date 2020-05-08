@@ -38,7 +38,7 @@ import medis.coronagraphy as cg
 #################################################################################################
 #################################################################################################
 #################################################################################################
-# iop.update('SCExAO-dummy-save')
+# iop.update_testname('SCExAO-dummy-save')
 
 # Defining Subaru parameters
 # ----------------------------
@@ -169,7 +169,7 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
 
     # Defines aperture (baffle-before primary)
     # Obscurations (Secondary and Spiders)
-    wfo.loop_collection(opx.add_obscurations, d_primary=tp.d_nsmyth, d_secondary=tp.d_secondary, legs_frac=0.05)
+    wfo.loop_collection(opx.add_obscurations, d_primary=tp.entrance_d, d_secondary=tp.d_secondary, legs_frac=0.05)
     wfo.loop_collection(proper.prop_circular_aperture,
                         **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
     wfo.loop_collection(proper.prop_define_entrance, plane_name='entrance_pupil')  # normalizes abs intensity
@@ -204,7 +204,7 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     # AO System
     if tp.use_ao:
         WFS_map = ao.open_loop_wfs(wfo)
-        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'],  None, tp, plane_name='woofer')  # don't use PASSVALUE['WFS_map'] here because open loop
+        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], None, plane_name='woofer')  # don't use PASSVALUE['WFS_map'] here because open loop
     # ------------------------------------------------
     wfo.loop_collection(proper.prop_propagate, tp.dist_dm_ao2)
 

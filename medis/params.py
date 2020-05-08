@@ -29,7 +29,7 @@ class IO_params:
     def __init__(self, datadir=f'{str(Path.home())}/MKIDSim/', testname='example1'):
         # you can update the datadir and testname with iop.update_testname('your_testname') and then run iop.mkdir()
         self.datadir = datadir
-
+        print(f"updating datadir to {datadir}")
         self.prescriptions_root = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                                                'simulations')  # top level of where prescriptions found
 
@@ -60,12 +60,12 @@ class IO_params:
         self.device = os.path.join(self.testdir, 'device.pkl')  # detector metadata
 
     def update_testname(self, new_name='example2'):
-        self.__init__(testname=new_name)
+        self.__init__(datadir=self.datadir, testname=new_name)
 
     def update_datadir(self, new_root=f'{str(Path.home())}/MKIDSim/'):
         """Update base directory where  simulation data and output files are saved.
         Remove old directory tree first if empty"""
-        self.__init__(datadir=new_root)
+        self.__init__(datadir=new_root, testname=self.testname)
 
     def makedir(self):
         #print(self.datadir, self.testdir,  self.scidir)

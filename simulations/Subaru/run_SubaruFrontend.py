@@ -15,7 +15,8 @@ specific prescription than the original optics_propagate, which had more toggles
 """
 import numpy as np
 
-from medis.params import iop, sp, ap, tp, cdip
+
+from medis.params import iop, sp, ap, tp, cdip, atmp, mp
 from medis.utils import dprint
 import medis.optics as opx
 from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
@@ -24,9 +25,11 @@ import medis.medis_main as mm
 #################################################################################################
 #################################################################################################
 #################################################################################################
-testname = 'Subaru-test2'
-iop.update(testname)
+# Renaming Directories
+iop.update_datadir('/home/captainkay/mazinlab/MKIDSim/CDIsim_data/')
+iop.update_testname('Subaru-test2')
 iop.makedir()
+dprint(f"im executing")
 
 # Telescope
 tp.prescription = 'Subaru_frontend'
@@ -68,12 +71,23 @@ sp.show_planes = True
 sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
 sp.save_list = ['atmosphere', 'entrance_pupil', 'woofer', 'detector']  # list of locations in optics train to save
 
+dprint(f"iop.datadir = {iop.datadir}")
+dprint(f"iop.testname = {iop.testname}")
+
+params = {'ap':ap, 'tp':tp, 'atmp':atmp, 'cdip':cdip, 'iop':iop, 'sp':sp, 'mp':mp}
+
 
 if __name__ == '__main__':
     # =======================================================================
     # Run it!!!!!!!!!!!!!!!!!
     # =======================================================================
-    cpx_sequence, sampling = mm.RunMedis().telescope()
+    dprint(f"iop.datadir = {iop.datadir}")
+    sim = mm.RunMedis(params=params, name='AO188', product='fields')
+    # cpx_sequence, sampling = mm.RunMedis().telescope()
+
+    observation = sim()
+    cpx_sequence = observation['fields']
+    sampling = observation['sampling']
 
     # =======================================================================
     # Focal Plane Processing

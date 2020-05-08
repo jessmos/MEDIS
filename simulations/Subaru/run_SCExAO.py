@@ -19,11 +19,9 @@ import medis.medis_main as mm
 #################################################################################################
 #################################################################################################
 #################################################################################################
-# testname = input("Please enter test name: ")
-# testname = 'SCExAO-test1'
-# params['iop'].update(testname)
-# # dprint(f"params['iop'] name = {params['iop'].testname}")
-# params['iop'].makedir()
+# iop.update_root(f"/home/captainkay/mazinlab/MKIDSim/CDIsim_data/")
+# iop.update_testname('Subaru-test2')
+# iop.makedir()
 
 # Telescope
 params['tp'].prescription = 'Subaru_SCExAO'
@@ -36,7 +34,7 @@ params['sp'].closed_loop = False
 
 # Grid Parameters
 params['sp'].focused_sys = True
-params['sp'].beam_ratio = 0.18  # parameter dealing with the sampling of the beam in the pupil/focal plane
+params['sp'].beam_ratio = 0.2  # parameter dealing with the sampling of the beam in the pupil/focal plane
 params['sp'].grid_size = 512  # creates a nxn array of samples of the wavefront
 params['sp'].maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
 
@@ -44,6 +42,12 @@ params['sp'].maskd_size = 256  # will truncate grid_size to this range (avoids F
 params['ap'].companion = False
 params['ap'].contrast = [1e-1]
 params['ap'].companion_xy = [[5, -5]]  # units of this are lambda/params['tp'].entrance_d
+params['ap'].n_wvl_init = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
+params['ap'].n_wvl_final = None  # final number of wavelength bins in spectral cube after interpolation (None sets equal to n_wvl_init)
+params['ap'].interp_wvl = False  # Set to interpolate wavelengths from ap.n_wvl_init to ap.n_wvl_final
+params['ap'].wvl_range = np.array([800, 1400]) / 1e9  # wavelength range in [m] (formerly ap.band)
+# eg. DARKNESS band is [800, 1500], J band =  [1100,1400])
+
 
 # Toggles for Aberrations and Control
 params['tp'].obscure = False
@@ -62,7 +66,7 @@ params['sp'].show_planes = True
 
 # Saving
 params['sp'].save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
-params['sp'].save_list = ['atmosphere', 'entrance_pupil','woofer',  'detector']  # list of locations in optics train to save
+params['sp'].save_list = ['atmosphere', 'entrance_pupil','woofer', 'focus', 'coronagraph', 'detector']  # list of locations in optics train to save
 
 if __name__ == '__main__':
     # =======================================================================
@@ -123,9 +127,9 @@ if __name__ == '__main__':
 
     # Plotting Selected Plane
     if params['sp'].show_planes:
-        # vlim = ((None, None), (None, None), (None, None), (None, None), (None, None))
-        vlim = [(None,None), (None,None), (None,None), (None,None)]  # (1e-2,1e-1) (7e-4, 6e-4)
-        logZ = [True, False, False, True]
+        vlim = [(None, None), (None, None), (None, None), (None, None), (None, None), (None, None)]
+        # vlim = [(None,None), (None,None), (None,None), (None,None)]  # (1e-2,1e-1) (7e-4, 6e-4)
+        logZ = [True, False, False, True, True, True]
         if params['sp'].save_list:
             plot_planes(cpx_sequence,
                         title=f"White Light through Optical System",
