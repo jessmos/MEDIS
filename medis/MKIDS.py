@@ -517,7 +517,7 @@ class Camera():
                     idx = 0
                     while idx != None:
                         these_times = events[idx:, 0] - events[idx, 0]
-                        detect, _ = next(((i, v) for (i, v) in enumerate(these_times) if v > mp.dead_time),
+                        detect, _ = next(((i, v) for (i, v) in enumerate(these_times) if v > self.params['mp'].dead_time),
                                          (None, None))
                         if detect != None:
                             detect += idx
@@ -589,7 +589,12 @@ class Camera():
             datacube = mkid_cube
 
         datacube[datacube < 0] *= -1
-        datacube *= int(self.params['ap'].star_flux * self.params['sp'].sample_time * np.sum(datacube))
+        num_events = int(self.params['ap'].star_flux * self.params['sp'].sample_time * np.sum(datacube))
+
+        if self.params['sp'].verbose:
+            print(f"star flux: {self.params['ap'].star_flux}, cube sum: {np.sum(datacube)}, num events: {num_events}")
+
+        datacube *= num_events
         return datacube
 
     def get_packets(self, datacube, step, plot=False):
