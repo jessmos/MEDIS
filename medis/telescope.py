@@ -131,7 +131,9 @@ class Telescope():
             # check if can do parrallel
             if params['sp'].closed_loop or params['sp'].ao_delay:
                 print(f"closed loop or ao delay means sim can't be parrallelized in time domain. Forcing serial mode")
-                params['sp'].parrallel = False
+                self.parrallel = False
+            else:
+                self.parrallel = self.params['sp'].num_processes > 1
 
             # ensure contrast is set properly
             if self.params['sp'].quick_companions:
@@ -158,17 +160,17 @@ class Telescope():
                 print('Simulated data too large for dynamic memory. Storing to disk as the sim runs')
                 self.params['sp'].chunking = True
 
-            #todo remove the hard coding
-            self.params['sp'].chunking = True
-            self.params['sp'].parrallel = False
-            self.params['sp'].ao_delay = False
-            self.params['sp'].closed_loop = False
+            self.markov = self.params['sp'].chunking or self.parrallel  # independent timesteps
+            nonmarkov = self.params['sp'].ao_delay or self.params['sp'].closed_loop  # dependent timesteps
+            # if both true
+            assert self.markov + nonmarkov != 2, "Confliciting modes. Request requires the timesteps be both dependent and independent"
 
-            self.markov = self.params['sp'].chunking or self.params['sp'].parrallel  # independent timesteps
-            assert np.logical_xor(self.markov, self.params['sp'].ao_delay or self.params['sp'].closed_loop), \
-                "Confliciting modes. Request requires the timesteps be both dependent and independent"
+            # neither true
+            if self.markov + nonmarkov == 0:
+                print("No mode specfified defaulting to markov (time independent)")
+                self.markov = True
 
-            modes = [self.params['sp'].chunking, self.params['sp'].ao_delay, self.params['sp'].parrallel,
+            modes = [self.params['sp'].chunking, self.params['sp'].ao_delay, self.parrallel,
                      self.params['sp'].closed_loop]
 
             # Initialize CDI probes
@@ -332,7 +334,7 @@ class Telescope():
 
 if __name__ == '__main__':
     from medis.params import params
-    params['iop'].update('test')
+    params['iop'].update_testname('test')
 
     telescope_sim = Telescope(params)
     dataproduct = telescope_sim()
