@@ -51,7 +51,7 @@ def make_speckle_kxy(kx, ky, amp, dm_phase):
 ################################################################################
 # Deformable Mirror
 ################################################################################
-def deformable_mirror(wf, WFS_map, iter, previous_output, tp, apodize=True, plane_name=None):
+def deformable_mirror(wf, WFS_map, iter, previous_output, apodize=True, plane_name=None):
     """
     combine different DM actuator commands into single map to send to prop_dm
 
@@ -115,14 +115,11 @@ def deformable_mirror(wf, WFS_map, iter, previous_output, tp, apodize=True, plan
     # Waffle
     #########
 
-    # if tp.satelite_speck and plane_name is not 'woofer':
-        #TODO Rupert don't hardcode params in this file
-        # phase = np.pi / 5.  <-- like this
-        # s_amp = 12e-9 <-- like this
-        # xloc, yloc = 12, 12 <-- like this
-        # waffle = make_speckle_kxy(xloc, yloc, s_amp, phase)
-        # waffle += make_speckle_kxy(xloc, -yloc, s_amp, phase)
-        # dm_map += waffle
+    if tp.satelite_speck['apply'] and plane_name is not 'woofer':
+        # TODO Rupert don't hardcode params in this file
+        waffle = make_speckle_kxy(tp.satelite_speck['xloc'], tp.satelite_speck['yloc'], tp.satelite_speck['amp'], tp.satelite_speck['phase'])
+        waffle += make_speckle_kxy(tp.satelite_speck['xloc'], -tp.satelite_speck['yloc'], tp.satelite_speck['amp'], tp.satelite_speck['phase'])
+        dm_map += waffle
 
     #######
     # CDI
@@ -144,6 +141,7 @@ def deformable_mirror(wf, WFS_map, iter, previous_output, tp, apodize=True, plan
     #########################
     # proper.prop_dm
     #########################
+    sp.debug = False
     if sp.debug: pre_ao = unwrap_phase(proper.prop_get_phase(wf)) * wf.lamda / (2 * np.pi)
 
     dmap = proper.prop_dm(wf, dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
@@ -161,7 +159,7 @@ def deformable_mirror(wf, WFS_map, iter, previous_output, tp, apodize=True, plan
         quick2D(pre_ao + (2*dmap), title='diff', show=False, vlim=(-0.5e-7,0.5e-7))
         quick2D(post_ao, title='post_ao', show=False, vlim=(-0.5e-7,0.5e-7))
         quick2D(proper.prop_get_phase(wf), title='post_ao', show=True)
-
+    sp.debug = False
     # check_sampling(0, wfo, "E-Field after DM", getframeinfo(stack()[0][0]), units='um')  # check sampling from optics.py
 
     # apodize_pupil = True
@@ -212,7 +210,7 @@ def quick_ao(wf, nact, WFS_map):
     # Creating AO Surface Map
     ############################
     d_beam = 2 * proper.prop_get_beamradius(wf)  # beam diameter
-    act_spacing = d_beam / nact_across_pupil  # actuator spacing [m]
+    act_spacing = 1.1*d_beam / nact_across_pupil  # actuator spacing [m]
     # map_spacing = proper.prop_get_sampling(wfo.wf_collection[iw,0])
 
     ###################################

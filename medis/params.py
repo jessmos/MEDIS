@@ -192,7 +192,7 @@ class Telescope_params:
         self.ao_act = 60  # number of actuators on the DM on one axis (proper only models nxn square DMs)
         self.piston_error = False  # flag for allowing error on DM surface shape
         self.fit_dm = True  # flag to use DM surface fitting (see proper manual pg 52, the FIT switch)
-        self.satelite_speck = False
+        self.satelite_speck = {'apply': False, 'phase': np.pi / 5., 'amp': 12e-9, 'xloc': 12, 'yloc': 12}
 
         # Ideal Detector Params (not bothering with MKIDs yet)
         self.detector = 'ideal'  # 'MKIDs'
