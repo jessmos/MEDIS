@@ -24,10 +24,7 @@ from medis.plot_tools import grid, quick2D
 class Camera():
     def __init__(self, params, fields=None, usesave=False):
         """
-        Creates a simulation for the MKID Camera to create a series of photons
-
-        During initialisation a backup of the pthon PROPER prescription is copied to the testdir, atmisphere maps and
-        aberration maps are created, serialisation and memory requirements are tested, and the cdi vairable initialised
+        Creates a simulation for the MKID Camera to create a series of photons from the fields sequence
 
         Resulting file structure:
         datadir
@@ -57,8 +54,6 @@ class Camera():
         self.save_exists = True if os.path.exists(self.name) else False
 
         if self.save_exists and self.usesave:
-            # with open(self.name, 'rb') as handle:
-            #     load = pickle.load(handle)
                 load = self.load()
                 self.__dict__ = load.__dict__
                 self.save_exists = True  # just in case the saved obj didn't have this set to True
@@ -81,23 +76,23 @@ class Camera():
         self.dark_pix_frac = self.params['mp'].dark_pix_frac
         self.hot_pix = self.params['mp'].hot_pix
         self.lod = self.params['mp'].lod
+
         self.QE_map_all = self.array_QE(plot=False)
         # self.max_count = self.params['mp'].max_count
         self.responsivity_error_map = self.responvisity_scaling_map(plot=False)
+
         if self.params['mp'].bad_pix:
             self.QE_map = self.create_bad_pix(self.QE_map_all) if self.params['mp'].pix_yield != 1 else self.QE_map_all
 
             if self.params['mp'].dark_counts:
                 self.dark_per_step = self.params['sp'].sample_time * self.params['mp'].dark_bright * self.array_size[0] * self.array_size[
                     1] * self.dark_pix_frac
-                dprint('dark_per_step:', self.dark_per_step, 'sample_time: ', self.params['sp'].sample_time,
-                       'dark_bright: ', self.params['mp'].dark_bright, 'pixels: ', self.array_size[0] * self.array_size[1], self.dark_pix_frac)
-                
                 self.dark_locs = self.create_false_pix(amount=int(
                     self.params['mp'].dark_pix_frac * self.array_size[0] * self.array_size[1]))
             if self.params['mp'].hot_pix:
                 self.hot_per_step = self.params['sp'].sample_time * self.params['mp'].hot_bright * self.hot_pix
                 self.hot_locs = self.create_false_pix(amount=self.params['mp'].hot_pix)
+
         self.Rs = self.assign_spectral_res(plot=False)
         self.sigs = self.get_R_hyper(self.Rs, plot=False)
 
@@ -110,14 +105,14 @@ class Camera():
         print('\nInitialized MKID device parameters\n')
 
     def __call__(self, *args, **kwargs):
+        """ Detect photons (combine fields and device params to produce a photon list) """
         if not self.save_exists:
 
             self.photons = np.empty((0, 4))
             self.stackcube = np.zeros((len(self.fields), self.params['ap'].n_wvl_final, self.array_size[1], self.array_size[0]))
             for step in range(len(self.fields)):
-                print('step', step)
+                print('Generating photons for step: ', step)
                 spectralcube = np.abs(np.sum(self.fields[step, -1, :, :], axis=1)) ** 2
-                # view_spectra(spectralcube, logZ=True)
                 if not self.params['sp'].quick_detect:
                     step_packets = self.get_packets(spectralcube, step)
                     self.photons = np.vstack((self.photons, step_packets))
@@ -136,10 +131,6 @@ class Camera():
         return dataproduct
 
     def save(self):
-        # import sys
-        # print(sys.getsizeof(self), 'size')
-        # with open(c, 'wb') as handle:
-        #     pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
         """
         This is a defensive way to write pickle.write, allowing for very large files on all platforms
         """
@@ -165,6 +156,88 @@ class Camera():
         except:
             return None
         return obj
+
+    def get_packets(self, datacube, step, plot=False):
+        if plot: view_spectra(datacube, logZ=True, extract_center=False, title='pre')
+
+        if self.params['mp'].resamp:
+            nyq_sampling = self.params['ap'].wvl_range[0]*360*3600/(4*np.pi*self.params['tp'].entrance_d)
+            self.sampling = nyq_sampling*self.params['sp'].beam_ratio*2  # nyq sampling happens at self.params['sp'].beam_ratio = 0.5
+            x = np.arange(-self.params['sp'].grid_size*self.sampling/2, self.params['sp'].grid_size*self.sampling/2, self.sampling)
+            xnew = np.arange(-self.array_size[0]*self.platescale/2, self.array_size[0]*self.platescale/2, self.platescale)
+            mkid_cube = np.zeros((len(datacube), self.array_size[0], self.array_size[1]))
+            for s, slice in enumerate(datacube):
+                f = interpolate.interp2d(x, x, slice, kind='cubic')
+                mkid_cube[s] = f(xnew, xnew)
+            mkid_cube = mkid_cube*np.sum(datacube)/np.sum(mkid_cube)
+            # view_spectra(mkid_cube, logZ=True, show=True, extract_center=False, title='post')
+            datacube = mkid_cube
+
+        datacube[datacube < 0] *= -1
+
+        if plot: view_spectra(datacube, logZ=True)
+        if self.params['mp'].QE_var:
+            datacube *= self.QE_map[:datacube.shape[1],:datacube.shape[1]]
+        if plot: view_spectra(datacube, logZ=True)
+
+        # quick2D(self.QE_map)
+        if plot: view_spectra(datacube, logZ=True, show=False)
+        if hasattr(self,'star_phot'): self.params['ap'].star_flux = self.star_phot
+        num_events = int(self.params['ap'].star_flux * self.params['sp'].sample_time * np.sum(datacube))
+
+        if self.params['sp'].verbose:
+            print(f"star flux: {self.params['ap'].star_flux}, cube sum: {np.sum(datacube)}, num events: {num_events}")
+
+        photons = self.sample_cube(datacube, num_events)
+        photons = self.calibrate_phase(photons)
+        photons = self.assign_calibtime(photons, step)
+
+        if plot:
+            cube = self.make_datacube_from_list(photons.T)
+            print(cube.shape)
+            # view_spectra(cube, logZ=True)
+
+        if self.params['mp'].dark_counts:
+            dark_photons = self.get_bad_packets(step, type='dark')
+            dprint(dark_photons.shape, 'dark')
+            photons = np.hstack((photons, dark_photons))
+
+        if self.params['mp'].hot_pix:
+            hot_photons = self.get_bad_packets(step, type='hot')
+            photons = np.hstack((photons, hot_photons))
+            # stem = add_hot(stem)
+
+        if plot:
+            cube = self.make_datacube_from_list(photons.T)
+            print(cube.shape)
+            grid(cube, logZ=True, title='sampled')
+
+        if self.params['mp'].phase_uncertainty:
+            photons[1] *= self.responsivity_error_map[np.int_(photons[2]), np.int_(photons[3])]
+            photons, idx = self.apply_phase_offset_array(photons, self.sigs)
+
+        # thresh =  photons[1] < self.basesDeg[np.int_(photons[3]),np.int_(photons[2])]
+        if self.params['mp'].phase_background:
+            thresh =  -photons[1] > 3*self.sigs[-1,np.int_(photons[3]), np.int_(photons[2])]
+            photons = photons[:, thresh]
+
+        if self.params['mp'].remove_close:
+            stem = self.arange_into_stem(photons.T, (self.array_size[0], self.array_size[1]))
+            stem = self.remove_close(stem)
+            photons = self.ungroup(stem)
+
+        if plot:
+            cube = self.make_datacube_from_list(photons.T)
+            print(cube.shape)
+            view_spectra(cube, logZ=True, use_axis=False, title='remove close')
+        # This step was taking a long time
+        # stem = arange_into_stem(photons.T, (self.array_size[0], self.array_size[1]))
+        # cube = make_datacube(stem, (self.array_size[0], self.array_size[1], self.params['ap'].n_wvl_final))
+        # # ax7.imshow(cube[0], origin='lower', norm=LogNorm(), cmap='inferno', vmin=1)
+        # cube /= self.QE_map
+        # photons = ungroup(stem)
+
+        return photons.T
 
     def arange_into_cube(self, packets, size):
         # print 'Sorting packets into xy grid (no phase or time sorting)'
@@ -597,122 +670,13 @@ class Camera():
         datacube *= num_events
         return datacube
 
-    def get_packets(self, datacube, step, plot=False):
-        if plot: view_spectra(datacube, logZ=True, extract_center=False, title='pre')
-
-        if self.params['mp'].resamp:
-            nyq_sampling = self.params['ap'].wvl_range[0]*360*3600/(4*np.pi*self.params['tp'].entrance_d)
-            self.sampling = nyq_sampling*self.params['sp'].beam_ratio*2  # nyq sampling happens at self.params['sp'].beam_ratio = 0.5
-            x = np.arange(-self.params['sp'].grid_size*self.sampling/2, self.params['sp'].grid_size*self.sampling/2, self.sampling)
-            xnew = np.arange(-self.array_size[0]*self.platescale/2, self.array_size[0]*self.platescale/2, self.platescale)
-            mkid_cube = np.zeros((len(datacube), self.array_size[0], self.array_size[1]))
-            for s, slice in enumerate(datacube):
-                f = interpolate.interp2d(x, x, slice, kind='cubic')
-                mkid_cube[s] = f(xnew, xnew)
-            mkid_cube = mkid_cube*np.sum(datacube)/np.sum(mkid_cube)
-            # view_spectra(mkid_cube, logZ=True, show=True, extract_center=False, title='post')
-            datacube = mkid_cube
-
-        datacube[datacube < 0] *= -1
-
-        if plot: view_spectra(datacube, logZ=True)
-        if self.params['mp'].QE_var:
-            datacube *= self.QE_map[:datacube.shape[1],:datacube.shape[1]]
-        if plot: view_spectra(datacube, logZ=True)
-
-        # quick2D(self.QE_map)
-        if plot: view_spectra(datacube, logZ=True, show=False)
-        if hasattr(self,'star_phot'): self.params['ap'].star_flux = self.star_phot
-        num_events = int(self.params['ap'].star_flux * self.params['sp'].sample_time * np.sum(datacube))
-
-        if self.params['sp'].verbose:
-            print(f"star flux: {self.params['ap'].star_flux}, cube sum: {np.sum(datacube)}, num events: {num_events}")
-
-        photons = self.sample_cube(datacube, num_events)
-        photons = self.calibrate_phase(photons)
-        photons = self.assign_calibtime(photons, step)
-
-        if plot:
-            cube = self.make_datacube_from_list(photons.T)
-            print(cube.shape)
-            # view_spectra(cube, logZ=True)
-
-        if self.params['mp'].dark_counts:
-            dark_photons = self.get_bad_packets(step, type='dark')
-            dprint(dark_photons.shape, 'dark')
-            photons = np.hstack((photons, dark_photons))
-
-        if self.params['mp'].hot_pix:
-            hot_photons = self.get_bad_packets(step, type='hot')
-            photons = np.hstack((photons, hot_photons))
-            # stem = add_hot(stem)
-
-        # plt.hist(photons[3], bins=25)
-        # plt.yscale('log')
-        # plt.show(block=True)
-        # stem = arange_into_stem(photons.T, (self.array_size[0], self.array_size[1]))
-        # cube = make_datacube(stem, (self.array_size[0], self.array_size[1], self.params['ap'].n_wvl_final))
-        # view_spectra(cube, logZ=True, vmin=0.01)
-
-        if plot:
-            cube = self.make_datacube_from_list(photons.T)
-            print(cube.shape)
-            grid(cube, logZ=True, title='sampled')
-
-        if self.params['mp'].phase_uncertainty:
-            photons[1] *= self.responsivity_error_map[np.int_(photons[2]), np.int_(photons[3])]
-            photons, idx = self.apply_phase_offset_array(photons, self.sigs)
-            # stem = arange_into_stem(photons.T, (self.array_size[0], self.array_size[1]))
-            # cube = make_datacube(stem, (self.array_size[0], self.array_size[1], self.params['ap'].n_wvl_final))
-            # view_spectra(cube, logZ=True, vmin=0.01)
-
-        # stem = arange_into_stem(photons.T, (self.array_size[0], self.array_size[1]))
-        # cube = make_datacube(stem, (self.array_size[0], self.array_size[1], self.params['ap'].n_wvl_final))
-        # view_spectra(cube, vmin=0.01, logZ=True)
-        # plt.figure()
-        # plt.imshow(cube[0], origin='lower', norm=LogNorm(), cmap='inferno', vmin=1)
-        # plt.show(block=True)
-
-        # thresh =  photons[1] < self.basesDeg[np.int_(photons[3]),np.int_(photons[2])]
-        if self.params['mp'].phase_background:
-            thresh =  -photons[1] > 3*self.sigs[-1,np.int_(photons[3]), np.int_(photons[2])]
-            photons = photons[:, thresh]
-        # print(thresh)
-
-        # stem = arange_into_stem(photons.T, (self.array_size[0], self.array_size[1]))
-        # cube = make_datacube(stem, (self.array_size[0], self.array_size[1], self.params['ap'].n_wvl_final))
-        # quick2D(cube[0], vmin=1, logZ=True)
-        # plt.figure()
-        # plt.imshow(cube[0], origin='lower', norm=LogNorm(), cmap='inferno', vmin=1)
-        # plt.show(block=True)
-
-        # print(photons.shape)
-        if self.params['mp'].remove_close:
-            stem = self.arange_into_stem(photons.T, (self.array_size[0], self.array_size[1]))
-            stem = self.remove_close(stem)
-            photons = self.ungroup(stem)
-
-        if plot:
-            cube = self.make_datacube_from_list(photons.T)
-            print(cube.shape)
-            view_spectra(cube, logZ=True, use_axis=False, title='remove close')
-        # This step was taking a long time
-        # stem = arange_into_stem(photons.T, (self.array_size[0], self.array_size[1]))
-        # cube = make_datacube(stem, (self.array_size[0], self.array_size[1], self.params['ap'].n_wvl_final))
-        # # ax7.imshow(cube[0], origin='lower', norm=LogNorm(), cmap='inferno', vmin=1)
-        # cube /= self.QE_map
-        # photons = ungroup(stem)
-
-        # print(photons.shape)
-
-
-        # print("Measured photons with MKIDs")
-
-        return photons.T
 
 if __name__ == '__main__':
     from medis.params import params
+    params['iop'].update_testname('MKIDS_module_test')
+    params['sp'].quick_detect = True
 
     cam = Camera(params)
-    dataproduct = cam()
-    print(dataproduct.keys())
+    observation = cam()
+    print(observation.keys())
+    grid(observation['stackcube'], nstd=5)

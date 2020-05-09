@@ -54,20 +54,17 @@ class Telescope():
     """
 
     def __init__(self, params, usesave=True):
-        # if not initialise atmosphere
-        # aberrations etc
-
         self.params = params
         self.usesave=usesave
 
-        self.save_exists = True if os.path.exists(self.params['iop'].telescope) else False
-        self.fields_exists = True if os.path.exists(self.params['iop'].fields) else False
+        self.save_exists = True if os.path.exists(self.params['iop'].telescope) else False  # the whole telescope object
+        self.fields_exists = True if os.path.exists(self.params['iop'].fields) else False  # just the fields ndarray
 
         if self.save_exists:
             print(f"\nLoading telescope instance from\n\n\t{self.params['iop'].telescope}\n")
             with open(self.params['iop'].telescope, 'rb') as handle:
                 load = pickle.load(handle)
-                self.__dict__ = load.__dict__
+                self.__dict__ = load.__dict__  # replace the contents
                 self.save_exists = True
         elif self.fields_exists:
             self.load_fields()
@@ -99,9 +96,9 @@ class Telescope():
 
             #import prescription params
             # sys.path.insert(0, os.path.dirname(self.target))
-            sys.path.insert(0, os.path.dirname(fullprescription))
+            sys.path.insert(0, os.path.dirname(fullprescription))  # load from the original prescription incase user is editting
             pres_module = importlib.import_module(params['tp'].prescription)
-            self.params['tp'].__dict__.update(pres_module.tp.__dict__)
+            self.params['tp'].__dict__.update(pres_module.tp.__dict__)  #  update tp with the contents of the prescription
 
             # initialize atmosphere
             self.params['iop'].atmosdir = self.params['iop'].atmosdir.format(params['sp'].grid_size,
@@ -139,7 +136,7 @@ class Telescope():
             if self.params['sp'].quick_companions:
                 # purpose of this code to add option to shift and scale an unocculed star and use that for several sources vastly decreasing compute time
                 raise NotImplementedError
-                self.params['ap'].contrast = range(2)  # give it length two since all the planets will be collapsed into one frame
+                self.params['ap'].contrast = range(2)  # give it length two since all the planets will be collapsed into one slice
 
             if self.params['ap'].companion is False:
                 self.params['ap'].contrast = []
@@ -180,6 +177,7 @@ class Telescope():
                 self.theta_series = np.zeros(self.params['sp'].numframes) * np.nan  # string of Nans
 
     def __call__(self, *args, **kwargs):
+        """ Take the observation (generate the fields sequence) """
         if not self.save_exists and not self.fields_exists:
             print('\n\n\tBeginning Telescope Simulation with MEDIS\n\n')
             start = time.time()
@@ -214,12 +212,13 @@ class Telescope():
                         (1 + len(self.params['ap'].contrast)) * self.params['sp'].grid_size**2 * 32 / 8  # in Bytes
 
         max_chunk = self.params['sp'].memory_limit*1e9 // self.timestep_size
-        print(f'Each timestep is predicted to be {self.timestep_size/1.e6} MB, requiring sim to be split into '
-              f'{max_chunk} time chunks')
+        print(f'Each timestep is predicted to be {self.timestep_size/1.e6} MB, meaning no more than {max_chunk} time '
+              f'steps can fit in the memory at one time')
 
         return max_chunk
 
     def create_fields(self):
+        """ Create fields tensor for an initialised Telecope instance """
 
         t0 = self.params['sp'].startframe
         self.kwargs = {'params': self.params, 'theta_series': self.theta_series}
@@ -273,8 +272,6 @@ class Telescope():
             print('************************')
             if self.params['sp'].save_to_disk: self.save_fields(self.cpx_sequence)
 
-
-
         # return {'fields': np.array(self.cpx_sequence), 'sampling': self.sampling}
 
     def run_timestep(self, t):
@@ -307,6 +304,8 @@ class Telescope():
             dtype ndarray of complex or float
             fields can be any shape but the h5 dataset can only extended along axis 0
         :return:
+
+        todo convert to pytables for pipeline conda integration
         """
         with h5py.File(self.params['iop'].fields, mode='a') as hdf:
             print(f"Saving observation data at {self.params['iop'].fields}")
@@ -323,6 +322,11 @@ class Telescope():
                 hdf["data"][-len(fields):] = fields
 
     def load_fields(self):
+        """ load fields h5
+
+         warning sampling is not currently stored in h5. It is stored in telescope.pkl however
+         """
+        print(f"Loading fields from {self.params['iop'].fieldsself.params['iop'].fields}")
         with h5py.File(self.params['iop'].fields, 'r') as hdf:
             keys = list(hdf.keys())
             if 'data' in keys:
@@ -334,9 +338,9 @@ class Telescope():
 
 if __name__ == '__main__':
     from medis.params import params
-    params['iop'].update_testname('test')
+    params['iop'].update_testname('telescope_module_test')
 
     telescope_sim = Telescope(params)
-    dataproduct = telescope_sim()
-    print(dataproduct.keys())
-    grid(dataproduct['fields'], logZ=True, nstd=5)
+    observation = telescope_sim()
+    print(observation.keys())
+    grid(observation['fields'], logZ=True, nstd=5)

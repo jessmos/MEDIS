@@ -15,7 +15,8 @@ a separate module in the Simulations subdirectory of MEDIS. They can then update
 run_name.py" type script, which also makes the call to run_MEDIS to start the simulation. The output is a 6D complex
 field observation sequence.
 
-Rupert will fill in the overview of the MKIDs part.
+The MKIDs camera simulator creates an instance of a device with distributions in R, dead pixel locations etc and then
+combines the fields sequence with this to generate realistic detected photons
 
 """
 import os
@@ -80,6 +81,7 @@ class RunMedis():
 
         self.params['iop'].update(self.name)
 
+        # show all the parameters input into the simulation (before some are updated)
         if params['sp'].verbose:
             for param in params.values():
                 print(f'\n\t {param.__name__()}')
@@ -121,6 +123,7 @@ class RunMedis():
         match_params = {}
         for p in ['ap','tp','atmp','cdip','iop','sp']:  # vars(self.params).keys()
             matches = []
+            #todo appears to be a bug here where identical params are checked
             for (this_attr, this_val), (load_attr, load_val) in zip(self.params[p].__dict__.items(),
                                                                     self.params[p].__dict__.items()):
                 matches.append(this_attr == load_attr and np.all(load_val == this_val))
@@ -134,13 +137,14 @@ class RunMedis():
         # return {'ap':False, 'tp':True, 'atmp':True, 'cdip':True, 'iop':True, 'sp':True}
 
     def __call__(self, *args, **kwargs):
+        """ Calling the RunMedis sim instantiates and runs either the Telescope or Camera sims"""
         if self.product == 'fields':
             self.telescope = Telescope(self.params)  # checking of class's cache etc is left to the class
             dataproduct = self.telescope()
 
         if self.product == 'photons':
-            self.camera = Camera(self.params, usesave=self.params['sp'].save_to_disk)  # creating fields is left to Camera since fields only needs to be created
-                                              # if camera.pkl does not exist
+            # creating fields is left to Camera since fields only needs to be created if camera.pkl does not exist
+            self.camera = Camera(self.params, usesave=self.params['sp'].save_to_disk)
             dataproduct = self.camera()
 
         return dataproduct
