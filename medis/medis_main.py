@@ -20,29 +20,14 @@ combines the fields sequence with this to generate realistic detected photons
 
 """
 import os
-import sys
 import numpy as np
-import importlib
-import multiprocessing
-import time
-import glob
 import pickle
-import shutil
 from datetime import datetime
-import h5py
 from pprint import pprint
 
-
-import proper
-import medis.atmosphere as atmos
-from medis.plot_tools import view_spectra
-import medis.CDI as cdi
-import medis.utils as mu
-import medis.MKIDS as MKIDs
 from medis.telescope import Telescope
 from medis.MKIDS import Camera
-import medis.optics as opx
-import medis.aberrations as aber
+from medis.params import sp, ap, tp, iop, atmp, cdip, mp
 
 ################################################################################################################
 ################################################################################################################
@@ -62,38 +47,38 @@ class RunMedis():
     If the params are different or the testdir does not already exist a new testdir and simulation is created.
 
     """
-    def __init__(self, params, name='test', product='fields'):
+    def __init__(self, name='test', product='fields'):
         """
         File structure:
         datadir
             testdir          <--- output
                 params.pkl   <--- output
 
-        :param params:
         :param name:
         :param product:
         """
 
-        self.params = params
         self.name = name
         self.product = product
         assert self.product in ['fields', 'photons'], f"Requested data product {self.product} not supported"
 
-        self.params['iop'].update(self.name)
+        iop.update_testname(self.name)
+        # for storing a checking between tests
+        self.params = {'ap': ap, 'tp': tp, 'atmp': atmp, 'cdip': cdip, 'iop': iop, 'sp': sp, 'mp': mp}
 
-        # show all the parameters input into the simulation (before some are updated)
-        if params['sp'].verbose:
-            for param in params.values():
+        # show all the parameters input into the simulation (before some are updated by Telescope and Camera)
+        if sp.verbose:
+            for param in self.params.values():
                 print(f'\n\t {param.__name__()}')
                 pprint(param.__dict__)
 
         # always make the top level directory if it doesn't exist yet
-        if not os.path.isdir(self.params['iop'].datadir):
-            print(f"Top level directory... \n\n\t{self.params['iop'].datadir} \n\ndoes not exist yet. Creating")
-            os.makedirs(self.params['iop'].datadir, exist_ok=True)
+        if not os.path.isdir(iop.datadir):
+            print(f"Top level directory... \n\n\t{iop.datadir} \n\ndoes not exist yet. Creating")
+            os.makedirs(iop.datadir, exist_ok=True)
 
-        if not os.path.exists(self.params['iop'].testdir) or not os.path.exists(self.params['iop'].params_logs):
-            print(f"No simulation data found at... \n\n\t{self.params['iop'].testdir} \n\n A new test simulation"
+        if not os.path.exists(iop.testdir) or not os.path.exists(iop.params_logs):
+            print(f"No simulation data found at... \n\n\t{iop.testdir} \n\n A new test simulation"
                   f" will be started")
             self.make_testdir()
         else:
@@ -104,28 +89,28 @@ class RunMedis():
             else:
                 print(f"Configuration files differ. Creating a new test directory")
                 now = datetime.now().strftime("%m:%d:%Y_%H-%M-%S")
-                self.params['iop'].update(self.name+'_newsim_'+now)
+                iop.update_testname(self.name+'_newsim_'+now)
                 self.make_testdir()
 
     def make_testdir(self):
-        if not os.path.isdir(self.params['iop'].testdir):
-            os.makedirs(self.params['iop'].testdir, exist_ok=True)
+        if not os.path.isdir(iop.testdir):
+            os.makedirs(iop.testdir, exist_ok=True)
 
-        with open(self.params['iop'].params_logs, 'wb') as handle:
+        with open(iop.params_logs, 'wb') as handle:
             pickle.dump(self.params, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     def check_params(self):
-        """ Check all param classes apart from mp since that is not relevant at this stage """
+        """ Check all param classes at this stage. Some params are updated in Telescope and Camera and those params
+         should be checked against each other at that stage of the pipeline"""
 
-        with open(self.params['iop'].params_logs, 'rb') as handle:
+        with open(iop.params_logs, 'rb') as handle:
             loaded_params = pickle.load(handle)
 
         match_params = {}
-        for p in ['ap','tp','atmp','cdip','iop','sp']:  # vars(self.params).keys()
+        for p in ['ap','tp','atmp','cdip','iop','sp','mp']:  # vars(self.params).keys()
             matches = []
-            #todo appears to be a bug here where identical params are checked
             for (this_attr, this_val), (load_attr, load_val) in zip(self.params[p].__dict__.items(),
-                                                                    self.params[p].__dict__.items()):
+                                                                    loaded_params[p].__dict__.items()):
                 matches.append(this_attr == load_attr and np.all(load_val == this_val))
 
             match = np.all(matches)
@@ -139,21 +124,19 @@ class RunMedis():
     def __call__(self, *args, **kwargs):
         """ Calling the RunMedis sim instantiates and runs either the Telescope or Camera sims"""
         if self.product == 'fields':
-            self.telescope = Telescope(self.params)  # checking of class's cache etc is left to the class
+            self.telescope = Telescope(usesave=sp.save_to_disk)  # checking of class's cache etc is left to the class
             dataproduct = self.telescope()
 
         if self.product == 'photons':
             # creating fields is left to Camera since fields only needs to be created if camera.pkl does not exist
-            self.camera = Camera(self.params, usesave=self.params['sp'].save_to_disk)
+            self.camera = Camera(usesave=sp.save_to_disk)
             dataproduct = self.camera()
 
         return dataproduct
 
 
 if __name__ == '__main__':
-    from medis.params import params
-
-    sim = RunMedis(params=params, name='example1', product='photons')
+    sim = RunMedis(name='example1', product='photons')
     observation = sim()
     print(observation.keys())
 

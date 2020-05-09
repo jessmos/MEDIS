@@ -14,14 +14,14 @@ import proper
 import os
 import pickle
 
-from medis.params import tp, iop, ap, sp
+from medis.params import iop
 from medis.utils import *
 
 
 ################################################################################################################
 # Aberrations
 ################################################################################################################
-def generate_maps(iop, aber_vals, lens_diam, lens_name='lens'):
+def generate_maps(aber_vals, lens_diam, lens_name='lens'):
     """
     generate PSD-defined aberration maps for a lens(mirror) using Proper
 
@@ -115,8 +115,7 @@ def add_aber(wf, aberdir=None, step=0, lens_name=None):
     # Load in or Generate Aberration Map
     # iop.aberdata = f"gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
     # iop.aberdir = os.path.join(iop.testdir, iop.aberroot, iop.aberdata)
-    aberdir = aberdir if aberdir else iop.aberdir
-    filename = f"{aberdir}/t{step}_{lens_name}.fits"
+    filename = f"{iop.aberdir}/t{step}_{lens_name}.fits"
     # print(f'Adding Abberations from {filename}')
 
     # if not os.path.isfile(filename):

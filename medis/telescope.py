@@ -17,6 +17,7 @@ import medis.CDI as cdi
 import medis.utils as mu
 import medis.optics as opx
 import medis.aberrations as aber
+from medis.params import sp, ap, tp, iop, cdip
 
 
 class Telescope():
@@ -53,16 +54,15 @@ class Telescope():
         complex tensor of dimensions (n_timesteps, n_saved_planes, n_wavelengths, n_stars/planets, grid_size, grid_size)
     """
 
-    def __init__(self, params, usesave=True):
-        self.params = params
+    def __init__(self, usesave=True):
         self.usesave=usesave
 
-        self.save_exists = True if os.path.exists(self.params['iop'].telescope) else False  # the whole telescope object
-        self.fields_exists = True if os.path.exists(self.params['iop'].fields) else False  # just the fields ndarray
+        self.save_exists = True if os.path.exists(iop.telescope) else False  # the whole telescope object
+        self.fields_exists = True if os.path.exists(iop.fields) else False  # just the fields ndarray
 
         if self.save_exists:
-            print(f"\nLoading telescope instance from\n\n\t{self.params['iop'].telescope}\n")
-            with open(self.params['iop'].telescope, 'rb') as handle:
+            print(f"\nLoading telescope instance from\n\n\t{iop.telescope}\n")
+            with open(iop.telescope, 'rb') as handle:
                 load = pickle.load(handle)
                 self.__dict__ = load.__dict__  # replace the contents
                 self.save_exists = True
@@ -71,11 +71,11 @@ class Telescope():
         else:
             print(f"\nInitialising new telescope instance\n")
             # copy over the prescription
-            self.params['iop'].prescopydir = self.params['iop'].prescopydir.format(self.params['tp'].prescription)
-            self.target = os.path.join(self.params['iop'].prescopydir, self.params['tp'].prescription+'.py')
+            iop.prescopydir = iop.prescopydir.format(tp.prescription)
+            self.target = os.path.join(iop.prescopydir, tp.prescription+'.py')
 
-            prescriptions = self.params['iop'].prescriptions_root
-            fullprescription = glob.glob(os.path.join(prescriptions, '**', self.params['tp'].prescription+'.py'),
+            prescriptions = iop.prescriptions_root
+            fullprescription = glob.glob(os.path.join(prescriptions, '**', tp.prescription+'.py'),
                                          recursive=True)
             if len(fullprescription) == 0:
                 raise FileNotFoundError
@@ -90,75 +90,75 @@ class Telescope():
             else:
                 print(f"Copying over prescription {fullprescription}")
 
-                if not os.path.isdir(self.params['iop'].prescopydir):
-                    os.makedirs(self.params['iop'].prescopydir, exist_ok=True)
+                if not os.path.isdir(iop.prescopydir):
+                    os.makedirs(iop.prescopydir, exist_ok=True)
                 shutil.copyfile(fullprescription, self.target)
 
             #import prescription params
             # sys.path.insert(0, os.path.dirname(self.target))
             sys.path.insert(0, os.path.dirname(fullprescription))  # load from the original prescription incase user is editting
-            pres_module = importlib.import_module(params['tp'].prescription)
-            self.params['tp'].__dict__.update(pres_module.tp.__dict__)  #  update tp with the contents of the prescription
+            pres_module = importlib.import_module(tp.prescription)
+            tp.__dict__.update(pres_module.tp.__dict__)  #  update tp with the contents of the prescription
 
             # initialize atmosphere
-            self.params['iop'].atmosdir = self.params['iop'].atmosdir.format(params['sp'].grid_size,
-                                                                             params['sp'].beam_ratio,
-                                                                             params['sp'].numframes)
-            if glob.glob(self.params['iop'].atmosdir+'/*.fits'):
-                print(f"Atmosphere maps already exist at \n\n\t{self.params['iop'].atmosdir}"
+            iop.atmosdir = iop.atmosdir.format(sp.grid_size,
+                                                                             sp.beam_ratio,
+                                                                             sp.numframes)
+            if glob.glob(iop.atmosdir+'/*.fits'):
+                print(f"Atmosphere maps already exist at \n\n\t{iop.atmosdir}"
                       f" \n\n... skipping generation\n\n")
             else:
-                if not os.path.isdir(self.params['iop'].atmosdir):
-                    os.makedirs(self.params['iop'].atmosdir, exist_ok=True)
-                atmos.gen_atmos(params)
+                if not os.path.isdir(iop.atmosdir):
+                    os.makedirs(iop.atmosdir, exist_ok=True)
+                atmos.gen_atmos()
 
             # initialize aberrations
-            self.params['iop'].aberdir = self.params['iop'].aberdir.format(params['sp'].grid_size,
-                                                                           params['sp'].beam_ratio,
-                                                                           params['sp'].numframes)
-            if glob.glob(self.params['iop'].aberdir + '/*.fits'):
-                print(f"Aberration maps already exist at \n\n\t{self.params['iop'].aberdir} "
+            iop.aberdir = iop.aberdir.format(sp.grid_size,
+                                                                           sp.beam_ratio,
+                                                                           sp.numframes)
+            if glob.glob(iop.aberdir + '/*.fits'):
+                print(f"Aberration maps already exist at \n\n\t{iop.aberdir} "
                       f"\n\n... skipping generation\n\n")
             else:
-                if not os.path.isdir(self.params['iop'].aberdir):
-                    os.makedirs(self.params['iop'].aberdir, exist_ok=True)
-                for lens in params['tp'].lens_params:
-                    aber.generate_maps(params['iop'], lens['aber_vals'], lens['diam'], lens['name'])
+                if not os.path.isdir(iop.aberdir):
+                    os.makedirs(iop.aberdir, exist_ok=True)
+                for lens in tp.lens_params:
+                    aber.generate_maps(lens['aber_vals'], lens['diam'], lens['name'])
 
             # check if can do parrallel
-            if params['sp'].closed_loop or params['sp'].ao_delay:
+            if sp.closed_loop or sp.ao_delay:
                 print(f"closed loop or ao delay means sim can't be parrallelized in time domain. Forcing serial mode")
                 self.parrallel = False
             else:
-                self.parrallel = self.params['sp'].num_processes > 1
+                self.parrallel = sp.num_processes > 1
 
             # ensure contrast is set properly
-            if self.params['sp'].quick_companions:
+            if sp.quick_companions:
                 # purpose of this code to add option to shift and scale an unocculed star and use that for several sources vastly decreasing compute time
                 raise NotImplementedError
-                self.params['ap'].contrast = range(2)  # give it length two since all the planets will be collapsed into one slice
+                ap.contrast = range(2)  # give it length two since all the planets will be collapsed into one slice
 
-            if self.params['ap'].companion is False:
-                self.params['ap'].contrast = []
+            if ap.companion is False:
+                ap.contrast = []
 
-            if not isinstance(self.params['ap'].n_wvl_final, int):
-                self.params['ap'].n_wvl_final = self.params['ap'].n_wvl_init
+            if not isinstance(ap.n_wvl_final, int):
+                ap.n_wvl_final = ap.n_wvl_init
 
             # determine if can/should do all in memory
             max_steps = self.max_chunk()
-            self.fieldssize = self.timestep_size * self.params['sp'].numframes
-            if self.params['sp'].verbose: print(f"File total size should be {self.fieldssize * 1e-6} MB")
-            checkpoint_steps = max_steps if self.params['sp'].checkpointing is None else self.params['sp'].checkpointing
-            self.chunk_steps = int(min([max_steps, self.params['sp'].numframes, checkpoint_steps]))
-            if self.params['sp'].verbose: print(f'Using time chunks of size {self.chunk_steps}')
-            self.num_chunks = self.params['sp'].numframes / self.chunk_steps
+            self.fieldssize = self.timestep_size * sp.numframes
+            if sp.verbose: print(f"File total size should be {self.fieldssize * 1e-6} MB")
+            checkpoint_steps = max_steps if sp.checkpointing is None else sp.checkpointing
+            self.chunk_steps = int(min([max_steps, sp.numframes, checkpoint_steps]))
+            if sp.verbose: print(f'Using time chunks of size {self.chunk_steps}')
+            self.num_chunks = sp.numframes / self.chunk_steps
 
             if self.num_chunks > 1:
                 print('Simulated data too large for dynamic memory. Storing to disk as the sim runs')
-                self.params['sp'].chunking = True
+                sp.chunking = True
 
-            self.markov = self.params['sp'].chunking or self.parrallel  # independent timesteps
-            nonmarkov = self.params['sp'].ao_delay or self.params['sp'].closed_loop  # dependent timesteps
+            self.markov = sp.chunking or self.parrallel  # independent timesteps
+            nonmarkov = sp.ao_delay or sp.closed_loop  # dependent timesteps
             # if both true
             assert self.markov + nonmarkov != 2, "Confliciting modes. Request requires the timesteps be both dependent and independent"
 
@@ -167,14 +167,14 @@ class Telescope():
                 print("No mode specfified defaulting to markov (time independent)")
                 self.markov = True
 
-            modes = [self.params['sp'].chunking, self.params['sp'].ao_delay, self.parrallel,
-                     self.params['sp'].closed_loop]
+            modes = [sp.chunking, sp.ao_delay, self.parrallel,
+                     sp.closed_loop]
 
             # Initialize CDI probes
-            if self.params['cdip'].use_cdi is True:
+            if cdip.use_cdi is True:
                 self.theta_series = cdi.gen_CDI_phase_stream()
             else:
-                self.theta_series = np.zeros(self.params['sp'].numframes) * np.nan  # string of Nans
+                self.theta_series = np.zeros(sp.numframes) * np.nan  # string of Nans #todo comment seems wrong - check
 
     def __call__(self, *args, **kwargs):
         """ Take the observation (generate the fields sequence) """
@@ -192,11 +192,11 @@ class Telescope():
             self.save_exists = True
 
             if self.usesave and self.fieldssize > 4e9:  # bug with pickling on Mac preventing dump beyond 4GB
-                print(f"\nSaving telescope instance at\n\n\t{self.params['iop'].telescope}\n")
-                with open(self.params['iop'].telescope, 'wb') as handle:
+                print(f"\nSaving telescope instance at\n\n\t{iop.telescope}\n")
+                with open(iop.telescope, 'wb') as handle:
                     pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-        if len(self.cpx_sequence) < self.params['sp'].numframes:
+        if len(self.cpx_sequence) < sp.numframes:
             print('Returning the final time chunk instead of the full duration. Increase chunk size if you want full '
                   'duration')
         dataproduct = {'fields': np.array(self.cpx_sequence), 'sampling': self.sampling}
@@ -208,10 +208,10 @@ class Telescope():
 
         :return: integer
         """
-        self.timestep_size = len(self.params['sp'].save_list) * self.params['ap'].n_wvl_final * \
-                        (1 + len(self.params['ap'].contrast)) * self.params['sp'].grid_size**2 * 32 / 8  # in Bytes
+        self.timestep_size = len(sp.save_list) * ap.n_wvl_final * \
+                        (1 + len(ap.contrast)) * sp.grid_size**2 * 32 / 8  # in Bytes
 
-        max_chunk = self.params['sp'].memory_limit*1e9 // self.timestep_size
+        max_chunk = sp.memory_limit*1e9 // self.timestep_size
         print(f'Each timestep is predicted to be {self.timestep_size/1.e6} MB, meaning no more than {max_chunk} time '
               f'steps can fit in the memory at one time')
 
@@ -220,63 +220,63 @@ class Telescope():
     def create_fields(self):
         """ Create fields tensor for an initialised Telecope instance """
 
-        t0 = self.params['sp'].startframe
-        self.kwargs = {'params': self.params, 'theta_series': self.theta_series}
+        t0 = sp.startframe
+        self.kwargs = {'theta_series': self.theta_series}
         self.cpx_sequence = None
 
         if self.markov:  # time steps are independent
             ceil_num_chunks = int(np.ceil(self.num_chunks))
-            final_chunk_size = self.params['sp'].numframes-int(np.floor(self.num_chunks))*self.chunk_steps
+            final_chunk_size = sp.numframes-int(np.floor(self.num_chunks))*self.chunk_steps
             for ichunk in range(ceil_num_chunks):
                 fractional_step = final_chunk_size != 0 and ichunk == ceil_num_chunks-1
                 chunk_steps = final_chunk_size if fractional_step else self.chunk_steps
 
-                cpx_sequence = np.empty((chunk_steps, len(self.params['sp'].save_list),
-                                        self.params['ap'].n_wvl_init, 1 + len(self.params['ap'].contrast),
-                                        self.params['sp'].grid_size, self.params['sp'].grid_size),
+                cpx_sequence = np.empty((chunk_steps, len(sp.save_list),
+                                        ap.n_wvl_init, 1 + len(ap.contrast),
+                                        sp.grid_size, sp.grid_size),
                                         dtype=np.complex64)
                 chunk_range = ichunk * self.chunk_steps + t0 + np.arange(chunk_steps)
-                if self.params['sp'].num_processes == 1:
+                if sp.num_processes == 1:
                     seq_samp_list = [self.run_timestep(t) for t in chunk_range]
                 else:
-                    pool = multiprocessing.Pool(processes=self.params['sp'].num_processes)
+                    pool = multiprocessing.Pool(processes=sp.num_processes)
                     seq_samp_list = [pool.apply(self.run_timestep, args=(t,)) for t in chunk_range]
                 self.cpx_sequence = [tup[0] for tup in seq_samp_list]
                 self.sampling = seq_samp_list[0][1]
 
-                if self.params['ap'].n_wvl_init < self.params['ap'].n_wvl_final:
+                if ap.n_wvl_init < ap.n_wvl_final:
                     self.cpx_sequence = opx.interp_wavelength(self.cpx_sequence, ax=2)
                     self.sampling = opx.interp_sampling(self.sampling)
 
-                if self.params['sp'].save_to_disk: self.save_fields(self.cpx_sequence)
+                if sp.save_to_disk: self.save_fields(self.cpx_sequence)
 
         else:
             print('*** This is untested ***')
-            self.cpx_sequence = np.zeros((self.params['sp'].numframes, len(self.params['sp'].save_list),
-                                          self.params['ap'].n_wvl_init, 1 + len(self.params['ap'].contrast),
-                                          self.params['sp'].grid_size, self.params['sp'].grid_size), dtype=np.complex)
-            self.sampling = np.zeros((len(self.params['sp'].save_list), self.params['ap'].n_wvl_init))
+            self.cpx_sequence = np.zeros((sp.numframes, len(sp.save_list),
+                                          ap.n_wvl_init, 1 + len(ap.contrast),
+                                          sp.grid_size, sp.grid_size), dtype=np.complex)
+            self.sampling = np.zeros((len(sp.save_list), ap.n_wvl_init))
 
-            for it, t in enumerate(range(t0, self.params['sp'].numframes + t0)):
-                WFS_ind = ['wfs' in plane for plane in self.params['sp'].save_list]
-                if t > self.params['sp'].ao_delay:
-                    self.kwargs['WFS_field'] = self.cpx_sequence[it - self.params['sp'].ao_delay, WFS_ind, :, 0]
-                    self.kwargs['AO_field'] =  self.cpx_sequence[it - self.params['sp'].ao_delay, AO_ind, :, 0]
+            for it, t in enumerate(range(t0, sp.numframes + t0)):
+                WFS_ind = ['wfs' in plane for plane in sp.save_list]
+                if t > sp.ao_delay:
+                    self.kwargs['WFS_field'] = self.cpx_sequence[it - sp.ao_delay, WFS_ind, :, 0]
+                    self.kwargs['AO_field'] =  self.cpx_sequence[it - sp.ao_delay, AO_ind, :, 0]
                 else:
-                    self.kwargs['WFS_field'] = np.zeros((self.params['ap'].n_wvl_init, self.params['sp'].grid_size,
-                                                    self.params['sp'].grid_size), dtype=np.complex)
-                    self.kwargs['AO_field'] = np.zeros((self.params['ap'].n_wvl_init, self.params['sp'].grid_size,
-                                                        self.params['sp'].grid_size), dtype=np.complex)
+                    self.kwargs['WFS_field'] = np.zeros((ap.n_wvl_init, sp.grid_size,
+                                                    sp.grid_size), dtype=np.complex)
+                    self.kwargs['AO_field'] = np.zeros((ap.n_wvl_init, sp.grid_size,
+                                                        sp.grid_size), dtype=np.complex)
                 self.cpx_sequence[it], sampling = self.run_timestep(t)
 
             print('************************')
-            if self.params['sp'].save_to_disk: self.save_fields(self.cpx_sequence)
+            if sp.save_to_disk: self.save_fields(self.cpx_sequence)
 
         # return {'fields': np.array(self.cpx_sequence), 'sampling': self.sampling}
 
     def run_timestep(self, t):
         self.kwargs['iter'] = t
-        return proper.prop_run(self.params['tp'].prescription, 1, self.params['sp'].grid_size, PASSVALUE=self.kwargs)
+        return proper.prop_run(tp.prescription, 1, sp.grid_size, PASSVALUE=self.kwargs)
 
     def pretty_sequence_shape(self):
 
@@ -307,8 +307,8 @@ class Telescope():
 
         todo convert to pytables for pipeline conda integration
         """
-        with h5py.File(self.params['iop'].fields, mode='a') as hdf:
-            print(f"Saving observation data at {self.params['iop'].fields}")
+        with h5py.File(iop.fields, mode='a') as hdf:
+            print(f"Saving observation data at {iop.fields}")
             dims = np.shape(fields)
             keys = list(hdf.keys())
             fields = np.array(fields)
@@ -326,8 +326,8 @@ class Telescope():
 
          warning sampling is not currently stored in h5. It is stored in telescope.pkl however
          """
-        print(f"Loading fields from {self.params['iop'].fieldsself.params['iop'].fields}")
-        with h5py.File(self.params['iop'].fields, 'r') as hdf:
+        print(f"Loading fields from {iop.fieldsiop.fields}")
+        with h5py.File(iop.fields, 'r') as hdf:
             keys = list(hdf.keys())
             if 'data' in keys:
                 self.cpx_sequence = hdf.get('data')[:]
@@ -337,10 +337,9 @@ class Telescope():
         return {'fields': self.cpx_sequence, 'sampling': self.sampling}
 
 if __name__ == '__main__':
-    from medis.params import params
-    params['iop'].update_testname('telescope_module_test')
+    iop.update_testname('telescope_module_test')
 
-    telescope_sim = Telescope(params)
+    telescope_sim = Telescope()
     observation = telescope_sim()
     print(observation.keys())
     grid(observation['fields'], logZ=True, nstd=5)

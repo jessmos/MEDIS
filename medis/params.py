@@ -208,7 +208,7 @@ class Telescope_params:
         self.servo_error = [0, 1]  # [0,1] # False # No delay and rate of 1/frame_time
         self.abertime = 0.5  # time scale of optic aberrations in seconds
 
-        self.lens_params = None
+        self.lens_params = None  # None at first then gets updated by prescription module
 
         # Zernike Settings- see pg 192 for details
         self.zernike_orders = [2, 3, 4]  # Order of Zernike Polynomials to include

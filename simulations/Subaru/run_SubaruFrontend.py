@@ -82,7 +82,7 @@ if __name__ == '__main__':
     # Run it!!!!!!!!!!!!!!!!!
     # =======================================================================
     dprint(f"iop.datadir = {iop.datadir}")
-    sim = mm.RunMedis(params=params, name='AO188', product='fields')
+    sim = mm.RunMedis(name='AO188', product='fields')
     # cpx_sequence, sampling = mm.RunMedis().telescope()
 
     observation = sim()
