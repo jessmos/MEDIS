@@ -65,6 +65,25 @@ class Distribution(object):
 
         return self.transform(index)
 
+def planck(T, l):
+    from scipy.constants import codata
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    D = codata.physical_constants
+
+    h = D['Planck constant'][0]
+    k = D['Boltzmann constant'][0]
+    c = D['speed of light in vacuum'][0]
+    wienConstant = 2.897e-3
+    # calculate the Planck Law for a specific temperature and an array of wavelengths
+    p = c*h/(k*l*T)
+    result = np.zeros(np.shape(l))+1e-99
+    # prevent underflow - compute only when p is "not too big"
+    calcMe = np.where(p<700)
+    result[calcMe] = (h*c*c)/(np.power(l[calcMe], 5.0) * (np.exp(p[calcMe])-1))
+    return result
+
 def poisson(lamda, k):
     pdf = (lamda ** k * np.exp(-lamda)) / scipy.misc.factorial(k)
     return pdf

@@ -47,14 +47,11 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     params = PASSVALUE['params']
 
     wfo = opx.Wavefronts(debug=params['sp'].debug)
-    wfo.initialize_proper()
+    wfo.initialize_proper(set_up_beam=True)
 
     ###################################################
-    # Aperture, Atmosphere, and Secondary Obscuration
+    # Atmosphere, and Secondary Obscuration
     ###################################################
-    # Defines aperture (baffle-before primary)
-    wfo.loop_collection(proper.prop_circular_aperture, **{'radius': params['tp'].entrance_d/2})
-    wfo.loop_collection(proper.prop_define_entrance)  # normalizes the intensity
 
     # Pass through a mini-atmosphere inside the telescope baffle
     #  The atmospheric model used here (as of 3/5/19) uses different scale heights,
@@ -110,7 +107,7 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
         else:
             WFS_map = ao.open_loop_wfs(wfo, plane_name='wfs')  # just uwraps this steps measured phase_map
             wfo.loop_collection(ao.deformable_mirror, WFS_map, iter=PASSVALUE['iter'], previous_output=None,
-                                tp=params['tp'], plane_name='deformable mirror', zero_outside=True)
+                                plane_name='deformable mirror', zero_outside=True)
 
     # Obscure Baffle
     if params['tp'].obscure:
