@@ -326,7 +326,7 @@ class Telescope():
 
          warning sampling is not currently stored in h5. It is stored in telescope.pkl however
          """
-        print(f"Loading fields from {iop.fieldsiop.fields}")
+        print(f"Loading fields from {iop.fields}")
         with h5py.File(iop.fields, 'r') as hdf:
             keys = list(hdf.keys())
             if 'data' in keys:
