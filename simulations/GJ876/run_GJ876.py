@@ -37,19 +37,18 @@ tp.ao_act = 50
 TESTDIR = 'GJ876'
 
 class Stats_Visualiser():
-    def __init__(self, fields, steps):
+    def __init__(self, fields, steps, pupil_xys, focal_xys=None):
         plt.ion()
         plt.show(block=True)
 
         self.planes = [np.where(sp.save_list == 'atmosphere')[0][0], np.where(sp.save_list == 'detector')[0][0]]
         self.fig, self.axes = plt.subplots(len(self.planes), 5, figsize=(17, 5))
 
-        pupil_xys = [[sp.grid_size // 2, sp.grid_size // 2], [275, 275], [237, 237], [290, 260], [100, 100], [412, 412]]
-        focal_xys = pupil_xys
+        if not focal_xys:
+            focal_xys = pupil_xys
         self.all_xys = [pupil_xys, focal_xys]
         props = dict(boxstyle='square', facecolor='k', alpha=0.5)
-        colors = [f'C{i}' for i in range(len(pupil_xys))]
-        print(colors)
+        self.colors = [f'C{i}' for i in range(len(pupil_xys))]
         xlabels = ['x', r'$E_{real}$', 'time', 'time', 'intensity']
         ylabels = ['y', r'$E_{imag}$', 'phase', 'intensity', 'amount']
 
@@ -61,7 +60,7 @@ class Stats_Visualiser():
 
             for ip, xy in enumerate(xys):
                 x, y = xy
-                circle = plt.Circle((x, y), 8, color=colors[ip])
+                circle = plt.Circle((x, y), 8, color=self.colors[ip])
                 self.axes[i, 0].add_artist(circle)
 
             [self.axes[i, ix].set_ylabel(ylabel) for ix, ylabel in enumerate(ylabels)]
@@ -84,7 +83,8 @@ class Stats_Visualiser():
             step = steps[self.it]
             self.draw(fields, step)
 
-        cid = self.fig.canvas.mpl_connect('button_press_event', onclick)
+        self.fig.canvas.mpl_connect('button_press_event', onclick)
+        plt.tight_layout()
 
     def draw(self, fields, step):
         if len(self.ims) > 0:
@@ -95,14 +95,19 @@ class Stats_Visualiser():
 
             for ip, xy in enumerate(xys):
                 x, y = xy
-                self.ims.append(self.axes[i, 1].plot(fields[:step, plane, 0, 0, x, y].real, fields[:step, plane, 0, 0, x, y].imag, marker='o',
-                                label=str(xy))[0])
-                self.ims.append(self.axes[i, 2].plot(np.arange(sp.numframes)[:step] * sp.sample_time, np.angle(fields[:step, plane, 0, 0, x, y]),
-                                marker='o')[0])
+                self.ims.append(self.axes[i, 1].plot(fields[:step, plane, 0, 0, x, y].real,
+                                                     fields[:step, plane, 0, 0, x, y].imag, marker='o',
+                                label=str(xy), color=self.colors[ip])[0])
+                self.ims.append(self.axes[i, 2].plot(np.arange(sp.numframes)[:step] * sp.sample_time,
+                                                     np.angle(fields[:step, plane, 0, 0, x, y]),
+                                marker='o', color=self.colors[ip])[0])
                 intensity = np.abs(fields[:step, plane, 0, 0, x, y]) ** 2
-                self.ims.append(self.axes[i, 3].plot(np.arange(sp.numframes)[:step] * sp.sample_time, intensity, marker='o')[0])
+
+                self.ims.append(self.axes[i, 3].plot(np.arange(sp.numframes)[:step] * sp.sample_time,
+                                                     intensity, marker='o', color=self.colors[ip])[0])
+
                 I, bins = np.histogram(intensity, bins=np.arange(np.min(intensity), np.max(intensity), 1e-9))
-                self.ims.append(self.axes[i, 4].step(bins[:-1], I)[0])
+                self.ims.append(self.axes[i, 4].step(bins[:-1], I, color=self.colors[ip])[0])
 
         self.fig.canvas.draw()
 
@@ -125,9 +130,9 @@ def investigate_fields():
     #     axes[0, i].set_title(sp.save_list[i])
     # plt.tight_layout()
 
-    steps = range(0,600,100)
-    vis = Stats_Visualiser(fields, steps)
-
+    steps = range(0,600,10)
+    pupil_xys = [[sp.grid_size // 2, sp.grid_size // 2], [275, 275], [237, 237], [290, 260], [100, 100]]
+    Stats_Visualiser(fields, steps, pupil_xys)
 
     plt.show(block=True)
     # plt.tight_layout()
