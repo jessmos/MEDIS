@@ -36,6 +36,76 @@ tp.ao_act = 50
 
 TESTDIR = 'GJ876'
 
+class Stats_Visualiser():
+    def __init__(self, fields, steps):
+        plt.ion()
+        plt.show(block=True)
+
+        self.planes = [np.where(sp.save_list == 'atmosphere')[0][0], np.where(sp.save_list == 'detector')[0][0]]
+        self.fig, self.axes = plt.subplots(len(self.planes), 5, figsize=(17, 5))
+
+        pupil_xys = [[sp.grid_size // 2, sp.grid_size // 2], [275, 275], [237, 237], [290, 260], [100, 100], [412, 412]]
+        focal_xys = pupil_xys
+        self.all_xys = [pupil_xys, focal_xys]
+        props = dict(boxstyle='square', facecolor='k', alpha=0.5)
+        colors = [f'C{i}' for i in range(len(pupil_xys))]
+        print(colors)
+        xlabels = ['x', r'$E_{real}$', 'time', 'time', 'intensity']
+        ylabels = ['y', r'$E_{imag}$', 'phase', 'intensity', 'amount']
+
+        for i, (plane, xys) in enumerate(zip(self.planes, self.all_xys)):
+
+            self.axes[i, 0].imshow(np.abs(fields[0, plane, 0, 0]) ** 2, origin='lower')
+            self.axes[i, 0].text(0.1, 0.1, sp.save_list[plane], transform=self.axes[i, 0].transAxes, fontweight='bold',
+                            color='w', fontsize=16, bbox=props)
+
+            for ip, xy in enumerate(xys):
+                x, y = xy
+                circle = plt.Circle((x, y), 8, color=colors[ip])
+                self.axes[i, 0].add_artist(circle)
+
+            [self.axes[i, ix].set_ylabel(ylabel) for ix, ylabel in enumerate(ylabels)]
+        [self.axes[1, ix].set_xlabel(xlabel) for ix, xlabel in enumerate(xlabels)]
+        self.axes[0, 1].legend()
+
+        self.it = 0
+        self.ims = []
+
+        def onclick(event):
+            print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
+                  ('double' if event.dblclick else 'single', event.button,
+                   event.x, event.y, event.xdata, event.ydata))
+            if event.button == 1:
+                self.it -= 1
+                print(self.it, event.button)
+            else:
+                self.it += 1
+                print(self.it, event.button)
+            step = steps[self.it]
+            self.draw(fields, step)
+
+        cid = self.fig.canvas.mpl_connect('button_press_event', onclick)
+
+    def draw(self, fields, step):
+        if len(self.ims) > 0:
+            [im.remove() for im in self.ims]
+            self.ims = []
+
+        for i, (plane, xys) in enumerate(zip(self.planes, self.all_xys)):
+
+            for ip, xy in enumerate(xys):
+                x, y = xy
+                self.ims.append(self.axes[i, 1].plot(fields[:step, plane, 0, 0, x, y].real, fields[:step, plane, 0, 0, x, y].imag, marker='o',
+                                label=str(xy))[0])
+                self.ims.append(self.axes[i, 2].plot(np.arange(sp.numframes)[:step] * sp.sample_time, np.angle(fields[:step, plane, 0, 0, x, y]),
+                                marker='o')[0])
+                intensity = np.abs(fields[:step, plane, 0, 0, x, y]) ** 2
+                self.ims.append(self.axes[i, 3].plot(np.arange(sp.numframes)[:step] * sp.sample_time, intensity, marker='o')[0])
+                I, bins = np.histogram(intensity, bins=np.arange(np.min(intensity), np.max(intensity), 1e-9))
+                self.ims.append(self.axes[i, 4].step(bins[:-1], I)[0])
+
+        self.fig.canvas.draw()
+
 def investigate_fields():
 
     sp.save_list = np.array(['atmosphere', 'detector'])
@@ -55,38 +125,13 @@ def investigate_fields():
     #     axes[0, i].set_title(sp.save_list[i])
     # plt.tight_layout()
 
-    planes = [np.where(sp.save_list == 'atmosphere')[0][0], np.where(sp.save_list == 'detector')[0][0]]
+    steps = range(0,600,100)
+    vis = Stats_Visualiser(fields, steps)
 
-    fig, axes = plt.subplots(len(planes), 5, figsize=(17, 5))
-    pupil_xys = [[sp.grid_size // 2, sp.grid_size // 2], [275, 275], [237, 237], [290, 260], [100,100], [412,412]]
-    focal_xys = pupil_xys
-    all_xys = [pupil_xys, focal_xys]
-    props = dict(boxstyle='square', facecolor='k', alpha=0.5)
-    colors = [f'C{i}' for i in range(len(pupil_xys))]
-    print(colors)
-    xlabels = ['x', r'$E_{real}$', 'time', 'time', 'intensity']
-    ylabels = ['y', r'$E_{imag}$', 'phase', 'intensity', 'amount']
-    for i, (plane, xys) in enumerate(zip(planes, all_xys)):
 
-        axes[i, 0].imshow(np.abs(fields[0, plane, 0, 0]) ** 2, origin='lower')
-        axes[i, 0].text(0.1, 0.1, sp.save_list[plane], transform=axes[i,0].transAxes, fontweight='bold', color='w', fontsize=16, bbox=props)
-
-        for ip, xy in enumerate(xys):
-            x, y = xy
-            axes[i, 1].plot(fields[:, plane, 0, 0, x, y].real, fields[:, plane, 0, 0, x, y].imag, marker='o', label=str(xy))
-            axes[i, 2].plot(np.arange(sp.numframes)*sp.sample_time, np.angle(fields[:, plane, 0, 0, x, y]), marker='o')
-            intensity = np.abs(fields[:, plane, 0, 0, x, y])**2
-            axes[i, 3].plot(np.arange(sp.numframes)*sp.sample_time, intensity, marker='o')
-            I, bins = np.histogram(intensity, bins=np.arange(np.min(intensity),np.max(intensity), 1e-9))
-            axes[i, 4].step(bins[:-1], I)
-            circle = plt.Circle((x, y), 8, color=colors[ip])
-            axes[i, 0].add_artist(circle)
-
-        [axes[i, ix].set_ylabel(ylabel) for ix, ylabel in enumerate(ylabels)]
-    [axes[1, ix].set_xlabel(xlabel) for ix, xlabel in enumerate(xlabels)]
-    axes[0, 1].legend()
-    plt.tight_layout()
     plt.show(block=True)
+    # plt.tight_layout()
+    # plt.show(block=True)
 
 def investigate_stats():
     sp.grid_size = 512
