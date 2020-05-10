@@ -15,9 +15,11 @@ from medis.plot_tools import quick2D, grid
 from medis.twilight_colormaps import sunlight
 from medis.params import sp, ap, tp, iop, mp
 
-sp.numframes = 600  # 2000  # 1000
-ap.companion_xy = [[2,0]]
-ap.companion = False
+sp.numframes = 500  # 2000  # 1000
+ap.companion_xy = [[2,0], [-2,0]]
+ap.companion = True
+ap.spectra = [None, None, None]
+ap.contrast = [1e-3, 1e-2]
 ap.n_wvl_init = 1
 ap.n_wvl_final = 1
 tp.cg_type = 'Solid'
@@ -32,12 +34,13 @@ tp.use_ao = True
 sp.save_to_disk = True
 sp.debug = False
 tp.ao_act = 50
+# sp.debug = True
 # sp.skip_planes = ['coronagraph']
 
 TESTDIR = 'GJ876'
 
 class Stats_Visualiser():
-    def __init__(self, fields, steps, pupil_xys, focal_xys=None):
+    def __init__(self, monofields, steps, I_bins, pupil_xys, focal_xys=None):
         plt.ion()
         plt.show(block=True)
 
@@ -54,39 +57,41 @@ class Stats_Visualiser():
 
         for i, (plane, xys) in enumerate(zip(self.planes, self.all_xys)):
 
-            self.axes[i, 0].imshow(np.abs(fields[0, plane, 0, 0]) ** 2, origin='lower')
+            self.axes[i, 0].imshow(np.sum(np.abs(monofields[0, plane, :]) ** 2, axis=0), origin='lower', norm=LogNorm())
             self.axes[i, 0].text(0.1, 0.1, sp.save_list[plane], transform=self.axes[i, 0].transAxes, fontweight='bold',
                             color='w', fontsize=16, bbox=props)
 
             for ip, xy in enumerate(xys):
                 x, y = xy
-                circle = plt.Circle((x, y), 8, color=self.colors[ip])
+                circle = plt.Circle((y, x), 9, color=self.colors[ip], fill=False, linewidth=2)
                 self.axes[i, 0].add_artist(circle)
 
             [self.axes[i, ix].set_ylabel(ylabel) for ix, ylabel in enumerate(ylabels)]
         [self.axes[1, ix].set_xlabel(xlabel) for ix, xlabel in enumerate(xlabels)]
         self.axes[0, 1].legend()
 
-        self.it = 0
+        self.ih = 0
+        self.iv = 0
         self.ims = []
 
-        def onclick(event):
-            print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
-                  ('double' if event.dblclick else 'single', event.button,
-                   event.x, event.y, event.xdata, event.ydata))
-            if event.button == 1:
-                self.it -= 1
-                print(self.it, event.button)
-            else:
-                self.it += 1
-                print(self.it, event.button)
-            step = steps[self.it]
-            self.draw(fields, step)
+        def on_key(event):
+            if event.key == 'right':
+                self.ih += 1
+            elif event.key == 'left':
+                self.ih -= 1
+            elif event.key == 'up':
+                self.iv += 1
+            elif event.key == 'down':
+                self.iv -= 1
+            step = steps[self.ih]
+            I_bin = I_bins[self.iv]
+            print('ih: ', self.ih, 'iv: ', self.iv, 'step num: ', step, 'intensity bin width: ', I_bin)
+            self.draw(monofields, step, I_bin)
 
-        self.fig.canvas.mpl_connect('button_press_event', onclick)
+        self.fig.canvas.mpl_connect('key_press_event', on_key)
         plt.tight_layout()
 
-    def draw(self, fields, step):
+    def draw(self, monofields, step, I_bin):
         if len(self.ims) > 0:
             [im.remove() for im in self.ims]
             self.ims = []
@@ -95,18 +100,18 @@ class Stats_Visualiser():
 
             for ip, xy in enumerate(xys):
                 x, y = xy
-                self.ims.append(self.axes[i, 1].plot(fields[:step, plane, 0, 0, x, y].real,
-                                                     fields[:step, plane, 0, 0, x, y].imag, marker='o',
+                timecube = np.sum(monofields[:step, plane, :, x, y], axis=1)  # containing all the objects
+                self.ims.append(self.axes[i, 1].plot(timecube.real, timecube.imag, marker='o',
                                 label=str(xy), color=self.colors[ip])[0])
                 self.ims.append(self.axes[i, 2].plot(np.arange(sp.numframes)[:step] * sp.sample_time,
-                                                     np.angle(fields[:step, plane, 0, 0, x, y]),
+                                                     np.angle(timecube),
                                 marker='o', color=self.colors[ip])[0])
-                intensity = np.abs(fields[:step, plane, 0, 0, x, y]) ** 2
+                intensity = np.abs(timecube) ** 2
 
                 self.ims.append(self.axes[i, 3].plot(np.arange(sp.numframes)[:step] * sp.sample_time,
                                                      intensity, marker='o', color=self.colors[ip])[0])
 
-                I, bins = np.histogram(intensity, bins=np.arange(np.min(intensity), np.max(intensity), 1e-9))
+                I, bins = np.histogram(intensity, bins=np.arange(np.min(intensity), np.max(intensity), I_bin))
                 self.ims.append(self.axes[i, 4].step(bins[:-1], I, color=self.colors[ip])[0])
 
         self.fig.canvas.draw()
@@ -114,9 +119,8 @@ class Stats_Visualiser():
 def investigate_fields():
 
     sp.save_list = np.array(['atmosphere', 'detector'])
-    sim = RunMedis(name=f'{TESTDIR}/fields', product='fields')
+    sim = RunMedis(name=f'{TESTDIR}/fieldscomp', product='fields')
     observation = sim()
-    print(observation.keys(), )
 
     fields = observation['fields']
 
@@ -130,13 +134,17 @@ def investigate_fields():
     #     axes[0, i].set_title(sp.save_list[i])
     # plt.tight_layout()
 
-    steps = range(0,600,10)
-    pupil_xys = [[sp.grid_size // 2, sp.grid_size // 2], [275, 275], [237, 237], [290, 260], [100, 100]]
-    Stats_Visualiser(fields, steps, pupil_xys)
+    planet_x = 189
+    anti_planet_x = sp.grid_size - planet_x
+    monofields = fields[:, :, 0]  # keep all dimensions apart from wavelength
+
+    steps = range(0,500,100)
+    I_bins = np.logspace(-6, -9, 7)
+    pupil_xys = [[sp.grid_size//2, sp.grid_size//2], [275, 275], [290, 260], [375, 375], [256,189], [256, anti_planet_x]]
+
+    Stats_Visualiser(monofields, steps,I_bins, pupil_xys)
 
     plt.show(block=True)
-    # plt.tight_layout()
-    # plt.show(block=True)
 
 def investigate_stats():
     sp.grid_size = 512
