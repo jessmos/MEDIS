@@ -90,13 +90,16 @@ class RunMedis():
                 print(f"Configuration files differ")
                 now = datetime.now().strftime("%m:%d:%Y_%H-%M-%S")
                 backup_testr = os.path.join(iop.datadir, self.name+'_backup_'+now)
-                if not sp.auto_rename:
-                    confirm = input(f'\n\n\tINPUT REQUIRED...\n\nRename old testdir to {backup_testr} and start new '
-                                    f'simulation as {iop.testdir} [Y/n]?')
-                    if confirm == 'n':
+                if not sp.auto_load:
+                    choice = input(f'\n\n\tINPUT REQUIRED...\n\n'
+                                    f'Rename old testdir to {backup_testr} and start new simulation as {iop.testdir} [R],'
+                                    f'\nor Quit [Q],'
+                                    f'\nor ignore parameter difference and proceed with Loading original [L]?')
+                    if choice.lower() == 'q':
                         exit()
-                os.rename(iop.testdir, backup_testr)
-                self.make_testdir()
+                    elif choice.lower() == 'r':
+                        os.rename(iop.testdir, backup_testr)
+                        self.make_testdir()
 
     def make_testdir(self):
         if not os.path.isdir(iop.testdir):
