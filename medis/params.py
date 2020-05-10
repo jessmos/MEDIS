@@ -125,9 +125,8 @@ class Simulation_params:
         self.save_list = ['detector']  # list of locations in optics train to save
         self.skip_planes = []  # You can tell Wavefronts to ignore planes if it sees them by including the plane name here
         self.memory_limit = 10  # number of giga-bytes for sixcube of complex fields before chunking happens
-        self.checkpointing = None  # int or None number of timesteps before complex fields sixcube is saved
+        self.checkpointing = 100  # int or None number of timesteps before complex fields sixcube is saved
                                  # minimum of this and max allowed steps for memory reasons takes priority
-        self.continuous_save = True
         self.chunking = False  # chunking is neccessary if the full fields tensor does not fit in memory. RunMedis should set this automatically
         self.auto_load = False  # controls whether RunMedis checks with the user before it loads an old simulaiton it knows to have mismatching parameters
 

@@ -1,3 +1,8 @@
+"""
+todo h5 won't let you save chunks>4GB. Add that check to max_chunk function (in addition to one users specific memory check)
+
+"""
+
 import os
 import sys
 import numpy as np
