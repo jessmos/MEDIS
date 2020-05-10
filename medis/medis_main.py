@@ -87,9 +87,15 @@ class RunMedis():
             if exact_match:
                 print(f"Configuration files match. Initialization over")
             else:
-                print(f"Configuration files differ. Creating a new test directory")
+                print(f"Configuration files differ")
                 now = datetime.now().strftime("%m:%d:%Y_%H-%M-%S")
-                iop.update_testname(self.name+'_newsim_'+now)
+                backup_testr = os.path.join(iop.datadir, self.name+'_backup_'+now)
+                if not sp.auto_rename:
+                    confirm = input(f'\n\n\tINPUT REQUIRED...\n\nRename old testdir to {backup_testr} and start new '
+                                    f'simulation as {iop.testdir} [Y/n]?')
+                    if confirm == 'n':
+                        exit()
+                os.rename(iop.testdir, backup_testr)
                 self.make_testdir()
 
     def make_testdir(self):

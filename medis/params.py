@@ -128,7 +128,8 @@ class Simulation_params:
         self.checkpointing = None  # int or None number of timesteps before complex fields sixcube is saved
                                  # minimum of this and max allowed steps for memory reasons takes priority
         self.continuous_save = True
-        self.chunking = False
+        self.chunking = False  # chunking is neccessary if the full fields tensor does not fit in memory. RunMedis should set this automatically
+        self.auto_rename = False  # controls whether RunMedis lets the user know its renaming an old simulation save and starting a new one with the desired name
 
         self.verbose = True
         self.debug = False
