@@ -120,7 +120,10 @@ class RunMedis():
             matches = []
             for (this_attr, this_val), (load_attr, load_val) in zip(self.params[p].__dict__.items(),
                                                                     loaded_params[p].__dict__.items()):
-                matches.append(this_attr == load_attr and np.all(load_val == this_val))
+                try:
+                    matches.append(this_attr == load_attr and np.all(load_val == this_val))
+                except ValueError:
+                    matches.append(False)
 
             match = np.all(matches)
             print(f"param: {p}, match: {match}")
