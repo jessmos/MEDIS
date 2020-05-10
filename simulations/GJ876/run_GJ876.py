@@ -15,9 +15,9 @@ from medis.plot_tools import quick2D, grid
 from medis.twilight_colormaps import sunlight
 from medis.params import sp, ap, tp, iop, mp
 
-sp.numframes = 5  # 2000  # 1000
+sp.numframes = 600  # 2000  # 1000
 ap.companion_xy = [[2,0]]
-ap.companion = True
+ap.companion = False
 ap.n_wvl_init = 1
 ap.n_wvl_final = 1
 tp.cg_type = 'Solid'
@@ -38,31 +38,53 @@ TESTDIR = 'GJ876'
 
 def investigate_fields():
 
-    ap.contrast = 10**np.array([-1.])
-    if tp.prescription == 'general_telescope':
-        sp.save_list = np.array(
-            ['atmosphere', 'CPA', 'deformable mirror', 'NCPA', 'pre_coron', 'detector'])
-    else:
-        sp.save_list = np.array(
-            ['atmosphere', 'effective-primary', 'ao188-OAP1', 'woofer', 'ao188-OAP2',  'tweeter', 'focus', 'detector'])
+    sp.save_list = np.array(['atmosphere', 'detector'])
     sim = RunMedis(name=f'{TESTDIR}/fields', product='fields')
     observation = sim()
     print(observation.keys(), )
 
     fields = observation['fields']
-    grid(fields, logZ=True, nstd=2, show=False)
-    spectral_train_phase = np.angle(fields[0, :-2, :, 0])
-    spectral_train_amp = np.abs(fields[0, -2:, :, 0] ** 2)
-    spectral_train_grid = np.concatenate((spectral_train_phase,spectral_train_amp), axis=0)
-    nplanes = len(sp.save_list)
-    fig, axes = plt.subplots(1, nplanes, figsize=(14,7))
 
-    for i in range(nplanes-2):
-        im1 = axes[i].imshow(spectral_train_grid[i, 0], cmap=sunlight, vmin=-np.pi, vmax=np.pi)
-        axes[i].set_title(sp.save_list[i])
-    for i in range(nplanes-2,nplanes):
-        im3 = axes[i].imshow(spectral_train_grid[i,0], cmap='inferno', norm=LogNorm(), vmin=1e-8, vmax=1e-3)
-        axes[i].set_title(sp.save_list[i])
+    # spectral_train_grid = np.concatenate((fields[0, :, :, 0].imag, fields[0, :, :, 0].real), axis=1)
+    # nplanes = len(sp.save_list)
+    # fig, axes = plt.subplots(2, nplanes, figsize=(14, 7))
+    # print(axes.shape, spectral_train_grid.shape)
+    # for i in range(nplanes):
+    #     for j in range(2):
+    #         axes[j,i].imshow(spectral_train_grid[i,j])
+    #     axes[0, i].set_title(sp.save_list[i])
+    # plt.tight_layout()
+
+    planes = [np.where(sp.save_list == 'atmosphere')[0][0], np.where(sp.save_list == 'detector')[0][0]]
+
+    fig, axes = plt.subplots(len(planes), 5, figsize=(17, 5))
+    pupil_xys = [[sp.grid_size // 2, sp.grid_size // 2], [275, 275], [237, 237], [290, 260], [100,100], [412,412]]
+    focal_xys = pupil_xys
+    all_xys = [pupil_xys, focal_xys]
+    props = dict(boxstyle='square', facecolor='k', alpha=0.5)
+    colors = [f'C{i}' for i in range(len(pupil_xys))]
+    print(colors)
+    xlabels = ['x', r'$E_{real}$', 'time', 'time', 'intensity']
+    ylabels = ['y', r'$E_{imag}$', 'phase', 'intensity', 'amount']
+    for i, (plane, xys) in enumerate(zip(planes, all_xys)):
+
+        axes[i, 0].imshow(np.abs(fields[0, plane, 0, 0]) ** 2, origin='lower')
+        axes[i, 0].text(0.1, 0.1, sp.save_list[plane], transform=axes[i,0].transAxes, fontweight='bold', color='w', fontsize=16, bbox=props)
+
+        for ip, xy in enumerate(xys):
+            x, y = xy
+            axes[i, 1].plot(fields[:, plane, 0, 0, x, y].real, fields[:, plane, 0, 0, x, y].imag, marker='o', label=str(xy))
+            axes[i, 2].plot(np.arange(sp.numframes)*sp.sample_time, np.angle(fields[:, plane, 0, 0, x, y]), marker='o')
+            intensity = np.abs(fields[:, plane, 0, 0, x, y])**2
+            axes[i, 3].plot(np.arange(sp.numframes)*sp.sample_time, intensity, marker='o')
+            I, bins = np.histogram(intensity, bins=np.arange(np.min(intensity),np.max(intensity), 1e-9))
+            axes[i, 4].step(bins[:-1], I)
+            circle = plt.Circle((x, y), 8, color=colors[ip])
+            axes[i, 0].add_artist(circle)
+
+        [axes[i, ix].set_ylabel(ylabel) for ix, ylabel in enumerate(ylabels)]
+    [axes[1, ix].set_xlabel(xlabel) for ix, xlabel in enumerate(xlabels)]
+    axes[0, 1].legend()
     plt.tight_layout()
     plt.show(block=True)
 
@@ -157,6 +179,6 @@ def investigate_quantized():
     plt.show()
 
 if __name__ == '__main__':
-    # investigate_fields()
+    investigate_fields()
     # investigate_stats()
-    investigate_quantized()
+    # investigate_quantized()
