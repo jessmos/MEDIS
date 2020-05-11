@@ -1,9 +1,6 @@
 """
-MKIDs.py
-
-is a function under run_medis class
-
-Rupert adds all of his stuff here.
+The Camera class simulates an obsservation with an MKID camera given a "fields" tensor (created with Telescope) and
+the MKID_params that define the device
 """
 
 import os, sys
@@ -50,9 +47,18 @@ class Camera():
         :return:
         either photon list or rebinned cube
 
+        Functions
+        __init__():        loads instance of class if it exists, otherwise loads photonlist if it exist, otherwise gets
+                           fields and creates device
+        create_device():   create the camera's random device parameters eg locations of dead pix, assigning R to pixels etc
+        __call__():        if photons can't be loaded detect photons (combine fields and device params to produce a photon
+                           list) and save
+        save_photonlist(): save the photonlist in the MKIDPipeline format
+        save_instance():   save the whole instance of this class including photons and self.name etc
+
         """
 
-        self.name = iop.camera
+        self.name = iop.camera  # used for saving an loading the instance
         self.usesave = usesave
         self.stackcube = None
 
@@ -79,6 +85,11 @@ class Camera():
             self.create_device()
 
     def create_device(self):
+        """
+        Create the camera's random device parameters eg locations of dead pix, assigning R to pixels etc
+
+        :return:
+        """
         self.platescale = mp.platescale
         self.array_size = mp.array_size
         self.dark_pix_frac = mp.dark_pix_frac
@@ -143,6 +154,13 @@ class Camera():
 
     def save_photonlist(self, index=('ultralight', 6), timesort=False, chunkshape=None, shuffle=True, bitshuffle=False,
                         ndx_shuffle=True, ndx_bitshuffle=False):
+        """
+        save the photonlist in the MKIDPipeline format (https://github.com/MazinLab/MKIDPipeline)
+
+        This code is ported from build_pytables() https://github.com/MazinLab/MKIDPipeline/blob/develop/mkidpipeline/hdf/bin2hdf.py#L64
+        commit 292dec0f5140f5f1f941cc482c2fdcd2dd223011
+
+        """
 
         beammap = np.arange(mp.array_size[0]*mp.array_size[1]).reshape(mp.array_size)
         flagmap = np.zeros_like(beammap)
@@ -238,6 +256,12 @@ class Camera():
 
     def load_photonlist(self):
         #todo implement
+
+        h5file = tables.open_file(iop.photonlist, "r")
+        print(h5file)
+        table = h5file.root.Photons.PhotonTable
+        print(table.shape)
+
         raise NotImplementedError
         photons = None
         return photons
@@ -272,6 +296,14 @@ class Camera():
         return obj
 
     def get_packets(self, datacube, step, plot=False):
+        """
+        Given an intensity spectralcube and timestep create a quantized photon list
+
+        :param datacube:
+        :param step:
+        :param plot:
+        :return:
+        """
         if plot: view_spectra(datacube, logZ=True, extract_center=False, title='pre')
 
         if mp.resamp:
@@ -365,7 +397,6 @@ class Camera():
         # print cube[x][y]
         # cube = time_sort(cube)
         return cube
-
 
     def responvisity_scaling_map(self, plot=False):
         """Assigns each pixel a phase responsivity between 0 and 1"""
