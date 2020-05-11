@@ -40,9 +40,9 @@ class IO_params:
         self.params_logs = os.path.join(self.testdir, 'params.pkl')
 
         self.fields = os.path.join(self.testdir, 'fields.h5')  # a x/y/t/w cube of data
-        # self.photons = os.path.join(self.testdir, 'photons.pkl')  # a photon table with 4 columns
-        self.camera = os.path.join(self.testdir, 'camera.pkl')  # a photon table with 4 columns
-        self.telescope = os.path.join(self.testdir, 'telescope.pkl')  # a photon table with 4 columns
+        self.photonlist = os.path.join(self.testdir, 'photonlist.h5')  # a photon table with 4 columns
+        self.camera = os.path.join(self.testdir, 'camera.pkl')  # MKIDS.Camera instance save state
+        self.telescope = os.path.join(self.testdir, 'telescope.pkl')  # a telecope.Telescope instance save state
 
         self.atmosroot = 'atmos'
         atmosdir = "gridsz{}_bmratio{}_tsteps{}"  # fill in variable names later
@@ -122,6 +122,7 @@ class Simulation_params:
 
         # Reading/Saving Params
         self.save_to_disk = False  # Saves observation sequence (timestep, wavelength, x, y)
+        self.save_sim_object = True  # Toggles whether telescope.Telescope or MKIDs.Camera object is stored or just its photon data
         self.save_list = ['detector']  # list of locations in optics train to save
         self.skip_planes = []  # You can tell Wavefronts to ignore planes if it sees them by including the plane name here
         self.memory_limit = 10  # number of giga-bytes for sixcube of complex fields before chunking happens

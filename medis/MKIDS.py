@@ -12,6 +12,13 @@ from matplotlib import pyplot as plt
 from scipy import interpolate
 import pickle
 import random
+from mkidcore.config import yaml
+from mkidcore.corelog import getLogger
+from mkidcore.headers import ObsFileCols, ObsHeader
+import mkidcore
+from mkidcore import pixelflags
+import tables
+from io import StringIO
 
 from medis.distribution import *
 from medis.params import mp, ap, iop, sp, tp
@@ -49,13 +56,16 @@ class Camera():
         self.usesave = usesave
         self.stackcube = None
 
-        self.save_exists = True if os.path.exists(self.name) else False
+        self.save_exists = True if os.path.exists(self.name) else False  # whole Camera instance
+        self.photons_exists = True if os.path.exists(iop.photonlist) else False  # just the photonlist
 
         if self.save_exists and self.usesave:
-                load = self.load()
-                self.__dict__ = load.__dict__
-                self.save_exists = True  # just in case the saved obj didn't have this set to True
-
+            load = self.load_instance()
+            self.__dict__ = load.__dict__
+            self.save_exists = True  # just in case the saved obj didn't have this set to True
+        elif self.photons_exists and self.usesave:
+            self.photons = self.load_photonlist()
+            self.stackcube = None
         else:
             if fields is None:
                 # make fields (or load if it already exists)
@@ -122,14 +132,120 @@ class Camera():
                 self.stackcube[step] = cube
 
             if self.usesave:
-                self.save()
+                if sp.save_sim_object:
+                    self.save_instance()
+                else:
+                    self.save_photonlist()
 
         dataproduct = {'photons': self.photons, 'stackcube': self.stackcube}
 
         return dataproduct
 
-    def save(self):
+    def save_photonlist(self, index=('ultralight', 6), timesort=False, chunkshape=None, shuffle=True, bitshuffle=False,
+                        ndx_shuffle=True, ndx_bitshuffle=False):
+
+        beammap = np.arange(mp.array_size[0]*mp.array_size[1]).reshape(mp.array_size)
+        flagmap = np.zeros_like(beammap)
+
+        xs = np.int_(self.photons[:, 2])
+        ys = np.int_(self.photons[:, 3])
+        ResID = beammap[xs, ys]
+        photons = np.zeros(len(self.photons),
+                           dtype=np.dtype([('ResID', int), ('Time', float), ('Wavelength', float),
+                                           ('SpecWeight', float), ('NoiseWeight', float)]))
+
+        photons['ResID'] = ResID
+        photons['Time'] = self.photons[:,0]
+        photons['Wavelength'] = self.photons[:,1]
+        if timesort:
+            photons.sort(order=('Time', 'ResID'))
+            getLogger(__name__).warning('Sorting photon data on time for {}'.format(iop.photonlist))
+        elif not np.all(photons['ResID'][:-1] <= photons['ResID'][1:]):
+            getLogger(__name__).warning('binprocessor.extract returned data that was not sorted on ResID, sorting'
+                                        '({})'.format(iop.photonlist))
+            photons.sort(order=('ResID', 'Time'))
+
+        h5file = tables.open_file(iop.photonlist, mode="a", title="MKID Photon File")
+        group = h5file.create_group("/", 'Photons', 'Photon Information')
+        filter = tables.Filters(complevel=1, complib='blosc:lz4', shuffle=shuffle, bitshuffle=bitshuffle,
+                                fletcher32=False)
+        table = h5file.create_table(group, name='PhotonTable', description=ObsFileCols, title="Photon Datatable",
+                                    expectedrows=len(photons), filters=filter, chunkshape=chunkshape)
+        table.append(photons)
+
+        getLogger(__name__).debug('Table Populated for {}'.format(iop.photonlist))
+        if index:
+            index_filter = tables.Filters(complevel=1, complib='blosc:lz4', shuffle=ndx_shuffle,
+                                          bitshuffle=ndx_bitshuffle,
+                                          fletcher32=False)
+
+            def indexer(col, index, filter=None):
+                if isinstance(index, bool):
+                    col.create_csindex(filters=filter)
+                else:
+                    col.create_index(optlevel=index[1], kind=index[0], filters=filter)
+
+            indexer(table.cols.Time, index, filter=index_filter)
+            getLogger(__name__).debug('Time Indexed for {}'.format(iop.photonlist))
+            indexer(table.cols.ResID, index, filter=index_filter)
+            getLogger(__name__).debug('ResID Indexed for {}'.format(iop.photonlist))
+            indexer(table.cols.Wavelength, index, filter=index_filter)
+            getLogger(__name__).debug('Wavelength indexed for {}'.format(iop.photonlist))
+            getLogger(__name__).debug('Table indexed ({}) for {}'.format(index, iop.photonlist))
+        else:
+            getLogger(__name__).debug('Skipping Index Generation for {}'.format(iop.photonlist))
+
+        group = h5file.create_group("/", 'BeamMap', 'Beammap Information', filters=filter)
+        h5file.create_array(group, 'Map', beammap, 'resID map')
+        h5file.create_array(group, 'Flag', flagmap, 'flag map')
+        getLogger(__name__).debug('Beammap Attached to {}'.format(iop.photonlist))
+
+        h5file.create_group('/', 'header', 'Header')
+        headerTable = h5file.create_table('/header', 'header', ObsHeader, 'Header')
+        headerContents = headerTable.row
+        headerContents['isWvlCalibrated'] = False
+        headerContents['isFlatCalibrated'] = False
+        headerContents['isSpecCalibrated'] = False
+        headerContents['isLinearityCorrected'] = False
+        headerContents['isPhaseNoiseCorrected'] = False
+        headerContents['isPhotonTailCorrected'] = False
+        headerContents['timeMaskExists'] = False
+        headerContents['startTime'] = sp.startframe
+        headerContents['expTime'] = sp.sample_time
+        headerContents['wvlBinStart'] = ap.wvl_range[0]
+        headerContents['wvlBinEnd'] = ap.wvl_range[1]
+        headerContents['energyBinWidth'] = 0.1  #todo check this
+        headerContents['target'] = ''
+        headerContents['dataDir'] = iop.testdir
+        headerContents['beammapFile'] = ''
+        headerContents['wvlCalFile'] = ''
+        headerContents['fltCalFile'] = ''
+        headerContents['metadata'] = ''
+
+        out = StringIO()
+        yaml.dump({'flags': mkidcore.pixelflags.FLAG_LIST}, out)
+        out = out.getvalue().encode()
+        if len(out) > mkidcore.headers.METADATA_BLOCK_BYTES:  # this should match mkidcore.headers.ObsHeader.metadata
+            raise ValueError("Too much metadata! {} KB needed, {} allocated".format(len(out) // 1024,
+                                                                                    mkidcore.headers.METADATA_BLOCK_BYTES // 1024))
+        headerContents['metadata'] = out
+
+        headerContents.append()
+        getLogger(__name__).debug('Header Attached to {}'.format(iop.photonlist))
+
+        h5file.close()
+        getLogger(__name__).debug('Done with {}'.format(iop.photonlist))
+
+    def load_photonlist(self):
+        #todo implement
+        raise NotImplementedError
+        photons = None
+        return photons
+
+    def save_instance(self):
         """
+        Save the whole Camera instance
+
         This is a defensive way to write pickle.write, allowing for very large files on all platforms
         """
         max_bytes = 2 ** 31 - 1
@@ -139,7 +255,7 @@ class Camera():
             for idx in range(0, n_bytes, max_bytes):
                 f_out.write(bytes_out[idx:idx + max_bytes])
 
-    def load(self):
+    def load_instance(self):
         """
         This is a defensive way to write pickle.load, allowing for very large files on all platforms
         """
