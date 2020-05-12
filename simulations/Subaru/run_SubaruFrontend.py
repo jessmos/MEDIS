@@ -26,8 +26,9 @@ import medis.medis_main as mm
 #################################################################################################
 #################################################################################################
 # Renaming Directories
+testname = 'SubaruAO188-test1'
 iop.update_datadir('/home/captainkay/mazinlab/MKIDSim/CDIsim_data/')
-iop.update_testname('Subaru-test2')
+iop.update_testname(testname)
 iop.makedir()
 dprint(f"im executing")
 
@@ -74,15 +75,13 @@ sp.save_list = ['atmosphere', 'entrance_pupil', 'woofer', 'detector']  # list of
 dprint(f"iop.datadir = {iop.datadir}")
 dprint(f"iop.testname = {iop.testname}")
 
-params = {'ap':ap, 'tp':tp, 'atmp':atmp, 'cdip':cdip, 'iop':iop, 'sp':sp, 'mp':mp}
-
 
 if __name__ == '__main__':
     # =======================================================================
     # Run it!!!!!!!!!!!!!!!!!
     # =======================================================================
     dprint(f"iop.datadir = {iop.datadir}")
-    sim = mm.RunMedis(name='AO188', product='fields')
+    sim = mm.RunMedis(name=testname, product='fields')
     # cpx_sequence, sampling = mm.RunMedis().telescope()
 
     observation = sim()
@@ -140,8 +139,8 @@ if __name__ == '__main__':
 
     # Plotting Selected Plane
     if sp.show_planes:
-        # vlim = ((None, None), (None, None), (None, None), (None, None), (None, None))
-        vlim = [(None,None), (None,None), (None,None), (1e-3,1e-1)]  # (7e-4, 6e-4)
+        vlim = [(None, None), (None, None), (None, None), (None, None), (None, None)]
+        # vlim = [(None,None), (None,None), (None,None), (1e-2,1e-1)]  # (7e-4, 6e-4)
         logZ = [True, False, False, True]
         if sp.save_list:
             plot_planes(cpx_sequence,

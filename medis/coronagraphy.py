@@ -12,7 +12,7 @@ import os
 import numpy as np
 import proper
 from astropy.io.fits import getdata, writeto
-import cv2
+# import cv2
 import warnings
 
 from medis.params import tp, sp, ap, iop
@@ -140,8 +140,10 @@ def coronagraph(wf, occulter_mode=None):
         proper.prop_propagate(wf, tp.fl_cg_lens)  # propagate to reimaging lens from lyot stop
         opx.prop_pass_lens(wf, tp.fl_cg_lens, tp.fl_cg_lens)  # go to the next image plane
 
+
 def apodization(wf):
     raise NotImplementedError
+
 
 class Vortex():
     # https://github.com/vortex-exoplanet/HEEPS/tree/master/heeps

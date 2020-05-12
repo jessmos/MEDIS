@@ -337,6 +337,7 @@ class Telescope():
 
         return {'fields': self.cpx_sequence, 'sampling': self.sampling}
 
+
 if __name__ == '__main__':
     iop.update_testname('telescope_module_test')
 

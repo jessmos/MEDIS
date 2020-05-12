@@ -49,6 +49,7 @@ def make_speckle_kxy(kx, ky, amp, dm_phase):
     ret = amp*np.cos(xm + ym +  dm_phase)
     return ret
 
+
 ################################################################################
 # Deformable Mirror
 ################################################################################
@@ -142,11 +143,16 @@ def deformable_mirror(wf, WFS_map, iter, previous_output, apodize=True, plane_na
     # proper.prop_dm
     #########################
 
-    if debug: pre_ao = unwrap_phase(proper.prop_get_phase(wf)) * wf.lamda / (2 * np.pi)
+    if debug:
+        pre_ao = unwrap_phase(proper.prop_get_phase(wf)) * wf.lamda / (2 * np.pi)
 
     dmap = proper.prop_dm(wf, dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
 
     if debug:
+        check_sampling(0, wf, "E-Field after DM", getframeinfo(stack()[0][0]),
+                       units='um')  # check sampling from optics.py
+
+        import matplotlib.pylab as plt
         post_ao = unwrap_phase(proper.prop_get_phase(wf)) * wf.lamda / (2 * np.pi)
         quick2D(dm_map, title='dm_map', show=False)#, vlim=(-0.5e-7,0.5e-7))
         quick2D(pre_ao, title='pre_ao', show=False)#, vlim=(-0.5e-7,0.5e-7))
@@ -159,9 +165,6 @@ def deformable_mirror(wf, WFS_map, iter, previous_output, apodize=True, plane_na
         quick2D(post_ao, title='post_ao', show=False, vlim=(-0.5e-7,0.5e-7))
         quick2D(proper.prop_get_phase(wf), title='post_ao', show=True)
 
-    # check_sampling(0, wfo, "E-Field after DM", getframeinfo(stack()[0][0]), units='um')  # check sampling from optics.py
-
-    # apodize_pupil = True
     if apodize:
         apodize_pupil(wf)
 
@@ -246,6 +249,7 @@ def quick_ao(wf, nact, WFS_map):
     ao_map = -ao_map * surf_height  # Converts DM map to units of [m] of actuator heights
 
     return ao_map
+
 
 def retro_wfs(star_fields, wfo, plane_name='wfs'):
     """
