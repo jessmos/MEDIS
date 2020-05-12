@@ -9,13 +9,7 @@ from matplotlib import pyplot as plt
 from scipy import interpolate
 import pickle
 import random
-from mkidcore.config import yaml
-from mkidcore.corelog import getLogger
-from mkidcore.headers import ObsFileCols, ObsHeader
-import mkidcore
-from mkidcore import pixelflags
-import tables
-from io import StringIO
+import time
 
 from medis.distribution import *
 from medis.params import mp, ap, iop, sp, tp
@@ -65,6 +59,7 @@ class Camera():
         self.usesave = usesave
         self.product = product
         self.rebinned_cube = None
+        self.is_wave_cal = False
 
         self.save_exists = True if os.path.exists(self.name) else False  # whole Camera instance
         self.photons_exists = True if os.path.exists(iop.photonlist) else False  # just the photonlist
@@ -166,6 +161,13 @@ class Camera():
         commit 292dec0f5140f5f1f941cc482c2fdcd2dd223011
 
         """
+        from mkidcore.config import yaml
+        from mkidcore.corelog import getLogger
+        from mkidcore.headers import ObsFileCols, ObsHeader
+        import mkidcore
+        from mkidcore import pixelflags
+        from io import StringIO
+        import tables
 
         beammap = np.arange(mp.array_size[0]*mp.array_size[1]).reshape(mp.array_size)
         flagmap = np.zeros_like(beammap)
@@ -173,7 +175,6 @@ class Camera():
         xs = np.int_(self.photons[2])
         ys = np.int_(self.photons[3])
 
-        dprint(self.photons[:,:5])
         ResID = beammap[xs, ys]
         photons = np.zeros(len(self.photons[0]),
                            dtype=np.dtype([('ResID', np.uint32), ('Time', np.uint32), ('Wavelength', np.float32),
@@ -181,7 +182,7 @@ class Camera():
 
         photons['ResID'] = ResID
         photons['Time'] = self.photons[0] * 1e6 # seconds -> microseconds
-        photons['Wavelength'] = self.photons[1]
+        photons['Wavelength'] = self.wave_cal(self.photons[1])
         if timesort:
             photons.sort(order=('Time', 'ResID'))
             getLogger(__name__).warning('Sorting photon data on time for {}'.format(iop.photonlist))
@@ -217,6 +218,7 @@ class Camera():
             indexer(table.cols.Wavelength, index, filter=index_filter)
             getLogger(__name__).debug('Wavelength indexed for {}'.format(iop.photonlist))
             getLogger(__name__).debug('Table indexed ({}) for {}'.format(index, iop.photonlist))
+            print('Table indexed ({}) for {}'.format(index, iop.photonlist))
         else:
             getLogger(__name__).debug('Skipping Index Generation for {}'.format(iop.photonlist))
 
@@ -228,17 +230,17 @@ class Camera():
         h5file.create_group('/', 'header', 'Header')
         headerTable = h5file.create_table('/header', 'header', ObsHeader, 'Header')
         headerContents = headerTable.row
-        headerContents['isWvlCalibrated'] = False
-        headerContents['isFlatCalibrated'] = False
-        headerContents['isSpecCalibrated'] = False
-        headerContents['isLinearityCorrected'] = False
-        headerContents['isPhaseNoiseCorrected'] = False
-        headerContents['isPhotonTailCorrected'] = False
+        headerContents['isWvlCalibrated'] = True
+        headerContents['isFlatCalibrated'] = True
+        headerContents['isSpecCalibrated'] = True
+        headerContents['isLinearityCorrected'] = True
+        headerContents['isPhaseNoiseCorrected'] = True
+        headerContents['isPhotonTailCorrected'] = True
         headerContents['timeMaskExists'] = False
-        headerContents['startTime'] = sp.startframe
+        headerContents['startTime'] = int(time.time())
         headerContents['expTime'] = sp.sample_time
-        headerContents['wvlBinStart'] = ap.wvl_range[0]
-        headerContents['wvlBinEnd'] = ap.wvl_range[1]
+        headerContents['wvlBinStart'] = ap.wvl_range[0] * 1e9
+        headerContents['wvlBinEnd'] = ap.wvl_range[1] * 1e9
         headerContents['energyBinWidth'] = 0.1  #todo check this
         headerContents['target'] = ''
         headerContents['dataDir'] = iop.testdir
@@ -265,6 +267,7 @@ class Camera():
         """Load photon list from pipeline's photon table h5"""
         h5file = tables.open_file(iop.photonlist, "r")
         table = h5file.root.Photons.PhotonTable
+        self.is_wave_cal = h5file.root.header.header.description.isWvlCalibrated
 
         self.photons = np.zeros((4, len(table)))
         self.photons[0] = table[:]['Time'] /1e6
@@ -306,7 +309,7 @@ class Camera():
             return None
         return obj
 
-    def get_photons(self, datacube, plot=True):
+    def get_photons(self, datacube, plot=False):
         """
         Given an intensity spectralcube and timestep create a quantized photon list
 
@@ -334,7 +337,7 @@ class Camera():
 
         return photons
 
-    def degrade_photons(self, photons, plot=True):
+    def degrade_photons(self, photons, plot=False):
         if plot:
             grid(self.rebin_list(photons), title='before degrade')
 
@@ -708,8 +711,8 @@ class Camera():
                 np.linspace(phase_band[0], phase_band[1], ap.n_wvl_final + 1),
                 range(mp.array_size[0] + 1),
                 range(mp.array_size[1] + 1)]
-        print(sp.sample_time * sp.numframes)
-        plt.plot(photons[0])
+        if self.is_wave_cal:
+            bins[1] = self.wave_cal(np.linspace(phase_band[0], phase_band[1], ap.n_wvl_final + 1))
         rebinned_cube, _ = np.histogramdd(photons.T, bins)
         return rebinned_cube
 
