@@ -9,13 +9,7 @@ from matplotlib import pyplot as plt
 from scipy import interpolate
 import pickle
 import random
-from mkidcore.config import yaml
-from mkidcore.corelog import getLogger
-from mkidcore.headers import ObsFileCols, ObsHeader
-import mkidcore
-from mkidcore import pixelflags
 import tables
-from io import StringIO
 
 from medis.distribution import *
 from medis.params import mp, ap, iop, sp, tp
@@ -65,6 +59,7 @@ class Camera():
         self.usesave = usesave
         self.product = product
         self.rebinned_cube = None
+        self.is_wave_cal = False
 
         self.save_exists = True if os.path.exists(self.name) else False  # whole Camera instance
         self.photons_exists = True if os.path.exists(iop.photonlist) else False  # just the photonlist
@@ -166,6 +161,12 @@ class Camera():
         commit 292dec0f5140f5f1f941cc482c2fdcd2dd223011
 
         """
+        from mkidcore.config import yaml
+        from mkidcore.corelog import getLogger
+        from mkidcore.headers import ObsFileCols, ObsHeader
+        import mkidcore
+        from mkidcore import pixelflags
+        from io import StringIO
 
         beammap = np.arange(mp.array_size[0]*mp.array_size[1]).reshape(mp.array_size)
         flagmap = np.zeros_like(beammap)
@@ -234,7 +235,7 @@ class Camera():
         headerContents['isPhaseNoiseCorrected'] = True
         headerContents['isPhotonTailCorrected'] = True
         headerContents['timeMaskExists'] = False
-        headerContents['startTime'] = 0  #sp.startframe * sp.sample_time * 1e6  # s-> microseconds
+        headerContents['startTime'] = sp.startframe * sp.sample_time * 1e6  # s-> microseconds
         headerContents['expTime'] = sp.sample_time
         headerContents['wvlBinStart'] = ap.wvl_range[0]
         headerContents['wvlBinEnd'] = ap.wvl_range[1]
@@ -264,6 +265,7 @@ class Camera():
         """Load photon list from pipeline's photon table h5"""
         h5file = tables.open_file(iop.photonlist, "r")
         table = h5file.root.Photons.PhotonTable
+        self.is_wave_cal = h5file.root.header.header.description.isWvlCalibrated
 
         self.photons = np.zeros((4, len(table)))
         self.photons[0] = table[:]['Time'] /1e6
@@ -707,6 +709,8 @@ class Camera():
                 np.linspace(phase_band[0], phase_band[1], ap.n_wvl_final + 1),
                 range(mp.array_size[0] + 1),
                 range(mp.array_size[1] + 1)]
+        if self.is_wave_cal:
+            bins[1] = self.wave_cal(np.linspace(phase_band[0], phase_band[1], ap.n_wvl_final + 1))
         rebinned_cube, _ = np.histogramdd(photons.T, bins)
         return rebinned_cube
 
