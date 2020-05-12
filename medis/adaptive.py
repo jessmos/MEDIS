@@ -16,6 +16,7 @@ TODO
 import numpy as np
 from scipy import interpolate, ndimage
 from inspect import getframeinfo, stack
+import matplotlib.pylab as plt
 import proper
 
 from medis.params import sp, tp, ap, cdip
@@ -51,7 +52,7 @@ def make_speckle_kxy(kx, ky, amp, dm_phase):
 ################################################################################
 # Deformable Mirror
 ################################################################################
-def deformable_mirror(wf, WFS_map, iter, previous_output, tp, apodize=True, plane_name=None):
+def deformable_mirror(wf, WFS_map, iter, previous_output, apodize=True, plane_name=None, debug=False):
     """
     combine different DM actuator commands into single map to send to prop_dm
 
@@ -115,14 +116,10 @@ def deformable_mirror(wf, WFS_map, iter, previous_output, tp, apodize=True, plan
     # Waffle
     #########
 
-    # if tp.satelite_speck and plane_name is not 'woofer':
-        #TODO Rupert don't hardcode params in this file
-        # phase = np.pi / 5.  <-- like this
-        # s_amp = 12e-9 <-- like this
-        # xloc, yloc = 12, 12 <-- like this
-        # waffle = make_speckle_kxy(xloc, yloc, s_amp, phase)
-        # waffle += make_speckle_kxy(xloc, -yloc, s_amp, phase)
-        # dm_map += waffle
+    if tp.satelite_speck['apply'] and plane_name is not 'woofer':
+        waffle = make_speckle_kxy(tp.satelite_speck['xloc'], tp.satelite_speck['yloc'], tp.satelite_speck['amp'], tp.satelite_speck['phase'])
+        waffle += make_speckle_kxy(tp.satelite_speck['xloc'], -tp.satelite_speck['yloc'], tp.satelite_speck['amp'], tp.satelite_speck['phase'])
+        dm_map += waffle
 
     #######
     # CDI
@@ -144,12 +141,12 @@ def deformable_mirror(wf, WFS_map, iter, previous_output, tp, apodize=True, plan
     #########################
     # proper.prop_dm
     #########################
-    if sp.debug: pre_ao = unwrap_phase(proper.prop_get_phase(wf)) * wf.lamda / (2 * np.pi)
+
+    if debug: pre_ao = unwrap_phase(proper.prop_get_phase(wf)) * wf.lamda / (2 * np.pi)
 
     dmap = proper.prop_dm(wf, dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
 
-    if sp.debug:
-        import matplotlib.pylab as plt
+    if debug:
         post_ao = unwrap_phase(proper.prop_get_phase(wf)) * wf.lamda / (2 * np.pi)
         quick2D(dm_map, title='dm_map', show=False)#, vlim=(-0.5e-7,0.5e-7))
         quick2D(pre_ao, title='pre_ao', show=False)#, vlim=(-0.5e-7,0.5e-7))

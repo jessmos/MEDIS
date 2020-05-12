@@ -160,7 +160,7 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     # print("Propagating Broadband Wavefront Through Subaru")
 
     # Initialize the Wavefront in Proper
-    wfo = opx.Wavefronts()
+    wfo = opx.Wavefronts(sp.debug)
     wfo.initialize_proper()
 
     # Atmosphere

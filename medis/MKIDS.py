@@ -1,9 +1,6 @@
 """
-MKIDs.py
-
-is a function under run_medis class
-
-Rupert adds all of his stuff here.
+The Camera class simulates an obsservation with an MKID camera given a "fields" tensor (created with Telescope) and
+the MKID_params that define the device
 """
 
 import os, sys
@@ -12,9 +9,16 @@ from matplotlib import pyplot as plt
 from scipy import interpolate
 import pickle
 import random
+from mkidcore.config import yaml
+from mkidcore.corelog import getLogger
+from mkidcore.headers import ObsFileCols, ObsHeader
+import mkidcore
+from mkidcore import pixelflags
+import tables
+from io import StringIO
 
 from medis.distribution import *
-# from medis.params import mp, ap, tp, iop, dp, sp
+from medis.params import mp, ap, iop, sp, tp
 from medis.utils import dprint
 from medis.plot_tools import view_spectra
 from medis.telescope import Telescope
@@ -22,12 +26,9 @@ from medis.plot_tools import grid, quick2D
 
 
 class Camera():
-    def __init__(self, params, fields=None, usesave=False):
+    def __init__(self, fields=None, usesave=False, product='photons'):
         """
-        Creates a simulation for the MKID Camera to create a series of photons
-
-        During initialisation a backup of the pthon PROPER prescription is copied to the testdir, atmisphere maps and
-        aberration maps are created, serialisation and memory requirements are tested, and the cdi vairable initialised
+        Creates a simulation for the MKID Camera to create a series of photons from the fields sequence
 
         Resulting file structure:
         datadir
@@ -40,33 +41,45 @@ class Camera():
 
 
         input
-        params dict
-            collection of the objects in params.py
         fields ndarray complex
             complex tensor of dimensions (n_timesteps, n_saved_planes, n_wavelengths, n_stars/planets, grid_size, grid_size)
+        usesave: bool
+        product: 'photons' | 'rebinned_cube'
 
         :return:
         either photon list or rebinned cube
 
-        """
-        self.params = params
-        self.name = self.params['iop'].camera
-        self.usesave = usesave
-        self.stackcube = None
+        Functions
+        __init__():        loads instance of class if it exists, otherwise loads photonlist if it exist, otherwise gets
+                           fields and creates device
+        create_device():   create the camera's random device parameters eg locations of dead pix, assigning R to pixels etc
+        __call__():        if photons can't be loaded detect photons (combine fields and device params to produce a photon
+                           list) and save
+        save_photonlist(): save the photonlist in the MKIDPipeline format
+        save_instance():   save the whole instance of this class including photons and self.name etc
 
-        self.save_exists = True if os.path.exists(self.name) else False
+        """
+        assert product in ['photons', 'rebinned_cube'], f"Requested data product {self.product} not supported"
+
+        self.name = iop.camera  # used for saving an loading the instance
+        self.usesave = usesave
+        self.product = product
+        self.rebinned_cube = None
+
+        self.save_exists = True if os.path.exists(self.name) else False  # whole Camera instance
+        self.photons_exists = True if os.path.exists(iop.photonlist) else False  # just the photonlist
 
         if self.save_exists and self.usesave:
-            # with open(self.name, 'rb') as handle:
-            #     load = pickle.load(handle)
-                load = self.load()
-                self.__dict__ = load.__dict__
-                self.save_exists = True  # just in case the saved obj didn't have this set to True
-
+            load = self.load_instance()
+            self.__dict__ = load.__dict__
+            self.save_exists = True  # just in case the saved obj didn't have this set to True
+        elif self.photons_exists and self.usesave:
+            self.photons = self.load_photonlist()
+            self.rebinned_cube = None
         else:
             if fields is None:
                 # make fields (or load if it already exists)
-                telescope_sim = Telescope(self.params)
+                telescope_sim = Telescope()
                 dataproduct = telescope_sim()
                 self.fields = dataproduct['fields']
             else:
@@ -76,33 +89,38 @@ class Camera():
             self.create_device()
 
     def create_device(self):
-        self.platescale = self.params['mp'].platescale
-        self.array_size = self.params['mp'].array_size
-        self.dark_pix_frac = self.params['mp'].dark_pix_frac
-        self.hot_pix = self.params['mp'].hot_pix
-        self.lod = self.params['mp'].lod
-        self.QE_map_all = self.array_QE(plot=False)
-        # self.max_count = self.params['mp'].max_count
-        self.responsivity_error_map = self.responvisity_scaling_map(plot=False)
-        if self.params['mp'].bad_pix:
-            self.QE_map = self.create_bad_pix(self.QE_map_all) if self.params['mp'].pix_yield != 1 else self.QE_map_all
+        """
+        Create the camera's random device parameters eg locations of dead pix, assigning R to pixels etc
 
-            if self.params['mp'].dark_counts:
-                self.dark_per_step = self.params['sp'].sample_time * self.params['mp'].dark_bright * self.array_size[0] * self.array_size[
-                    1] * self.dark_pix_frac
-                dprint('dark_per_step:', self.dark_per_step, 'sample_time: ', self.params['sp'].sample_time,
-                       'dark_bright: ', self.params['mp'].dark_bright, 'pixels: ', self.array_size[0] * self.array_size[1], self.dark_pix_frac)
-                
+        :return:
+        """
+        self.platescale = mp.platescale
+        self.array_size = mp.array_size
+        self.dark_pix_frac = mp.dark_pix_frac
+        self.hot_pix = mp.hot_pix
+        self.lod = mp.lod
+
+        self.QE_map_all = self.array_QE(plot=False)
+        # self.max_count = mp.max_count
+        self.responsivity_error_map = self.responvisity_scaling_map(plot=False)
+
+        if mp.bad_pix:
+            self.QE_map = self.create_bad_pix(self.QE_map_all) if mp.pix_yield != 1 else self.QE_map_all
+
+            if mp.dark_counts:
+                self.total_dark = sp.sample_time * mp.dark_bright * self.array_size[0] * self.array_size[
+                    1] * self.dark_pix_frac * sp.numframes
                 self.dark_locs = self.create_false_pix(amount=int(
-                    self.params['mp'].dark_pix_frac * self.array_size[0] * self.array_size[1]))
-            if self.params['mp'].hot_pix:
-                self.hot_per_step = self.params['sp'].sample_time * self.params['mp'].hot_bright * self.hot_pix
-                self.hot_locs = self.create_false_pix(amount=self.params['mp'].hot_pix)
+                    mp.dark_pix_frac * self.array_size[0] * self.array_size[1]))
+            if mp.hot_pix:
+                self.total_hot = sp.sample_time * mp.hot_bright * self.hot_pix * sp.numframes
+                self.hot_locs = self.create_false_pix(amount=mp.hot_pix)
+
         self.Rs = self.assign_spectral_res(plot=False)
         self.sigs = self.get_R_hyper(self.Rs, plot=False)
 
         # get_phase_distortions(plot=True)
-        if self.params['mp'].phase_background:
+        if mp.phase_background:
             self.basesDeg = self.assign_phase_background(plot=False)
         else:
             self.basesDeg = np.zeros((self.array_size))
@@ -111,36 +129,153 @@ class Camera():
 
     def __call__(self, *args, **kwargs):
         if not self.save_exists:
+            # todo implement chunking for large datasets
+            self.rebinned_cube =  np.abs(np.sum(self.fields[:, -1, :, :], axis=2)) ** 2  # select detector plane and sum over objects
+            self.rebinned_cube = self.rescale_cube(self.rebinned_cube)  # interpolate onto pixel spacing
 
-            self.photons = np.empty((0, 4))
-            self.stackcube = np.zeros((len(self.fields), self.params['ap'].n_wvl_final, self.array_size[1], self.array_size[0]))
-            for step in range(len(self.fields)):
-                print('step', step)
-                spectralcube = np.abs(np.sum(self.fields[step, -1, :, :], axis=1)) ** 2
-                # view_spectra(spectralcube, logZ=True)
-                if not self.params['sp'].quick_detect:
-                    step_packets = self.get_packets(spectralcube, step)
-                    self.photons = np.vstack((self.photons, step_packets))
-                    cube = self.make_datacube_from_list(step_packets)
-                else:
-                    cube = self.get_ideal_cube(spectralcube)
-                    # self.photons = self.get_ideal_photons(cube, step)
-                    self.photons = np.array([[np.nan, np.nan, np.nan, np.nan]])
-                self.stackcube[step] = cube
+            if sp.quick_detect and self.product == 'rebinned_cube':
+                num_fake_events = int(ap.star_flux * sp.sample_time * np.sum(self.rebinned_cube))
 
-            if self.usesave:
-                self.save()
+                if sp.verbose:
+                    print(f"star flux: {ap.star_flux}, cube sum: {np.sum(self.rebinned_cube)}, num fake events: {num_fake_events}")
 
-        dataproduct = {'photons': self.photons, 'stackcube': self.stackcube}
+                self.rebinned_cube *= num_fake_events
+                self.photons = None
+            else:
+                self.photons = self.get_photons(self.rebinned_cube)
+                if sp.degrade_photons:
+                    self.photons = self.degrade_photons(self.photons)
 
-        return dataproduct
+                if self.product == 'photons':
+                    self.save_photontable()
+                    self.rebinned_cube = None
 
-    def save(self):
-        # import sys
-        # print(sys.getsizeof(self), 'size')
-        # with open(c, 'wb') as handle:
-        #     pickle.dump(self, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                elif self.product == 'rebinned_cube':
+                    self.rebinned_cube = self.rebin_list(self.photons)
+                    self.photons = None
+
+            self.save_instance()
+
+        return {'photons': self.photons, 'rebinned_cube': self.rebinned_cube}
+
+    def save_photontable(self, index=('ultralight', 6), timesort=False, chunkshape=None, shuffle=True, bitshuffle=False,
+                        ndx_shuffle=True, ndx_bitshuffle=False):
         """
+        save the photonlist in the MKIDPipeline format (https://github.com/MazinLab/MKIDPipeline)
+
+        This code is ported from build_pytables() https://github.com/MazinLab/MKIDPipeline/blob/develop/mkidpipeline/hdf/bin2hdf.py#L64
+        commit 292dec0f5140f5f1f941cc482c2fdcd2dd223011
+
+        """
+
+        beammap = np.arange(mp.array_size[0]*mp.array_size[1]).reshape(mp.array_size)
+        flagmap = np.zeros_like(beammap)
+
+        xs = np.int_(self.photons[2])
+        ys = np.int_(self.photons[3])
+        ResID = beammap[xs, ys]
+        photons = np.zeros(len(self.photons[0]),
+                           dtype=np.dtype([('ResID', int), ('Time', float), ('Wavelength', float),
+                                           ('SpecWeight', float), ('NoiseWeight', float)]))
+
+        photons['ResID'] = ResID
+        photons['Time'] = self.photons[0]
+        photons['Wavelength'] = self.photons[1]
+        if timesort:
+            photons.sort(order=('Time', 'ResID'))
+            getLogger(__name__).warning('Sorting photon data on time for {}'.format(iop.photonlist))
+        elif not np.all(photons['ResID'][:-1] <= photons['ResID'][1:]):
+            getLogger(__name__).warning('binprocessor.extract returned data that was not sorted on ResID, sorting'
+                                        '({})'.format(iop.photonlist))
+            photons.sort(order=('ResID', 'Time'))
+
+        h5file = tables.open_file(iop.photonlist, mode="a", title="MKID Photon File")
+        group = h5file.create_group("/", 'Photons', 'Photon Information')
+        filter = tables.Filters(complevel=1, complib='blosc:lz4', shuffle=shuffle, bitshuffle=bitshuffle,
+                                fletcher32=False)
+        table = h5file.create_table(group, name='PhotonTable', description=ObsFileCols, title="Photon Datatable",
+                                    expectedrows=len(photons), filters=filter, chunkshape=chunkshape)
+        table.append(photons)
+
+        getLogger(__name__).debug('Table Populated for {}'.format(iop.photonlist))
+        if index:
+            index_filter = tables.Filters(complevel=1, complib='blosc:lz4', shuffle=ndx_shuffle,
+                                          bitshuffle=ndx_bitshuffle,
+                                          fletcher32=False)
+
+            def indexer(col, index, filter=None):
+                if isinstance(index, bool):
+                    col.create_csindex(filters=filter)
+                else:
+                    col.create_index(optlevel=index[1], kind=index[0], filters=filter)
+
+            indexer(table.cols.Time, index, filter=index_filter)
+            getLogger(__name__).debug('Time Indexed for {}'.format(iop.photonlist))
+            indexer(table.cols.ResID, index, filter=index_filter)
+            getLogger(__name__).debug('ResID Indexed for {}'.format(iop.photonlist))
+            indexer(table.cols.Wavelength, index, filter=index_filter)
+            getLogger(__name__).debug('Wavelength indexed for {}'.format(iop.photonlist))
+            getLogger(__name__).debug('Table indexed ({}) for {}'.format(index, iop.photonlist))
+        else:
+            getLogger(__name__).debug('Skipping Index Generation for {}'.format(iop.photonlist))
+
+        group = h5file.create_group("/", 'BeamMap', 'Beammap Information', filters=filter)
+        h5file.create_array(group, 'Map', beammap, 'resID map')
+        h5file.create_array(group, 'Flag', flagmap, 'flag map')
+        getLogger(__name__).debug('Beammap Attached to {}'.format(iop.photonlist))
+
+        h5file.create_group('/', 'header', 'Header')
+        headerTable = h5file.create_table('/header', 'header', ObsHeader, 'Header')
+        headerContents = headerTable.row
+        headerContents['isWvlCalibrated'] = False
+        headerContents['isFlatCalibrated'] = False
+        headerContents['isSpecCalibrated'] = False
+        headerContents['isLinearityCorrected'] = False
+        headerContents['isPhaseNoiseCorrected'] = False
+        headerContents['isPhotonTailCorrected'] = False
+        headerContents['timeMaskExists'] = False
+        headerContents['startTime'] = sp.startframe
+        headerContents['expTime'] = sp.sample_time
+        headerContents['wvlBinStart'] = ap.wvl_range[0]
+        headerContents['wvlBinEnd'] = ap.wvl_range[1]
+        headerContents['energyBinWidth'] = 0.1  #todo check this
+        headerContents['target'] = ''
+        headerContents['dataDir'] = iop.testdir
+        headerContents['beammapFile'] = ''
+        headerContents['wvlCalFile'] = ''
+        headerContents['fltCalFile'] = ''
+        headerContents['metadata'] = ''
+
+        out = StringIO()
+        yaml.dump({'flags': mkidcore.pixelflags.FLAG_LIST}, out)
+        out = out.getvalue().encode()
+        if len(out) > mkidcore.headers.METADATA_BLOCK_BYTES:  # this should match mkidcore.headers.ObsHeader.metadata
+            raise ValueError("Too much metadata! {} KB needed, {} allocated".format(len(out) // 1024,
+                                                                                    mkidcore.headers.METADATA_BLOCK_BYTES // 1024))
+        headerContents['metadata'] = out
+
+        headerContents.append()
+        getLogger(__name__).debug('Header Attached to {}'.format(iop.photonlist))
+
+        h5file.close()
+        getLogger(__name__).debug('Done with {}'.format(iop.photonlist))
+
+    def load_photonlist(self):
+        #todo implement
+
+        h5file = tables.open_file(iop.photonlist, "r")
+        print(h5file)
+        table = h5file.root.Photons.PhotonTable
+        print(table.shape)
+
+        raise NotImplementedError
+        photons = None
+        return photons
+
+    def save_instance(self):
+        """
+        Save the whole Camera instance
+
         This is a defensive way to write pickle.write, allowing for very large files on all platforms
         """
         max_bytes = 2 ** 31 - 1
@@ -150,7 +285,7 @@ class Camera():
             for idx in range(0, n_bytes, max_bytes):
                 f_out.write(bytes_out[idx:idx + max_bytes])
 
-    def load(self):
+    def load_instance(self):
         """
         This is a defensive way to write pickle.load, allowing for very large files on all platforms
         """
@@ -166,6 +301,77 @@ class Camera():
             return None
         return obj
 
+    def get_photons(self, datacube, plot=False):
+        """
+        Given an intensity spectralcube and timestep create a quantized photon list
+
+        :param datacube:
+        :param step:
+        :param plot:
+        :return:
+        """
+
+        if mp.QE_var:
+            datacube *= self.QE_map[:datacube.shape[1],:datacube.shape[1]]
+
+        num_events = int(ap.star_flux * sp.sample_time * np.sum(datacube) * sp.numframes)
+
+        if sp.verbose:
+            print(f"star flux: {ap.star_flux}, cube sum: {np.sum(datacube)}, numframes: {sp.numframes},"
+                  f"num events: {num_events}")
+
+        photons = self.sample_cube(datacube, num_events)
+        photons[0] = self.assign_time(photons[0])
+        photons[1] = self.assign_phase(photons[1])
+
+        if plot:
+            grid(self.rebin_list(photons), title='get_photons')
+
+        return photons
+
+    def degrade_photons(self, photons, plot=False):
+        if plot:
+            grid(self.rebin_list(photons), title='before degrade')
+
+        if mp.dark_counts:
+            dark_photons = self.get_bad_packets(type='dark')
+            dprint(photons.shape, dark_photons.shape, 'dark')
+            photons = np.hstack((photons, dark_photons))
+
+        if mp.hot_pix:
+            hot_photons = self.get_bad_packets(type='hot')
+            photons = np.hstack((photons, hot_photons))
+            # stem = add_hot(stem)
+
+        if plot:
+            grid(self.rebin_list(photons), title='after bad')
+
+        if mp.phase_uncertainty:
+            photons[1] *= self.responsivity_error_map[np.int_(photons[2]), np.int_(photons[3])]
+            photons, idx = self.apply_phase_offset_array(photons, self.sigs)
+
+        # thresh =  photons[1] < self.basesDeg[np.int_(photons[3]),np.int_(photons[2])]
+        if mp.phase_background:
+            thresh =  -photons[1] > 3*self.sigs[-1,np.int_(photons[3]), np.int_(photons[2])]
+            photons = photons[:, thresh]
+
+        if mp.remove_close:
+            stem = self.arange_into_stem(photons.T, (self.array_size[0], self.array_size[1]))
+            stem = self.remove_close(stem)
+            photons = self.ungroup(stem)
+
+        if plot:
+            grid(self.rebin_list(photons), title='after remove close')
+
+        # This step was taking a long time
+        # stem = arange_into_stem(photons.T, (self.array_size[0], self.array_size[1]))
+        # cube = make_datacube(stem, (self.array_size[0], self.array_size[1], ap.n_wvl_final))
+        # # ax7.imshow(cube[0], origin='lower', norm=LogNorm(), cmap='inferno', vmin=1)
+        # cube /= self.QE_map
+        # photons = ungroup(stem)
+
+        return photons
+
     def arange_into_cube(self, packets, size):
         # print 'Sorting packets into xy grid (no phase or time sorting)'
         cube = [[[] for i in range(size[0])] for j in range(size[1])]
@@ -179,11 +385,10 @@ class Camera():
         # cube = time_sort(cube)
         return cube
 
-
     def responvisity_scaling_map(self, plot=False):
         """Assigns each pixel a phase responsivity between 0 and 1"""
-        dist = Distribution(gaussian(self.params['mp'].r_mean, self.params['mp'].r_sig, np.linspace(0, 2, self.params['mp'].res_elements)), interpolation=True)
-        responsivity = dist(self.array_size[0] * self.array_size[1])[0]/float(self.params['mp'].res_elements) * 2
+        dist = Distribution(gaussian(mp.r_mean, mp.r_sig, np.linspace(0, 2, mp.res_elements)), interpolation=True)
+        responsivity = dist(self.array_size[0] * self.array_size[1])[0]/float(mp.res_elements) * 2
         if plot:
             plt.xlabel('Responsivity')
             plt.ylabel('#')
@@ -198,8 +403,8 @@ class Camera():
 
     def array_QE(self, plot=False):
         """Assigns each pixel a phase responsivity between 0 and 1"""
-        dist = Distribution(gaussian(self.params['mp'].g_mean, self.params['mp'].g_sig, np.linspace(0, 1, self.params['mp'].res_elements)), interpolation=True)
-        QE = dist(self.array_size[0] * self.array_size[1])[0]/float(self.params['mp'].res_elements)
+        dist = Distribution(gaussian(mp.g_mean, mp.g_sig, np.linspace(0, 1, mp.res_elements)), interpolation=True)
+        QE = dist(self.array_size[0] * self.array_size[1])[0]/float(mp.res_elements)
         if plot:
             plt.xlabel('Responsivity')
             plt.ylabel('#')
@@ -214,9 +419,9 @@ class Camera():
 
     def assign_spectral_res(self, plot=False):
         """Assigning each pixel a spectral resolution (at 800nm)"""
-        dist = Distribution(gaussian(0.5, 0.25, np.linspace(-0.2, 1.2, self.params['mp'].res_elements)), interpolation=True)
-        # print(f"Mean R = {self.params['mp'].R_mean}")
-        Rs = (dist(self.array_size[0]*self.array_size[1])[0]/float(self.params['mp'].res_elements)-0.5)*self.params['mp'].R_sig + self.params['mp'].R_mean#
+        dist = Distribution(gaussian(0.5, 0.25, np.linspace(-0.2, 1.2, mp.res_elements)), interpolation=True)
+        # print(f"Mean R = {mp.R_mean}")
+        Rs = (dist(self.array_size[0]*self.array_size[1])[0]/float(mp.res_elements)-0.5)*mp.R_sig + mp.R_mean#
         if plot:
             plt.xlabel('R')
             plt.ylabel('#')
@@ -233,16 +438,16 @@ class Camera():
     def get_R_hyper(self, Rs, plot=False):
         """Each pixel of the array has a matrix of probabilities that depends on the input wavelength"""
         print('Creating a cube of R standard deviations')
-        m = (self.params['mp'].R_spec*Rs)/(self.params['ap'].wvl_range[1] - self.params['ap'].wvl_range[0]) # looses R of 10% over the 700 wvl_range
-        c = Rs-m*self.params['ap'].wvl_range[0] # each c depends on the R @ 800
-        waves = np.ones((np.shape(m)[1],np.shape(m)[0],self.params['ap'].n_wvl_final+5))*np.linspace(self.params['ap'].wvl_range[0],self.params['ap'].wvl_range[1],self.params['ap'].n_wvl_final+5)
+        m = (mp.R_spec*Rs)/(ap.wvl_range[1] - ap.wvl_range[0]) # looses R of 10% over the 700 wvl_range
+        c = Rs-m*ap.wvl_range[0] # each c depends on the R @ 800
+        waves = np.ones((np.shape(m)[1],np.shape(m)[0],ap.n_wvl_final+5))*np.linspace(ap.wvl_range[0],ap.wvl_range[1],ap.n_wvl_final+5)
         waves = np.transpose(waves) # make a tensor of 128x128x10 where every 10 vector is 800... 1500
         R_spec = m * waves + c # 128x128x10 tensor is now lots of simple linear lines e.g. 50,49,.. 45
         # probs = np.ones((np.shape(R_spec)[0],np.shape(R_spec)[1],np.shape(R_spec)[2],
-        #                 self.params['mp'].res_elements))*np.linspace(0, 1, self.params['mp'].res_elements)
+        #                 mp.res_elements))*np.linspace(0, 1, mp.res_elements)
         #                         # similar to waves but 0... 1 using 128 elements
-        # R_spec = np.repeat(R_spec[:,:,:,np.newaxis], self.params['mp'].res_elements, 3) # creat 128 repeats of R_spec so (10,128,128,128)
-        # self.params['mp'].R_probs = gaussian(0.5, R_spec, probs) #each xylocation is gaussian that gets wider for longer wavelengths
+        # R_spec = np.repeat(R_spec[:,:,:,np.newaxis], mp.res_elements, 3) # creat 128 repeats of R_spec so (10,128,128,128)
+        # mp.R_probs = gaussian(0.5, R_spec, probs) #each xylocation is gaussian that gets wider for longer wavelengths
         sigs_w = (waves/R_spec)/2.35 #R = w/dw & FWHM = 2.35*sig
 
         # plt.plot(range(0,1500),spec.phase_cal(np.arange(0,1500)))
@@ -267,7 +472,7 @@ class Camera():
             plt.plot(np.mean(sigs_w, axis=(1,2)))
             plt.figure()
             plt.plot(np.mean(sigs_p, axis=(1,2)))
-            # plt.imshow(self.params['mp'].R_probs[:,0,0,:])
+            # plt.imshow(mp.R_probs[:,0,0,:])
             plt.show(block=True)
         return sigs_p
 
@@ -315,7 +520,7 @@ class Camera():
         :param sigs:
         :return: distorted phase
         """
-        # phase = phase + self.params['mp'].phase_distortions[ip]
+        # phase = phase + mp.phase_distortions[ip]
         wavelength = self.wave_cal(phase)
         idx = self.wave_idx(wavelength)
 
@@ -324,26 +529,26 @@ class Camera():
         return phase
 
     def wave_idx(self, wavelength):
-        m = float(self.params['ap'].n_wvl_final-1)/(self.params['ap'].wvl_range[1] - self.params['ap'].wvl_range[0])
-        c = -m*self.params['ap'].wvl_range[0]
+        m = float(ap.n_wvl_final-1)/(ap.wvl_range[1] - ap.wvl_range[0])
+        c = -m*ap.wvl_range[0]
         idx = wavelength*m + c
         # return np.int_(idx)
         return np.int_(np.round(idx))
 
     def phase_cal(self, wavelengths):
         '''Wavelength in nm'''
-        phase = self.params['mp'].wavecal_coeffs[0]*wavelengths + self.params['mp'].wavecal_coeffs[1]
+        phase = mp.wavecal_coeffs[0]*wavelengths + mp.wavecal_coeffs[1]
         return phase
 
     def wave_cal(self, phase):
-        wave = (phase - self.params['mp'].wavecal_coeffs[1])/(self.params['mp'].wavecal_coeffs[0])
+        wave = (phase - mp.wavecal_coeffs[1])/(mp.wavecal_coeffs[0])
         return wave
 
     def assign_phase_background(self, plot=False):
         """assigns each pixel a baseline phase"""
-        dist = Distribution(gaussian(0.5, 0.25, np.linspace(-0.2, 1.2, self.params['mp'].res_elements)), interpolation=True)
+        dist = Distribution(gaussian(0.5, 0.25, np.linspace(-0.2, 1.2, mp.res_elements)), interpolation=True)
 
-        basesDeg = dist(self.array_size[0]*self.array_size[1])[0]/float(self.params['mp'].res_elements)*self.params['mp'].bg_mean/self.params['mp'].g_mean
+        basesDeg = dist(self.array_size[0]*self.array_size[1])[0]/float(mp.res_elements)*mp.bg_mean/mp.g_mean
         if plot:
             plt.xlabel('basesDeg')
             plt.ylabel('#')
@@ -359,12 +564,12 @@ class Camera():
 
 
     def create_bad_pix(self, QE_map, plot=False):
-        amount = int(self.array_size[0]*self.array_size[1]*(1.-self.params['mp'].pix_yield))
+        amount = int(self.array_size[0]*self.array_size[1]*(1.-mp.pix_yield))
 
         bad_ind = random.sample(list(range(self.array_size[0]*self.array_size[1])), amount)
 
         print(f"Bad indices = {len(bad_ind)}, # MKID pix = { self.array_size[0]*self.array_size[1]}, "
-               f"Pixel Yield = {self.params['mp'].pix_yield}, amount? = {amount}")
+               f"Pixel Yield = {mp.pix_yield}, amount? = {amount}")
 
         # bad_y = random.sample(y, amount)
         bad_y = np.int_(np.floor(bad_ind/self.array_size[1]))
@@ -387,8 +592,8 @@ class Camera():
         res_elements=self.array_size[0]
         # responsivities = np.zeros()
         for x in range(self.array_size[1]):
-            dist = Distribution(gaussian(0.5, 0.25, np.linspace(0, 1, self.params['mp'].res_elements)), interpolation=False)
-            dist = np.int_(dist(int(self.array_size[0]*self.params['mp'].pix_yield))[0])#/float(self.params['mp'].res_elements)*np.int_(self.array_size[0]) / self.params['mp'].g_mean)
+            dist = Distribution(gaussian(0.5, 0.25, np.linspace(0, 1, mp.res_elements)), interpolation=False)
+            dist = np.int_(dist(int(self.array_size[0]*mp.pix_yield))[0])#/float(mp.res_elements)*np.int_(self.array_size[0]) / mp.g_mean)
             # plt.plot(dist)
             # plt.show()
             dead_ind = []
@@ -397,12 +602,12 @@ class Camera():
 
         return responsivities
 
-    def get_bad_packets(self, step, type='hot'):
+    def get_bad_packets(self, type='dark'):
         if type == 'hot':
-            n_device_counts = self.hot_per_step
+            n_device_counts = self.total_hot
         elif type == 'dark':
-            n_device_counts = self.dark_per_step
-            dprint(self.dark_per_step, self.params['mp'].dark_bright, self.params['sp'].sample_time)
+            n_device_counts = self.total_dark
+            dprint(self.total_dark, mp.dark_bright, sp.sample_time)
         else:
             print("type currently has to be 'hot' or 'dark'")
             raise AttributeError
@@ -418,7 +623,7 @@ class Camera():
                 hot_ind = np.random.choice(range(len(self.hot_locs[0])), n_device_counts)
                 bad_pix = self.hot_locs[:, hot_ind]
             elif type == 'dark':
-                dist = Distribution(gaussian(0, 0.25, np.linspace(0, 1, self.params['mp'].res_elements)), interpolation=False)
+                dist = Distribution(gaussian(0, 0.25, np.linspace(0, 1, mp.res_elements)), interpolation=False)
                 phases = dist(n_device_counts)[0]
                 max_phase = max(phases)
                 phases = -phases*120/max_phase
@@ -426,8 +631,7 @@ class Camera():
                 bad_ind = np.random.choice(range(len(bad_pix_options[0])), n_device_counts)
                 bad_pix = bad_pix_options[:, bad_ind]
 
-            meantime = step * self.params['sp'].sample_time
-            photons[0] = np.random.uniform(meantime - self.params['sp'].sample_time / 2, meantime + self.params['sp'].sample_time / 2, len(photons[0]))
+            photons[0] = np.random.uniform(sp.startframe * sp.sample_time, sp.numframes * sp.sample_time, n_device_counts)
             photons[1] = phases
             photons[2:] = bad_pix
 
@@ -443,7 +647,7 @@ class Camera():
 
 
     def remove_bad(self, frame, QE):
-        bad_map = np.ones((self.params['sp'].grid_size,self.params['sp'].grid_size))
+        bad_map = np.ones((sp.grid_size,sp.grid_size))
         bad_map[QE[:-1,:-1]==0] = 0
         # quick2D(QE, logZ =False)
         # quick2D(bad_map, logZ =False)
@@ -453,50 +657,58 @@ class Camera():
     def sample_cube(self, datacube, num_events):
         # print 'creating photon data from reference cube'
 
-        dist = Distribution(datacube, interpolation=True)
+        dist = Distribution(datacube, interpolation=2)
 
         photons = dist(num_events)
         return photons
 
     def assign_calibtime(self, photons, step):
-        meantime = step*self.params['sp'].sample_time
+        meantime = step*sp.sample_time
         # photons = photons.astype(float)#np.asarray(photons[0], dtype=np.float64)
-        # photons[0] = photons[0] * ps.self.params['mp'].frame_time
-        timedist = np.random.uniform(meantime-self.params['sp'].sample_time/2, meantime+self.params['sp'].sample_time/2, len(photons[0]))
+        # photons[0] = photons[0] * ps.mp.frame_time
+        timedist = np.random.uniform(meantime-sp.sample_time/2, meantime+sp.sample_time/2, len(photons[0]))
         photons = np.vstack((timedist, photons))
         return photons
 
-    def calibrate_phase(self, photons):
+    def assign_time(self, time_idx):
+        return time_idx*sp.sample_time
+
+    def assign_phase(self, phase_idx):
         """
         idx -> phase
 
-        :param photons:
-        :return:
-        """
-        photons = np.array(photons)
-        c = self.params['ap'].wvl_range[0]
-        m = (self.params['ap'].wvl_range[1] - self.params['ap'].wvl_range[0])/self.params['ap'].n_wvl_final
-        wavelengths = photons[0]*m + c
-        # print(wavelengths[:5])
-        # photons[0] = wavelengths*self.params['mp'].wavecal_coeffs[0] + self.params['mp'].wavecal_coeffs[1]
-        photons[0] = self.phase_cal(wavelengths)
-        # print(photons[0,:5])
-        # exit()
+        :parameter: idx (list)
 
-        return photons
+        :return: phase (list)
+        """
+        phase_idx = np.array(phase_idx)
+        c = ap.wvl_range[0]
+        m = (ap.wvl_range[1] - ap.wvl_range[0])/ap.n_wvl_final
+        wavelengths = phase_idx*m + c
+
+        return self.phase_cal(wavelengths)
 
     def make_datacube_from_list(self, packets):
-        phase_band = self.phase_cal(self.params['ap'].wvl_range)
-        bins = [np.linspace(phase_band[0], phase_band[1], self.params['ap'].n_wvl_final + 1),
+        phase_band = self.phase_cal(ap.wvl_range)
+        bins = [np.linspace(phase_band[0], phase_band[1], ap.n_wvl_final + 1),
                 range(self.array_size[0]+1),
                 range(self.array_size[1]+1)]
         datacube, _ = np.histogramdd(packets[:,1:], bins)
 
         return datacube
 
+    def rebin_list(self, photons):
+        phase_band = self.phase_cal(ap.wvl_range)
+        bins = [np.linspace(0, sp.sample_time * sp.numframes, sp.numframes + 1),
+                np.linspace(phase_band[0], phase_band[1], ap.n_wvl_final + 1),
+                range(self.array_size[0] + 1),
+                range(self.array_size[1] + 1)]
+        rebinned_cube, _ = np.histogramdd(photons.T, bins)
+        return rebinned_cube
+
     def cut_max_count(self, datacube):
         image = np.sum(datacube, axis=0)
-        max_counts = self.max_count * self.params['sp'].sample_time
+        max_counts = self.max_count * sp.sample_time
         maxed = image > max_counts
         scaling_map = max_counts / image
         scaling_map[scaling_map > 1] = 1
@@ -565,149 +777,40 @@ class Camera():
         raise NotImplementedError
         ncounts = np.sum(cube)
         photons = np.zeros((ncounts, 4))
-        photons[:,0] = step*self.params['sp'].sample_time
+        photons[:,0] = step*sp.sample_time
         for iw, slice in enumerate(cube):
             nslicecounts = np.sum(cube)
-            photons[:, iw*nslicecounts:(iw+1)*nslicecounts] = self.params['ap'].wvl_samp[iw]
-            for x in self.params['mp'].array_size[0]:
-                for y in self.params['mp'].array_size[1]:
+            photons[:, iw*nslicecounts:(iw+1)*nslicecounts] = ap.wvl_samp[iw]
+            for x in mp.array_size[0]:
+                for y in mp.array_size[1]:
                     npixcounts = slice[x,y]
                     photons[:,:,x*npixcounts:(x+1)*npixcounts,y*npixcounts:(y+1)*npixcounts] = [x,y]
 
-    def get_ideal_cube(self, datacube):
-        if self.params['mp'].resamp:
-            nyq_sampling = self.params['ap'].wvl_range[0]*360*3600/(4*np.pi*self.params['tp'].entrance_d)
-            self.sampling = nyq_sampling*self.params['sp'].beam_ratio*2  # nyq sampling happens at self.params['sp'].beam_ratio = 0.5
-            x = np.arange(-self.params['sp'].grid_size*self.sampling/2, self.params['sp'].grid_size*self.sampling/2, self.sampling)
+    def rescale_cube(self, rebinned_cube):
+        if mp.resamp:
+            nyq_sampling = ap.wvl_range[0]*360*3600/(4*np.pi*tp.entrance_d)
+            self.sampling = nyq_sampling*sp.beam_ratio*2  # nyq sampling happens at sp.beam_ratio = 0.5
+            x = np.arange(-sp.grid_size*self.sampling/2, sp.grid_size*self.sampling/2, self.sampling)
             xnew = np.arange(-self.array_size[0]*self.platescale/2, self.array_size[0]*self.platescale/2, self.platescale)
-            mkid_cube = np.zeros((len(datacube), self.array_size[0], self.array_size[1]))
-            for s, slice in enumerate(datacube):
-                f = interpolate.interp2d(x, x, slice, kind='cubic')
-                mkid_cube[s] = f(xnew, xnew)
+            mkid_cube = np.zeros((rebinned_cube.shape[0], rebinned_cube.shape[1], self.array_size[0], self.array_size[1]))
+            for d, datacube in enumerate(rebinned_cube):
+                for s, slice in enumerate(datacube):
+                    f = interpolate.interp2d(x, x, slice, kind='cubic')
+                    mkid_cube[d, s] = f(xnew, xnew)
             mkid_cube = mkid_cube*np.sum(datacube)/np.sum(mkid_cube)
-            # view_spectra(mkid_cube, logZ=True, show=True, extract_center=False, title='post')
-            datacube = mkid_cube
+            # grid(mkid_cube, logZ=True, show=True, extract_center=False, title='post')
+            rebinned_cube = mkid_cube
 
-        datacube[datacube < 0] *= -1
-        datacube *= int(self.params['ap'].star_flux * self.params['sp'].sample_time * np.sum(datacube))
-        return datacube
+        rebinned_cube[rebinned_cube < 0] *= -1
 
-    def get_packets(self, datacube, step, plot=False):
-        if plot: view_spectra(datacube, logZ=True, extract_center=False, title='pre')
+        return rebinned_cube
 
-        if self.params['mp'].resamp:
-            nyq_sampling = self.params['ap'].wvl_range[0]*360*3600/(4*np.pi*self.params['tp'].entrance_d)
-            self.sampling = nyq_sampling*self.params['sp'].beam_ratio*2  # nyq sampling happens at self.params['sp'].beam_ratio = 0.5
-            x = np.arange(-self.params['sp'].grid_size*self.sampling/2, self.params['sp'].grid_size*self.sampling/2, self.sampling)
-            xnew = np.arange(-self.array_size[0]*self.platescale/2, self.array_size[0]*self.platescale/2, self.platescale)
-            mkid_cube = np.zeros((len(datacube), self.array_size[0], self.array_size[1]))
-            for s, slice in enumerate(datacube):
-                f = interpolate.interp2d(x, x, slice, kind='cubic')
-                mkid_cube[s] = f(xnew, xnew)
-            mkid_cube = mkid_cube*np.sum(datacube)/np.sum(mkid_cube)
-            # view_spectra(mkid_cube, logZ=True, show=True, extract_center=False, title='post')
-            datacube = mkid_cube
-
-        datacube[datacube < 0] *= -1
-
-        if plot: view_spectra(datacube, logZ=True)
-        if self.params['mp'].QE_var:
-            datacube *= self.QE_map[:datacube.shape[1],:datacube.shape[1]]
-        if plot: view_spectra(datacube, logZ=True)
-
-        # quick2D(self.QE_map)
-        if plot: view_spectra(datacube, logZ=True, show=False)
-        if hasattr(self,'star_phot'): self.params['ap'].star_flux = self.star_phot
-        num_events = int(self.params['ap'].star_flux * self.params['sp'].sample_time * np.sum(datacube))
-
-        if self.params['sp'].verbose:
-            print(f"star flux: {self.params['ap'].star_flux}, cube sum: {np.sum(datacube)}, num events: {num_events}")
-
-        photons = self.sample_cube(datacube, num_events)
-        photons = self.calibrate_phase(photons)
-        photons = self.assign_calibtime(photons, step)
-
-        if plot:
-            cube = self.make_datacube_from_list(photons.T)
-            print(cube.shape)
-            # view_spectra(cube, logZ=True)
-
-        if self.params['mp'].dark_counts:
-            dark_photons = self.get_bad_packets(step, type='dark')
-            dprint(dark_photons.shape, 'dark')
-            photons = np.hstack((photons, dark_photons))
-
-        if self.params['mp'].hot_pix:
-            hot_photons = self.get_bad_packets(step, type='hot')
-            photons = np.hstack((photons, hot_photons))
-            # stem = add_hot(stem)
-
-        # plt.hist(photons[3], bins=25)
-        # plt.yscale('log')
-        # plt.show(block=True)
-        # stem = arange_into_stem(photons.T, (self.array_size[0], self.array_size[1]))
-        # cube = make_datacube(stem, (self.array_size[0], self.array_size[1], self.params['ap'].n_wvl_final))
-        # view_spectra(cube, logZ=True, vmin=0.01)
-
-        if plot:
-            cube = self.make_datacube_from_list(photons.T)
-            print(cube.shape)
-            grid(cube, logZ=True, title='sampled')
-
-        if self.params['mp'].phase_uncertainty:
-            photons[1] *= self.responsivity_error_map[np.int_(photons[2]), np.int_(photons[3])]
-            photons, idx = self.apply_phase_offset_array(photons, self.sigs)
-            # stem = arange_into_stem(photons.T, (self.array_size[0], self.array_size[1]))
-            # cube = make_datacube(stem, (self.array_size[0], self.array_size[1], self.params['ap'].n_wvl_final))
-            # view_spectra(cube, logZ=True, vmin=0.01)
-
-        # stem = arange_into_stem(photons.T, (self.array_size[0], self.array_size[1]))
-        # cube = make_datacube(stem, (self.array_size[0], self.array_size[1], self.params['ap'].n_wvl_final))
-        # view_spectra(cube, vmin=0.01, logZ=True)
-        # plt.figure()
-        # plt.imshow(cube[0], origin='lower', norm=LogNorm(), cmap='inferno', vmin=1)
-        # plt.show(block=True)
-
-        # thresh =  photons[1] < self.basesDeg[np.int_(photons[3]),np.int_(photons[2])]
-        if self.params['mp'].phase_background:
-            thresh =  -photons[1] > 3*self.sigs[-1,np.int_(photons[3]), np.int_(photons[2])]
-            photons = photons[:, thresh]
-        # print(thresh)
-
-        # stem = arange_into_stem(photons.T, (self.array_size[0], self.array_size[1]))
-        # cube = make_datacube(stem, (self.array_size[0], self.array_size[1], self.params['ap'].n_wvl_final))
-        # quick2D(cube[0], vmin=1, logZ=True)
-        # plt.figure()
-        # plt.imshow(cube[0], origin='lower', norm=LogNorm(), cmap='inferno', vmin=1)
-        # plt.show(block=True)
-
-        # print(photons.shape)
-        if self.params['mp'].remove_close:
-            stem = self.arange_into_stem(photons.T, (self.array_size[0], self.array_size[1]))
-            stem = self.remove_close(stem)
-            photons = self.ungroup(stem)
-
-        if plot:
-            cube = self.make_datacube_from_list(photons.T)
-            print(cube.shape)
-            view_spectra(cube, logZ=True, use_axis=False, title='remove close')
-        # This step was taking a long time
-        # stem = arange_into_stem(photons.T, (self.array_size[0], self.array_size[1]))
-        # cube = make_datacube(stem, (self.array_size[0], self.array_size[1], self.params['ap'].n_wvl_final))
-        # # ax7.imshow(cube[0], origin='lower', norm=LogNorm(), cmap='inferno', vmin=1)
-        # cube /= self.QE_map
-        # photons = ungroup(stem)
-
-        # print(photons.shape)
-
-
-        # print("Measured photons with MKIDs")
-
-        return photons.T
 
 if __name__ == '__main__':
-    from medis.params import params
+    iop.update_testname('MKIDS_module_test')
+    sp.quick_detect = True
 
-    cam = Camera(params)
-    dataproduct = cam()
-    print(dataproduct.keys())
+    cam = Camera()
+    observation = cam()
+    print(observation.keys())
+    grid(observation['rebinned_photons'], nstd=5)

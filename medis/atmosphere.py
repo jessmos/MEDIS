@@ -17,7 +17,7 @@ from medis.utils import dprint, clipped_zoom
 from medis.optics import circular_mask
 
 
-def gen_atmos(params, plot=False):
+def gen_atmos(plot=False):
     """
     generates atmospheric phase distortions using hcipy (updated from original using CAOS)
 
@@ -29,26 +29,25 @@ def gen_atmos(params, plot=False):
     :param plot: turn plotting on or off
     :return:
     """
-    dprint("Making New Atmosphere Model")
+    if sp.verbose: dprint("Making New Atmosphere Model")
     # Saving Parameters
     # np.savetxt(iop.atmosconfig, ['Grid Size', 'Wvl Range', 'Number of Frames', 'Layer Strength', 'Outer Scale', 'Velocity', 'Scale Height', cp.model])
     # np.savetxt(iop.atmosconfig, ['ap.grid_size', 'ap.wvl_range', 'ap.numframes', 'atmp.cn_sq', 'atmp.L0', 'atmp.vel', 'atmp.h', 'cp.model'])
     # np.savetxt(iop.atmosconfig, [ap.grid_size, ap.wvl_range, ap.numframes, atmp.cn_sq, atmp.L0, atmp.vel, atmp.h, cp.model], fmt='%s')
 
-    wsamples = np.linspace(params['ap'].wvl_range[0], params['ap'].wvl_range[1], params['ap'].n_wvl_init)
+    wsamples = np.linspace(ap.wvl_range[0], ap.wvl_range[1], ap.n_wvl_init)
     wavefronts = []
 
     ##################################
     # Initiate HCIpy Atmosphere Type
     ##################################
-    pupil_grid = hcipy.make_pupil_grid(params['sp'].grid_size, params['tp'].entrance_d)
-    if params['atmp'].model == 'single':
-        layers = [hcipy.InfiniteAtmosphericLayer(pupil_grid, params['atmp'].cn_sq, params['atmp'].L0,
-                                                 params['atmp'].vel, params['atmp'].h, 2)]
-    elif params['atmp'].model == 'hcipy_standard':
+    pupil_grid = hcipy.make_pupil_grid(sp.grid_size, tp.entrance_d)
+    if atmp.model == 'single':
+        layers = [hcipy.InfiniteAtmosphericLayer(pupil_grid, atmp.cn_sq, atmp.L0, atmp.vel, atmp.h, 2)]
+    elif atmp.model == 'hcipy_standard':
         # Make multi-layer atmosphere
-        layers = hcipy.make_standard_atmospheric_layers(pupil_grid, params['atmp'].outer_scale)
-    elif params['atmp'].model == 'evolving':
+        layers = hcipy.make_standard_atmospheric_layers(pupil_grid, atmp.outer_scale)
+    elif atmp.model == 'evolving':
         raise NotImplementedError
     atmos = hcipy.MultiLayerAtmosphere(layers, scintilation=False)
 
@@ -58,16 +57,16 @@ def gen_atmos(params, plot=False):
     ###########################################
     # Evolving Wavefront using HCIpy tools
     ###########################################
-    for it, t in enumerate(np.arange(0, params['sp'].numframes*params['sp'].sample_time, params['sp'].sample_time)):
+    for it, t in enumerate(np.arange(0, sp.numframes*sp.sample_time, sp.sample_time)):
         atmos.evolve_until(t)
         for iw, wf in enumerate(wavefronts):
             wf2 = atmos.forward(wf)
 
-            filename = get_filename(it, wsamples[iw], (params['iop'].atmosdir, params['sp'].sample_time,
-                                    params['atmp'].model))
+            filename = get_filename(it, wsamples[iw], (iop.atmosdir, sp.sample_time,
+                                    atmp.model))
             dprint(f"atmos file = {filename}")
-            hdu = fits.ImageHDU(wf2.phase.reshape(params['sp'].grid_size, params['sp'].grid_size))
-            hdu.header['PIXSIZE'] = params['tp'].entrance_d/params['sp'].grid_size
+            hdu = fits.ImageHDU(wf2.phase.reshape(sp.grid_size, sp.grid_size))
+            hdu.header['PIXSIZE'] = tp.entrance_d/sp.grid_size
             hdu.writeto(filename, overwrite=True)
 
             if plot and iw == 0:

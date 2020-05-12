@@ -18,6 +18,7 @@ from inspect import getframeinfo, stack
 from medis.twilight_colormaps import sunlight
 from medis.params import ap, tp, sp
 from medis.utils import dprint
+from medis.distribution import planck
 
 class Wavefront(proper.WaveFront):
     """ Wrapper for proper.Wavefront that stores source and wavelength info """
@@ -71,8 +72,25 @@ class Wavefronts():
         # self.plane_sampling = np.empty((len(sp.save_list), ap.n_wvl_init))
         self.plane_sampling = []
 
-    def initialize_proper(self):
-        # Initialize the Wavefront in Proper
+        self.spectra = []
+        for object_spectrum in ap.spectra:
+            if isinstance(object_spectrum, (int, float)):
+                spectrum = planck(object_spectrum, self.wsamples)
+                spectrum /= np.sum(spectrum)
+            else:
+                spectrum = np.ones((ap.n_wvl_init))
+            self.spectra.append(spectrum)
+
+    def initialize_proper(self, set_up_beam=False):
+        """
+
+        Initialize the Wavefronts in Proper
+
+        :param set_up_beam: bool applies prop_circular_aperture and prop_define_entrance before spectral scaling
+            instead of during prescription wher it normally goes
+
+        returns wf_colllection attribute array of wavefronts
+        """
         for iw, wavelength in enumerate(self.wsamples):
             # Scale beam ratio by wavelength for polychromatic imaging
             # see Proper manual pg 37
@@ -90,6 +108,10 @@ class Wavefronts():
 
             # Initialize the wavefront at entrance pupil
             wfp = proper.prop_begin(tp.entrance_d, wavelength, sp.grid_size, beam_ratio)
+            if set_up_beam:
+                proper.prop_circular_aperture(wfp, radius = tp.entrance_d / 2)
+                proper.prop_define_entrance(wfp)  # normalizes the intensity
+            wfp.wfarr = np.multiply(wfp.wfarr, np.sqrt(self.spectra[0][iw]), out=wfp.wfarr, casting='unsafe')
 
             wfs = [wfp]
             names = ['star']
@@ -98,6 +120,10 @@ class Wavefronts():
             if ap.companion:
                 for ix in range(len(ap.contrast)):
                     wfc = proper.prop_begin(tp.entrance_d, wavelength, sp.grid_size, beam_ratio)
+                    if set_up_beam:
+                        proper.prop_circular_aperture(wfc, radius=tp.entrance_d / 2)
+                        proper.prop_define_entrance(wfc)  # normalizes the intensity
+                    wfc.wfarr = np.multiply(wfc.wfarr, np.sqrt(self.spectra[ix+1][iw]), out=wfc.wfarr, casting='unsafe')
                     wfs.append(wfc)
                     names.append('companion_%i' % ix)
 

@@ -15,33 +15,19 @@ a separate module in the Simulations subdirectory of MEDIS. They can then update
 run_name.py" type script, which also makes the call to run_MEDIS to start the simulation. The output is a 6D complex
 field observation sequence.
 
-Rupert will fill in the overview of the MKIDs part.
+The MKIDs camera simulator creates an instance of a device with distributions in R, dead pixel locations etc and then
+combines the fields sequence with this to generate realistic detected photons
 
 """
 import os
-import sys
 import numpy as np
-import importlib
-import multiprocessing
-import time
-import glob
 import pickle
-import shutil
 from datetime import datetime
-import h5py
 from pprint import pprint
 
-
-import proper
-import medis.atmosphere as atmos
-from medis.plot_tools import view_spectra
-import medis.CDI as cdi
-import medis.utils as mu
-import medis.MKIDS as MKIDs
 from medis.telescope import Telescope
 from medis.MKIDS import Camera
-import medis.optics as opx
-import medis.aberrations as aber
+from medis.params import sp, ap, tp, iop, atmp, cdip, mp
 
 ################################################################################################################
 ################################################################################################################
@@ -61,37 +47,42 @@ class RunMedis():
     If the params are different or the testdir does not already exist a new testdir and simulation is created.
 
     """
-    def __init__(self, params, name='test', product='fields'):
+    def __init__(self, name='test', product='fields'):
         """
         File structure:
         datadir
             testdir          <--- output
                 params.pkl   <--- output
 
-        :param params:
-        :param name:
+        :param name:  used at the folder name where all the data is stored
         :param product:
+            fields - 6D complex tensor (t,plane,wavelength,object,x,y) product of Telescope()
+            photons - photon list with non-ideal MKID affects applied
+            rebinned_cube - 4D tensor (t,wavelength,x,y) like scaled_fields but with non-ideal MKID affects aplied
+
         """
 
-        self.params = params
         self.name = name
         self.product = product
-        assert self.product in ['fields', 'photons'], f"Requested data product {self.product} not supported"
+        assert product in ['fields', 'photons', 'rebinned_cube'], f"Requested data product {self.product} not supported"
 
-        self.params['iop'].update(self.name)
+        iop.update_testname(self.name)
+        # for storing a checking between tests
+        self.params = {'ap': ap, 'tp': tp, 'atmp': atmp, 'cdip': cdip, 'iop': iop, 'sp': sp, 'mp': mp}
 
-        if params['sp'].verbose:
-            for param in params.values():
+        # show all the parameters input into the simulation (before some are updated by Telescope and Camera)
+        if sp.verbose:
+            for param in self.params.values():
                 print(f'\n\t {param.__name__()}')
                 pprint(param.__dict__)
 
         # always make the top level directory if it doesn't exist yet
-        if not os.path.isdir(self.params['iop'].datadir):
-            print(f"Top level directory... \n\n\t{self.params['iop'].datadir} \n\ndoes not exist yet. Creating")
-            os.makedirs(self.params['iop'].datadir, exist_ok=True)
+        if not os.path.isdir(iop.datadir):
+            print(f"Top level directory... \n\n\t{iop.datadir} \n\ndoes not exist yet. Creating")
+            os.makedirs(iop.datadir, exist_ok=True)
 
-        if not os.path.exists(self.params['iop'].testdir) or not os.path.exists(self.params['iop'].params_logs):
-            print(f"No simulation data found at... \n\n\t{self.params['iop'].testdir} \n\n A new test simulation"
+        if not os.path.exists(iop.testdir) or not os.path.exists(iop.params_logs):
+            print(f"No simulation data found at... \n\n\t{iop.testdir} \n\n A new test simulation"
                   f" will be started")
             self.make_testdir()
         else:
@@ -100,30 +91,43 @@ class RunMedis():
             if exact_match:
                 print(f"Configuration files match. Initialization over")
             else:
-                print(f"Configuration files differ. Creating a new test directory")
+                print(f"Configuration files differ")
                 now = datetime.now().strftime("%m:%d:%Y_%H-%M-%S")
-                self.params['iop'].update(self.name+'_newsim_'+now)
-                self.make_testdir()
+                backup_testr = os.path.join(iop.datadir, self.name+'_backup_'+now)
+                if not sp.auto_load:
+                    choice = input(f'\n\n\tINPUT REQUIRED...\n\n'
+                                    f'Rename old testdir to {backup_testr} and start new simulation as {iop.testdir} [R],'
+                                    f'\nor Quit [Q],'
+                                    f'\nor ignore parameter difference and proceed with Loading original [L]?')
+                    if choice.lower() == 'q':
+                        exit()
+                    elif choice.lower() == 'r':
+                        os.rename(iop.testdir, backup_testr)
+                        self.make_testdir()
 
     def make_testdir(self):
-        if not os.path.isdir(self.params['iop'].testdir):
-            os.makedirs(self.params['iop'].testdir, exist_ok=True)
+        if not os.path.isdir(iop.testdir):
+            os.makedirs(iop.testdir, exist_ok=True)
 
-        with open(self.params['iop'].params_logs, 'wb') as handle:
+        with open(iop.params_logs, 'wb') as handle:
             pickle.dump(self.params, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     def check_params(self):
-        """ Check all param classes apart from mp since that is not relevant at this stage """
+        """ Check all param classes at this stage. Some params are updated in Telescope and Camera and those params
+         should be checked against each other at that stage of the pipeline"""
 
-        with open(self.params['iop'].params_logs, 'rb') as handle:
+        with open(iop.params_logs, 'rb') as handle:
             loaded_params = pickle.load(handle)
 
         match_params = {}
-        for p in ['ap','tp','atmp','cdip','iop','sp']:  # vars(self.params).keys()
+        for p in ['ap','tp','atmp','cdip','iop','sp','mp']:  # vars(self.params).keys()
             matches = []
             for (this_attr, this_val), (load_attr, load_val) in zip(self.params[p].__dict__.items(),
-                                                                    self.params[p].__dict__.items()):
-                matches.append(this_attr == load_attr and np.all(load_val == this_val))
+                                                                    loaded_params[p].__dict__.items()):
+                try:
+                    matches.append(this_attr == load_attr and np.all(load_val == this_val))
+                except ValueError:
+                    matches.append(False)
 
             match = np.all(matches)
             print(f"param: {p}, match: {match}")
@@ -134,22 +138,19 @@ class RunMedis():
         # return {'ap':False, 'tp':True, 'atmp':True, 'cdip':True, 'iop':True, 'sp':True}
 
     def __call__(self, *args, **kwargs):
+        """ Calling the RunMedis sim instantiates and runs either the Telescope or Camera sims"""
+
         if self.product == 'fields':
-            self.telescope = Telescope(self.params)  # checking of class's cache etc is left to the class
-            dataproduct = self.telescope()
+            self.sim = Telescope(usesave=sp.save_to_disk)  # checking of class's cache etc is left to the class
+        else:
+            self.sim = Camera(usesave=sp.save_to_disk, product=self.product)
 
-        if self.product == 'photons':
-            self.camera = Camera(self.params, usesave=self.params['sp'].save_to_disk)  # creating fields is left to Camera since fields only needs to be created
-                                              # if camera.pkl does not exist
-            dataproduct = self.camera()
-
+        dataproduct = self.sim()
         return dataproduct
 
 
 if __name__ == '__main__':
-    from medis.params import params
-
-    sim = RunMedis(params=params, name='example1', product='photons')
+    sim = RunMedis(name='example1', product='photons')
     observation = sim()
     print(observation.keys())
 
