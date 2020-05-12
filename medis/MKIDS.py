@@ -173,7 +173,6 @@ class Camera():
         xs = np.int_(self.photons[2])
         ys = np.int_(self.photons[3])
 
-        dprint(self.photons[:,:5])
         ResID = beammap[xs, ys]
         photons = np.zeros(len(self.photons[0]),
                            dtype=np.dtype([('ResID', np.uint32), ('Time', np.uint32), ('Wavelength', np.float32),
@@ -181,7 +180,7 @@ class Camera():
 
         photons['ResID'] = ResID
         photons['Time'] = self.photons[0] * 1e6 # seconds -> microseconds
-        photons['Wavelength'] = self.photons[1]
+        photons['Wavelength'] = self.wave_cal(self.photons[1])
         if timesort:
             photons.sort(order=('Time', 'ResID'))
             getLogger(__name__).warning('Sorting photon data on time for {}'.format(iop.photonlist))
@@ -228,14 +227,14 @@ class Camera():
         h5file.create_group('/', 'header', 'Header')
         headerTable = h5file.create_table('/header', 'header', ObsHeader, 'Header')
         headerContents = headerTable.row
-        headerContents['isWvlCalibrated'] = False
-        headerContents['isFlatCalibrated'] = False
-        headerContents['isSpecCalibrated'] = False
-        headerContents['isLinearityCorrected'] = False
-        headerContents['isPhaseNoiseCorrected'] = False
-        headerContents['isPhotonTailCorrected'] = False
+        headerContents['isWvlCalibrated'] = True
+        headerContents['isFlatCalibrated'] = True
+        headerContents['isSpecCalibrated'] = True
+        headerContents['isLinearityCorrected'] = True
+        headerContents['isPhaseNoiseCorrected'] = True
+        headerContents['isPhotonTailCorrected'] = True
         headerContents['timeMaskExists'] = False
-        headerContents['startTime'] = sp.startframe
+        headerContents['startTime'] = sp.startframe * sp.sample_time * 1e6  # s-> microseconds
         headerContents['expTime'] = sp.sample_time
         headerContents['wvlBinStart'] = ap.wvl_range[0]
         headerContents['wvlBinEnd'] = ap.wvl_range[1]
@@ -306,7 +305,7 @@ class Camera():
             return None
         return obj
 
-    def get_photons(self, datacube, plot=True):
+    def get_photons(self, datacube, plot=False):
         """
         Given an intensity spectralcube and timestep create a quantized photon list
 
@@ -334,7 +333,7 @@ class Camera():
 
         return photons
 
-    def degrade_photons(self, photons, plot=True):
+    def degrade_photons(self, photons, plot=False):
         if plot:
             grid(self.rebin_list(photons), title='before degrade')
 
@@ -708,8 +707,6 @@ class Camera():
                 np.linspace(phase_band[0], phase_band[1], ap.n_wvl_final + 1),
                 range(mp.array_size[0] + 1),
                 range(mp.array_size[1] + 1)]
-        print(sp.sample_time * sp.numframes)
-        plt.plot(photons[0])
         rebinned_cube, _ = np.histogramdd(photons.T, bins)
         return rebinned_cube
 
