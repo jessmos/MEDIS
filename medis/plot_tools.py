@@ -84,6 +84,7 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=N
     if show:
         plt.show(block=True)
 
+
 def grid(fields, title='body spectra', logZ=False, show=True, nstd=1, vlim=(None, None), cmap='inferno'):
     """
     General purpose plotter for multi-dimensional input tensors from 2D up to 6D. The tensor will be converted to 4D
@@ -146,6 +147,7 @@ def grid(fields, title='body spectra', logZ=False, show=True, nstd=1, vlim=(None
 
     if show:
         plt.show(block=True)
+
 
 def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vlim=(None,None), subplt_cols=3,
                   dx=None, extract_center=False):
@@ -403,7 +405,8 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
         plot_plane = sp.save_list[p]
         plane = opx.extract_plane(cpx_seq, plot_plane)
         # converts to intensity of last timestep, THEN sums over wavelength, then sums over object
-        if plot_plane == "atmosphere" or plot_plane == "entrance_pupil":
+        if plot_plane == "atmosphere" or plot_plane == "entrance_pupil" or plot_plane == "woofer" \
+                or plot_plane == "tweeter" or plot_plane == "DM":
             plane = np.sum(np.angle(plane[-1]), axis=(0,1))
             logZ[p] = False
             vlim[p] = (None,None)
