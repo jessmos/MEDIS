@@ -234,7 +234,7 @@ class Camera():
         headerContents['isPhaseNoiseCorrected'] = True
         headerContents['isPhotonTailCorrected'] = True
         headerContents['timeMaskExists'] = False
-        headerContents['startTime'] = sp.startframe * sp.sample_time * 1e6  # s-> microseconds
+        headerContents['startTime'] = 0  #sp.startframe * sp.sample_time * 1e6  # s-> microseconds
         headerContents['expTime'] = sp.sample_time
         headerContents['wvlBinStart'] = ap.wvl_range[0]
         headerContents['wvlBinEnd'] = ap.wvl_range[1]
