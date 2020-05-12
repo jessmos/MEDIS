@@ -12,8 +12,7 @@ import time
 import glob
 import pickle
 import shutil
-import h5py
-
+import tables
 
 import proper
 import medis.atmosphere as atmos
@@ -312,19 +311,17 @@ class Telescope():
 
         todo convert to pytables for pipeline conda integration
         """
-        with h5py.File(iop.fields, mode='a') as hdf:
-            print(f"Saving observation data at {iop.fields}")
-            dims = np.shape(fields)
-            keys = list(hdf.keys())
-            fields = np.array(fields)
-            print(f'Saving fields dims with dimensions {dims} and type {fields.dtype}')
-            if 'data' not in keys:
-                dset = hdf.create_dataset('data', dims, maxshape=(None,) + dims[1:],
-                                          dtype=fields.dtype, chunks=dims, compression="gzip")
-                dset[:] = fields
-            else:
-                hdf['data'].resize((hdf["data"].shape[0] + len(fields)), axis = 0)
-                hdf["data"][-len(fields):] = fields
+
+        fields = np.array(fields)
+        print(f'Saving fields dims with dimensions {fields.shape} and type {fields.dtype}')
+        h5file = tables.open_file(iop.fields, mode="a", title="MEDIS Electric Fields File")
+        if "/data" not in h5file:
+            ds = h5file.create_earray(h5file.root, 'data', obj=fields)
+        else:
+            ds = h5file.root.data
+            ds.append(fields)
+
+        h5file.close()
 
     def load_fields(self):
         """ load fields h5
@@ -332,10 +329,9 @@ class Telescope():
          warning sampling is not currently stored in h5. It is stored in telescope.pkl however
          """
         print(f"Loading fields from {iop.fields}")
-        with h5py.File(iop.fields, 'r') as hdf:
-            keys = list(hdf.keys())
-            if 'data' in keys:
-                self.cpx_sequence = hdf.get('data')[:]
+        h5file = tables.open_file(iop.fields, mode="r", title="MEDIS Electric Fields File")
+        self.cpx_sequence = h5file.root.data[:]
+        h5file.close()
         self.pretty_sequence_shape()
         self.sampling = None
 
