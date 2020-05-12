@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 from scipy import interpolate
 import pickle
 import random
-import tables
+import time
 
 from medis.distribution import *
 from medis.params import mp, ap, iop, sp, tp
@@ -167,6 +167,7 @@ class Camera():
         import mkidcore
         from mkidcore import pixelflags
         from io import StringIO
+        import tables
 
         beammap = np.arange(mp.array_size[0]*mp.array_size[1]).reshape(mp.array_size)
         flagmap = np.zeros_like(beammap)
@@ -217,6 +218,7 @@ class Camera():
             indexer(table.cols.Wavelength, index, filter=index_filter)
             getLogger(__name__).debug('Wavelength indexed for {}'.format(iop.photonlist))
             getLogger(__name__).debug('Table indexed ({}) for {}'.format(index, iop.photonlist))
+            print('Table indexed ({}) for {}'.format(index, iop.photonlist))
         else:
             getLogger(__name__).debug('Skipping Index Generation for {}'.format(iop.photonlist))
 
@@ -235,10 +237,10 @@ class Camera():
         headerContents['isPhaseNoiseCorrected'] = True
         headerContents['isPhotonTailCorrected'] = True
         headerContents['timeMaskExists'] = False
-        headerContents['startTime'] = sp.startframe * sp.sample_time * 1e6  # s-> microseconds
+        headerContents['startTime'] = int(time.time())
         headerContents['expTime'] = sp.sample_time
-        headerContents['wvlBinStart'] = ap.wvl_range[0]
-        headerContents['wvlBinEnd'] = ap.wvl_range[1]
+        headerContents['wvlBinStart'] = ap.wvl_range[0] * 1e9
+        headerContents['wvlBinEnd'] = ap.wvl_range[1] * 1e9
         headerContents['energyBinWidth'] = 0.1  #todo check this
         headerContents['target'] = ''
         headerContents['dataDir'] = iop.testdir
