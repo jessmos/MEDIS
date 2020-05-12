@@ -34,6 +34,7 @@ class Wavefront(proper.WaveFront):
             if not hasattr(self, attr):
                 setattr(self, attr, getattr(wavefront, attr))
 
+
 class Wavefronts():
     """
     An object containing all of the complex E fields for each sampled wavelength and astronomical object at this tstep
@@ -274,12 +275,11 @@ class Wavefronts():
         ax3.plot(after_dm[int(sp.grid_size / 2)])
         ax3.plot(np.sum(np.eye(sp.grid_size) * after_dm, axis=1))
 
-        # plt.plot(np.sum(after_dm,axis=1)/after_dm[128,128])
-
         ax4.plot(phase_afterdm[int(sp.grid_size / 2)])
-        # ax4.plot(np.sum(np.eye(ap.grid_size)*phase_afterdm,axis=1))
         plt.xlim([0, proper.prop_get_gridsize(wf)])
-        if title:
+        if not title:
+            title = input(f"Always Add A Title\n "
+                          f"Please Enter Title:")
             fig.suptitle(f"plane: {title}, lambda: {wf.lamda} m, body: {wf.name}", fontsize=18)
 
         plt.subplots_adjust(top=0.9)
@@ -368,6 +368,9 @@ def extract_center(wf):
     return smaller_wf
 
 
+####################################################################################################
+# Functions Relating to Things Rupert Is Doing to the Pupil Plane
+####################################################################################################
 def circular_mask(h, w, center=None, radius=None):
     if center is None: # use the middle of the image
         center = (int(w/2), int(h/2))
@@ -505,6 +508,9 @@ def offset_companion(wf):
         # wf = wf * np.sqrt(ap.contrast[wf.ib-1] * cont_scaling[wf.iw])
 
 
+####################################################################################################
+# Check Sampling
+####################################################################################################
 def check_sampling(tstep, wfo, location, line_info, units=None):
     """
     checks the sampling of the wavefront at the given location and prints to console
