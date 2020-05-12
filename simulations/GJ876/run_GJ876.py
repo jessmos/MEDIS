@@ -1,6 +1,5 @@
 """
-This module creates an observation of the GJ 876 system as sampled with Subaru/SCExAO
-
+This module creates an observation and tests the speckle statistics
 
 """
 
@@ -384,9 +383,9 @@ def investigate_quantized():
         iop.atmosdir = os.path.join(iop.datadir, name, iop.atmosroot, atmosdir)
         iop.aberdir = os.path.join(iop.datadir, name, iop.aberroot, atmosdir)
         observation = sim()
-        print(observation.keys(), observation['photons'].shape, observation['stackcube'].shape)
-        grid(observation['stackcube'][:10], logZ=True, nstd=10, show=False, vlim=(0,2))
-        timecube = np.sum(observation['stackcube'], axis=1)
+        print(observation.keys(), observation['photons'].shape, observation['rebinned_photons'].shape)
+        grid(observation['rebinned_photons'][:10], logZ=True, nstd=10, show=False, vlim=(0,2))
+        timecube = np.sum(observation['rebinned_photons'], axis=1)
         # plot_stats(timecube, locs, names)
         for l, (loc, obj) in enumerate(zip(locs, objects)):
             print(l, loc, obj)

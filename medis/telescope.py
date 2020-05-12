@@ -106,9 +106,7 @@ class Telescope():
             tp.__dict__.update(pres_module.tp.__dict__)  #  update tp with the contents of the prescription
 
             # initialize atmosphere
-            iop.atmosdir = iop.atmosdir.format(sp.grid_size,
-                                                                             sp.beam_ratio,
-                                                                             sp.numframes)
+            iop.atmosdir = iop.atmosdir.format(sp.grid_size, sp.beam_ratio, sp.numframes)
             if glob.glob(iop.atmosdir+'/*.fits'):
                 print(f"Atmosphere maps already exist at \n\n\t{iop.atmosdir}"
                       f" \n\n... skipping generation\n\n")
@@ -118,9 +116,7 @@ class Telescope():
                 atmos.gen_atmos()
 
             # initialize aberrations
-            iop.aberdir = iop.aberdir.format(sp.grid_size,
-                                                                           sp.beam_ratio,
-                                                                           sp.numframes)
+            iop.aberdir = iop.aberdir.format(sp.grid_size, sp.beam_ratio, sp.numframes)
             if glob.glob(iop.aberdir + '/*.fits'):
                 print(f"Aberration maps already exist at \n\n\t{iop.aberdir} "
                       f"\n\n... skipping generation\n\n")

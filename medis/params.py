@@ -122,7 +122,6 @@ class Simulation_params:
 
         # Reading/Saving Params
         self.save_to_disk = False  # Saves observation sequence (timestep, wavelength, x, y)
-        self.save_sim_object = True  # Toggles whether telescope.Telescope or MKIDs.Camera object is stored or just its photon data
         self.save_list = ['detector']  # list of locations in optics train to save
         self.skip_planes = []  # You can tell Wavefronts to ignore planes if it sees them by including the plane name here
         self.memory_limit = 10  # number of giga-bytes for sixcube of complex fields before chunking happens
@@ -130,6 +129,7 @@ class Simulation_params:
                                  # minimum of this and max allowed steps for memory reasons takes priority
         self.chunking = False  # chunking is neccessary if the full fields tensor does not fit in memory. RunMedis should set this automatically
         self.auto_load = False  # controls whether RunMedis checks with the user before it loads an old simulaiton it knows to have mismatching parameters
+        self.degrade_photons = True
 
         self.verbose = True
         self.debug = False

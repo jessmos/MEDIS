@@ -54,13 +54,17 @@ class RunMedis():
             testdir          <--- output
                 params.pkl   <--- output
 
-        :param name:
+        :param name:  used at the folder name where all the data is stored
         :param product:
+            fields - 6D complex tensor (t,plane,wavelength,object,x,y) product of Telescope()
+            photons - photon list with non-ideal MKID affects applied
+            rebinned_cube - 4D tensor (t,wavelength,x,y) like scaled_fields but with non-ideal MKID affects aplied
+
         """
 
         self.name = name
         self.product = product
-        assert self.product in ['fields', 'photons'], f"Requested data product {self.product} not supported"
+        assert product in ['fields', 'photons', 'rebinned_cube'], f"Requested data product {self.product} not supported"
 
         iop.update_testname(self.name)
         # for storing a checking between tests
@@ -135,15 +139,13 @@ class RunMedis():
 
     def __call__(self, *args, **kwargs):
         """ Calling the RunMedis sim instantiates and runs either the Telescope or Camera sims"""
+
         if self.product == 'fields':
-            self.telescope = Telescope(usesave=sp.save_to_disk)  # checking of class's cache etc is left to the class
-            dataproduct = self.telescope()
+            self.sim = Telescope(usesave=sp.save_to_disk)  # checking of class's cache etc is left to the class
+        else:
+            self.sim = Camera(usesave=sp.save_to_disk, product=self.product)
 
-        if self.product == 'photons':
-            # creating fields is left to Camera since fields only needs to be created if camera.pkl does not exist
-            self.camera = Camera(usesave=sp.save_to_disk)
-            dataproduct = self.camera()
-
+        dataproduct = self.sim()
         return dataproduct
 
 

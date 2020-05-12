@@ -59,9 +59,8 @@ class Distribution(object):
         #is this a discrete or piecewise continuous distribution?
         if self.interpolation:
             index = np.float_(index)
-            # print index[0][:50], np.random.uniform(size=index.shape[1])[:50], (index[0] + np.random.uniform(size=index.shape[1]))[:50], index.shape, type(index[0])
-            index[0] += np.random.uniform(size=index.shape[1])
-            # print index[0][:50]
+            # index[0] += np.random.uniform(size=index.shape[1])
+            index[:int(self.interpolation)] += np.random.uniform(size=(int(self.interpolation), index.shape[1]))
 
         return self.transform(index)
 

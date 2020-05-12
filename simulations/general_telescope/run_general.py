@@ -63,11 +63,11 @@ if __name__ == '__main__':
     observation = sim()
 
     fp_sampling = sim.camera.platescale
-    stackcube = sim.camera.stackcube
+    rebinned_photons = sim.camera.rebinned_cube
 
     print(fp_sampling)
     for o in range(len(ap.contrast)+1):
-        print(stackcube.shape)
-        datacube = stackcube[o]
+        print(rebinned_photons.shape)
+        datacube = rebinned_photons[o]
         print(o, datacube.shape)
         grid(datacube, logZ=True, title='Spectral Channels')
