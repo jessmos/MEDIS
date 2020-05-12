@@ -74,8 +74,7 @@ class Camera():
             self.__dict__ = load.__dict__
             self.save_exists = True  # just in case the saved obj didn't have this set to True
         elif self.photons_exists and self.usesave:
-            self.photons = self.load_photonlist()
-            self.rebinned_cube = None
+            self.load_photonlist()
         else:
             if fields is None:
                 # make fields (or load if it already exists)
@@ -128,7 +127,7 @@ class Camera():
         print('\nInitialized MKID device parameters\n')
 
     def __call__(self, *args, **kwargs):
-        if not self.save_exists:
+        if not (self.save_exists or self.photons_exists):
             # todo implement chunking for large datasets
             self.rebinned_cube =  np.abs(np.sum(self.fields[:, -1, :, :], axis=2)) ** 2  # select detector plane and sum over objects
             self.rebinned_cube = self.rescale_cube(self.rebinned_cube)  # interpolate onto pixel spacing
@@ -173,13 +172,15 @@ class Camera():
 
         xs = np.int_(self.photons[2])
         ys = np.int_(self.photons[3])
+
+        dprint(self.photons[:,:5])
         ResID = beammap[xs, ys]
         photons = np.zeros(len(self.photons[0]),
-                           dtype=np.dtype([('ResID', int), ('Time', float), ('Wavelength', float),
-                                           ('SpecWeight', float), ('NoiseWeight', float)]))
+                           dtype=np.dtype([('ResID', np.uint32), ('Time', np.uint32), ('Wavelength', np.float32),
+                                           ('SpecWeight', np.float32), ('NoiseWeight', np.float32)]))
 
         photons['ResID'] = ResID
-        photons['Time'] = self.photons[0]
+        photons['Time'] = self.photons[0] * 1e6 # seconds -> microseconds
         photons['Wavelength'] = self.photons[1]
         if timesort:
             photons.sort(order=('Time', 'ResID'))
@@ -261,16 +262,20 @@ class Camera():
         getLogger(__name__).debug('Done with {}'.format(iop.photonlist))
 
     def load_photonlist(self):
-        #todo implement
-
+        """Load photon list from pipeline's photon table h5"""
         h5file = tables.open_file(iop.photonlist, "r")
-        print(h5file)
         table = h5file.root.Photons.PhotonTable
-        print(table.shape)
 
-        raise NotImplementedError
-        photons = None
-        return photons
+        self.photons = np.zeros((4, len(table)))
+        self.photons[0] = table[:]['Time'] /1e6
+        self.photons[1] = table[:]['Wavelength']
+
+        rev_beam = []
+        [[rev_beam.append([c,r]) for r in range(mp.array_size[1])] for c in range(mp.array_size[0])]
+        rev_beam = np.array(rev_beam)
+        self.photons[2:] = (rev_beam[table[:]['ResID']].T)
+        self.rebinned_cube = None
+        print(f"Loaded photon list from table at{h5file}")
 
     def save_instance(self):
         """
@@ -301,7 +306,7 @@ class Camera():
             return None
         return obj
 
-    def get_photons(self, datacube, plot=False):
+    def get_photons(self, datacube, plot=True):
         """
         Given an intensity spectralcube and timestep create a quantized photon list
 
@@ -329,7 +334,7 @@ class Camera():
 
         return photons
 
-    def degrade_photons(self, photons, plot=False):
+    def degrade_photons(self, photons, plot=True):
         if plot:
             grid(self.rebin_list(photons), title='before degrade')
 
@@ -701,8 +706,10 @@ class Camera():
         phase_band = self.phase_cal(ap.wvl_range)
         bins = [np.linspace(0, sp.sample_time * sp.numframes, sp.numframes + 1),
                 np.linspace(phase_band[0], phase_band[1], ap.n_wvl_final + 1),
-                range(self.array_size[0] + 1),
-                range(self.array_size[1] + 1)]
+                range(mp.array_size[0] + 1),
+                range(mp.array_size[1] + 1)]
+        print(sp.sample_time * sp.numframes)
+        plt.plot(photons[0])
         rebinned_cube, _ = np.histogramdd(photons.T, bins)
         return rebinned_cube
 
