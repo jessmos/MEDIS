@@ -24,10 +24,9 @@ import numpy as np
 import pickle
 from datetime import datetime
 from pprint import pprint
-from shutil import rmtree
 
 from medis.telescope import Telescope
-# from medis.MKIDS import Camera
+from medis.MKIDS import Camera
 from medis.params import sp, ap, tp, iop, atmp, cdip, mp
 
 ################################################################################################################
