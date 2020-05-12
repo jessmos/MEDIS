@@ -19,9 +19,10 @@ import medis.medis_main as mm
 #################################################################################################
 #################################################################################################
 #################################################################################################
-# iop.update_root(f"/home/captainkay/mazinlab/MKIDSim/CDIsim_data/")
-# iop.update_testname('Subaru-test2')
-# iop.makedir()
+testname = 'SCExAO-test2'
+iop.update_datadir(f"/home/captainkay/mazinlab/MKIDSim/CDIsim_data/")
+iop.update_testname(testname)
+iop.makedir()
 
 # Telescope
 tp.prescription = 'Subaru_SCExAO'
@@ -39,7 +40,7 @@ sp.grid_size = 512  # creates a nxn array of samples of the wavefront
 sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
 
 # Companion
-ap.companion = False
+ap.companion = True
 ap.contrast = [1e-1]
 ap.companion_xy = [[5, -5]]  # units of this are lambda/tp.entrance_d
 ap.n_wvl_init = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
@@ -52,9 +53,9 @@ ap.wvl_range = np.array([800, 1400]) / 1e9  # wavelength range in [m] (formerly 
 # Toggles for Aberrations and Control
 tp.obscure = False
 tp.use_atmos = False
-tp.use_aber = False
+tp.use_aber = True
 tp.use_ao = True
-cdip.use_cdi = False
+tp.use_cdi = False
 
 # Plotting
 sp.show_wframe = False  # plot white light image frame
@@ -72,7 +73,7 @@ if __name__ == '__main__':
     # =======================================================================
     # Run it!!!!!!!!!!!!!!!!!
     # =======================================================================
-    sim = mm.RunMedis(name='SCExAO', product='fields')
+    sim = mm.RunMedis(name=testname, product='fields')
     observation = sim()
     cpx_sequence = observation['fields']
     sampling = observation['sampling']
@@ -81,7 +82,7 @@ if __name__ == '__main__':
     # Focal Plane Processing
     # =======================================================================
     # cpx_sequence = (n_timesteps ,n_planes, n_waves_init, n_astro_bodies, nx ,ny)
-    # cpx_sequence = mmu.interp_wavelength(cpx_sequence, 2)  # interpolate over wavelength
+    cpx_sequence = opx.interp_wavelength(cpx_sequence, 2)  # interpolate over wavelength
     focal_plane = opx.extract_plane(cpx_sequence, 'detector')  # eliminates astro_body axis
     # convert to intensity THEN sum over object, keeping the dimension of tstep even if it's one
     focal_plane = np.sum(opx.cpx_to_intensity(focal_plane), axis=2)

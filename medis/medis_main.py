@@ -24,9 +24,10 @@ import numpy as np
 import pickle
 from datetime import datetime
 from pprint import pprint
+from shutil import rmtree
 
 from medis.telescope import Telescope
-from medis.MKIDS import Camera
+# from medis.MKIDS import Camera
 from medis.params import sp, ap, tp, iop, atmp, cdip, mp
 
 ################################################################################################################
@@ -98,12 +99,17 @@ class RunMedis():
                     choice = input(f'\n\n\tINPUT REQUIRED...\n\n'
                                     f'Rename old testdir to {backup_testr} and start new simulation as {iop.testdir} [R],'
                                     f'\nor Quit [Q],'
-                                    f'\nor ignore parameter difference and proceed with Loading original [L]?')
+                                    f'\nor overwrite the pickle file .pkl (keeps atmosphere and aberration maps) [P]?'
+                                    f'\nor ignore parameter difference and proceed with Loading original [L]?\n')
+
                     if choice.lower() == 'q':
                         exit()
                     elif choice.lower() == 'r':
                         os.rename(iop.testdir, backup_testr)
                         self.make_testdir()
+                    elif choice.lower() == 'p':
+                        # Overwrite the .pkl files but keep aberration and atmosphere directories
+                        os.remove(f"{iop.testdir}/params.pkl")
 
     def make_testdir(self):
         if not os.path.isdir(iop.testdir):
@@ -120,7 +126,8 @@ class RunMedis():
             loaded_params = pickle.load(handle)
 
         match_params = {}
-        for p in ['ap','tp','atmp','cdip','iop','sp','mp']:  # vars(self.params).keys()
+        print(f"\nChecking Matching Params Classes:")
+        for p in ['ap','tp','atmp','cdip','iop','sp','mp']:
             matches = []
             for (this_attr, this_val), (load_attr, load_val) in zip(self.params[p].__dict__.items(),
                                                                     loaded_params[p].__dict__.items()):
@@ -134,8 +141,6 @@ class RunMedis():
             match_params[p] = match
 
         return match_params
-
-        # return {'ap':False, 'tp':True, 'atmp':True, 'cdip':True, 'iop':True, 'sp':True}
 
     def __call__(self, *args, **kwargs):
         """ Calling the RunMedis sim instantiates and runs either the Telescope or Camera sims"""

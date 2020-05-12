@@ -93,7 +93,7 @@ if __name__ == '__main__':
     # =======================================================================
     # obs_sequence = np.array(obs_sequence)  # obs sequence is returned by gen_timeseries (called above)
     # (n_timesteps ,n_planes, n_waves_init, n_astro_bodies, nx ,ny)
-    # cpx_sequence = mmu.interp_wavelength(cpx_sequence, 2)  # interpolate over wavelength
+    cpx_sequence = opx.interp_wavelength(cpx_sequence, 2)  # interpolate over wavelength
     focal_plane = opx.extract_plane(cpx_sequence, 'detector')  # eliminates object axis
     # convert to intensity THEN sum over object, keeping the dimension of tstep even if it's one
     focal_plane = np.sum(opx.cpx_to_intensity(focal_plane), axis=2)

@@ -33,6 +33,7 @@ def phase_cal(wavelengths):
     phase = tp.wavecal_coeffs[0] * wavelengths + tp.wavecal_coeffs[1]
     return phase
 
+
 ####################################################################################################
 # Functions Relating to Reading, Loading, and Saving Data #
 ####################################################################################################
@@ -113,6 +114,7 @@ def readFITS(filename):
     scidata = hdulist[0].data
 
     return scidata
+
 
 def clipped_zoom(img, zoom_factor, **kwargs):
     from scipy.ndimage import zoom

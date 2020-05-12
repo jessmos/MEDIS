@@ -287,6 +287,7 @@ class Wavefronts():
         if show:
             plt.show(block=True)
 
+
 ####################################################################################################
 # Functions Relating to Processing Complex Cubes
 ####################################################################################################
@@ -308,6 +309,7 @@ def interp_wavelength(data_in, ax):
         data_out = data_in
 
     return data_out
+
 
 def interp_sampling(sampling):
     if ap.interp_wvl and 1 < ap.n_wvl_init < ap.n_wvl_final:
@@ -365,6 +367,7 @@ def extract_center(wf):
                     int(nx/2-EXTRACT/2):int(nx/2+EXTRACT/2)]
     return smaller_wf
 
+
 def circular_mask(h, w, center=None, radius=None):
     if center is None: # use the middle of the image
         center = (int(w/2), int(h/2))
@@ -376,6 +379,7 @@ def circular_mask(h, w, center=None, radius=None):
 
     mask = dist_from_center <= radius
     return mask
+
 
 def apodize_pupil(wf):
     phase_map = proper.prop_get_phase(wf)
@@ -389,6 +393,7 @@ def apodize_pupil(wf):
     smooth_mask = gaussian_filter(mask, 1.5, mode='nearest')
     smoothed = phase_map * smooth_mask
     wf.wfarr = proper.prop_shift_center(amp_map * np.cos(smoothed) + 1j * amp_map * np.sin(smoothed))
+
 
 ################################################################################################################
 # Optics in Proper
@@ -531,6 +536,7 @@ def check_sampling(tstep, wfo, location, line_info, units=None):
                 print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling:.3f} rad")
             else:
                 print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling} m")
+
 
 def unwrap_phase_zeros(phasemap):
     """ combination of abs_zeros and masking allows phase unwrap to work without discontiuities sometimes occur """
