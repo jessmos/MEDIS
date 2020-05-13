@@ -238,7 +238,7 @@ class Camera():
         headerContents['isPhotonTailCorrected'] = True
         headerContents['timeMaskExists'] = False
         headerContents['startTime'] = int(time.time())
-        headerContents['expTime'] = sp.sample_time
+        headerContents['expTime'] = np.ceil(sp.sample_time * sp.numframes)
         headerContents['wvlBinStart'] = ap.wvl_range[0] * 1e9
         headerContents['wvlBinEnd'] = ap.wvl_range[1] * 1e9
         headerContents['energyBinWidth'] = 0.1  #todo check this
@@ -802,11 +802,12 @@ class Camera():
             self.sampling = nyq_sampling*sp.beam_ratio*2  # nyq sampling happens at sp.beam_ratio = 0.5
             x = np.arange(-sp.grid_size*self.sampling/2, sp.grid_size*self.sampling/2, self.sampling)
             xnew = np.arange(-self.array_size[0]*self.platescale/2, self.array_size[0]*self.platescale/2, self.platescale)
+            ynew = np.arange(-self.array_size[1]*self.platescale/2, self.array_size[1]*self.platescale/2, self.platescale)
             mkid_cube = np.zeros((rebinned_cube.shape[0], rebinned_cube.shape[1], self.array_size[0], self.array_size[1]))
             for d, datacube in enumerate(rebinned_cube):
                 for s, slice in enumerate(datacube):
                     f = interpolate.interp2d(x, x, slice, kind='cubic')
-                    mkid_cube[d, s] = f(xnew, xnew)
+                    mkid_cube[d, s] = f(ynew, xnew)
             mkid_cube = mkid_cube*np.sum(datacube)/np.sum(mkid_cube)
             # grid(mkid_cube, logZ=True, show=True, extract_center=False, title='post')
             rebinned_cube = mkid_cube
