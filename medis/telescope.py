@@ -280,7 +280,7 @@ class Telescope():
 
     def run_timestep(self, t):
         self.kwargs['iter'] = t
-        return proper.prop_run(tp.prescription, 1, sp.grid_size, PASSVALUE=self.kwargs)
+        return proper.prop_run(tp.prescription, 1, sp.grid_size, PASSVALUE=self.kwargs, QUIET=True)
 
     def pretty_sequence_shape(self):
 
