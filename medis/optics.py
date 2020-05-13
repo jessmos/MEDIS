@@ -269,14 +269,19 @@ class Wavefronts():
             ax1.imshow(after_dm, origin='lower', cmap="YlGnBu_r", norm=LogNorm())
         else:
             ax1.imshow(after_dm, origin='lower', cmap="YlGnBu_r")
+
+        ax1.set_title('Amplitude Map')
         ax2.imshow(phase_afterdm, origin='lower', cmap=sunlight)  # , vmin=-0.5, vmax=0.5)
+        ax2.set_title('Phase Map')
 
         ax3.plot(after_dm[int(sp.grid_size / 2)])
-        ax3.plot(np.sum(np.eye(sp.grid_size) * after_dm, axis=1))
+        ax3.plot(np.sum(np.eye(sp.grid_size) * after_dm, axis=1), label=f'row {int(sp.grid_size / 2)}')
+        ax3.legend()
 
         # plt.plot(np.sum(after_dm,axis=1)/after_dm[128,128])
 
-        ax4.plot(phase_afterdm[int(sp.grid_size / 2)])
+        ax4.plot(phase_afterdm[int(sp.grid_size / 2)], label=f'row {int(sp.grid_size / 2)}')
+        ax4.legend()
         # ax4.plot(np.sum(np.eye(ap.grid_size)*phase_afterdm,axis=1))
         plt.xlim([0, proper.prop_get_gridsize(wf)])
         if title:
