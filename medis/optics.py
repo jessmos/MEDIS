@@ -20,6 +20,7 @@ from medis.params import ap, tp, sp
 from medis.utils import dprint
 from medis.distribution import planck
 
+
 class Wavefront(proper.WaveFront):
     """ Wrapper for proper.Wavefront that stores source and wavelength info """
 
@@ -377,7 +378,7 @@ def extract_center(wf):
 
 
 ####################################################################################################
-# Functions Relating to Things Rupert Is Doing to the Pupil Plane
+# Functions Relating to Masking the Pupil Plane
 ####################################################################################################
 def circular_mask(h, w, center=None, radius=None):
     if center is None: # use the middle of the image
@@ -393,17 +394,43 @@ def circular_mask(h, w, center=None, radius=None):
 
 
 def apodize_pupil(wf):
+    # phase_map = proper.prop_get_phase(wf)
+    # amp_map = proper.prop_get_amplitude(wf)
+    # h, w = wf.wfarr.shape[:2]
+    # wavelength = wf.lamda
+    # scale = ap.wvl_range[0] / wavelength
+    # inds = circular_mask(h, w, radius=scale * 0.95 * h * sp.beam_ratio / 2)  #TODO remove hardcoded sizing, especially if use is default
+    # mask = np.zeros_like(phase_map)
+    # mask[inds] = 1
+    # smooth_mask = gaussian_filter(mask, 1.5, mode='nearest')  #TODO remove hardcoded sizing, especially if use is default
+    # smoothed = phase_map * smooth_mask
+    # wf.wfarr = proper.prop_shift_center(amp_map * np.cos(smoothed) + 1j * amp_map * np.sin(smoothed))
     phase_map = proper.prop_get_phase(wf)
     amp_map = proper.prop_get_amplitude(wf)
     h, w = wf.wfarr.shape[:2]
     wavelength = wf.lamda
     scale = ap.wvl_range[0] / wavelength
-    inds = circular_mask(h, w, radius=scale * 0.95 * h * sp.beam_ratio / 2)
+    inds = circular_mask(h, w,
+                         radius=scale * 0.95 * h * sp.beam_ratio / 2)  # TODO remove hardcoded sizing, especially if use is default
     mask = np.zeros_like(phase_map)
     mask[inds] = 1
-    smooth_mask = gaussian_filter(mask, 1.5, mode='nearest')
+    smooth_mask = mask
     smoothed = phase_map * smooth_mask
     wf.wfarr = proper.prop_shift_center(amp_map * np.cos(smoothed) + 1j * amp_map * np.sin(smoothed))
+
+
+def abs_zeros(wf):
+    """
+    zeros everything outside the pupil
+
+    This function attempts to figure out where the edges of the pupil are by determining if either the real
+     or imaginary part of the complex-valued E-field is zero at a gridpoint. If so, it sets the full cpmplex
+     value to zero, so 0+0j
+    """
+    bad_locs = np.logical_or(np.real(wf) == -0, np.imag(wf) == -0)
+    wf[bad_locs] = 0 + 0j
+
+    return wf
 
 
 ################################################################################################################
@@ -445,20 +472,6 @@ def prop_pass_lens(wf, fl_lens, dist):
     """
     proper.prop_lens(wf, fl_lens)
     proper.prop_propagate(wf, dist)
-
-
-def abs_zeros(wf):
-    """
-    zeros everything outside the pupil
-
-    This function attempts to figure out where the edges of the pupil are by determining if either the real
-     or imaginary part of the complex-valued E-field is zero at a gridpoint. If so, it sets the full cpmplex
-     value to zero, so 0+0j
-    """
-    bad_locs = np.logical_or(np.real(wf) == -0, np.imag(wf) == -0)
-    wf[bad_locs] = 0 + 0j
-
-    return wf
 
 
 def rotate_sky(wf, it):
@@ -517,14 +530,16 @@ def offset_companion(wf):
 
 
 ####################################################################################################
-# Check Sampling
+# Check Sampling & Misc Tools
 ####################################################################################################
-def check_sampling(tstep, wfo, location, line_info, units=None):
+def check_sampling(wf, tstep, location, line_info, units=None):
     """
     checks the sampling of the wavefront at the given location and prints to console
 
+    mostly reformats the output of proper.prop_get_sampling into human-readable format
+
+    :param wf: wavefront object
     :param tstep: timestep, will only check for first timestep, so when tstep==0
-    :param wfo: wavefront object
     :param location: string that identifies where call is being made
     :param line_info: info on the line number and function name from where check_sampling was called
         example: getframeinfo(stack()[0][0])
@@ -532,24 +547,25 @@ def check_sampling(tstep, wfo, location, line_info, units=None):
     :param units: desired units of returned print statement; options are 'mm,'um','nm','arcsec','rad'
     :return: prints sampling to the command line
     """
-    if tstep == 0:
-        print(f"From {line_info.filename}:{line_info.lineno}\n Sampling at {location}")
-        for w in range(wfo.wf_collection.shape[0]):
-            check_sampling = proper.prop_get_sampling(wfo.wf_collection[w,0])
-            if units == 'mm':
-                print(f"sampling at wavelength={wfo.wsamples[w]*1e9:.0f}nm is {check_sampling:.4f} m")
-            elif units == 'um':
-                print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling*1e6:.1f} um")
-            elif units == 'nm':
-                print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling*1e9:.1f} nm")
-            elif units == 'arcsec':
-                check_sampling = proper.prop_get_sampling_arcsec(wfo.wf_collection[w, 0])
-                print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling*1e3:.2f} mas")
-            elif units == 'rad':
-                check_sampling = proper.prop_get_sampling_radians(wfo.wf_collection[w, 0])
-                print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling:.3f} rad")
-            else:
-                print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling} m")
+    if tstep == 0 and wf.ib == 0:
+        if wf.iw == 0:
+            print(f"\nFrom {line_info.filename}:{line_info.lineno}\n Sampling at {location}")
+
+        check_sampling = proper.prop_get_sampling(wf)
+        if units == 'mm':
+            print(f"sampling at wavelength={wf.lamda * 1e9:.0f}nm is {check_sampling*1e3:.4f} mm")
+        elif units == 'um':
+            print(f"sampling at wavelength={wf.lamda * 1e9:.0f}nm is {check_sampling*1e6:.1f} um")
+        elif units == 'nm':
+            print(f"sampling at wavelength={wf.lamda * 1e9:.0f}nm is {check_sampling*1e9:.1f} nm")
+        elif units == 'arcsec':
+            check_sampling = proper.prop_get_sampling_arcsec(wf)
+            print(f"sampling at wavelength={wf.lamda * 1e9:.0f}nm is {check_sampling*1e3:.2f} mas")
+        elif units == 'rad':
+            check_sampling = proper.prop_get_sampling_radians(wf)
+            print(f"sampling at wavelength={wf.lamda * 1e9:.0f}nm is {check_sampling:.3f} rad")
+        else:
+            print(f"sampling at wavelength={wf.lamda * 1e9:.0f}nm is {check_sampling} m")
 
 
 def unwrap_phase_zeros(phasemap):
