@@ -139,21 +139,24 @@ class Wavefronts():
         The wavefront object has dimensions of shape=(n_wavelengths, n_astro_bodies, grid_sz, grid_sz)
 
         To save, you must pass in the keyword argument plane_name when you call this function from the prescription.
-        This function does not have a keyword argument for plane_name specifically, since you need to distinguish
-        it from the **kwargs you want to pass to the function that you are looping over.
+        Specifically for the AO/DM system, there is different behavior in the function depending on the plane name.
+        Therefore, we need to pass the plane_name through to ao.deformable_mirror. Otherwise, we jsut use it for saving
+        and we can pop it out of the kwargs list because no other functins use it for dependant functionality.
+
         If you are saving the plane at this location, keep in mind it is saved AFTER the function is applied. This
         is desirable for most functions but be careful when using it for prop_lens, etc
 
         :param func: function to be applied e.g. ap.add_aber()
-        :param plane_name: name the plane where this is called if you want to save the complex field data via save_plane
         :param args: args to be passed to the function
         :param kwargs: kwargs to be passed to the function
         :return: everything is just applied to the wfo, so nothing is returned in the traditional sense
         """
         if 'plane_name' in kwargs:
-            plane_name = kwargs.pop('plane_name')  # remove plane_name from **kwargs
-            # if plane_name not in sp.save_list:
-            #     plane_name = None
+            if kwargs['plane_name'] == 'woofer' or kwargs['plane_name'] == 'tweeter':
+                plane_name = kwargs['plane_name']
+                pass  # keep the plane_name in kwargs.
+            else:
+                plane_name = kwargs.pop('plane_name')  # remove plane_name from **kwargs
         elif 'lens_name' in kwargs:
             plane_name = kwargs['lens_name']
         else:
