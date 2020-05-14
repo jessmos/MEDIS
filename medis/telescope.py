@@ -243,8 +243,10 @@ class Telescope():
                 if sp.num_processes == 1:
                     seq_samp_list = [self.run_timestep(t) for t in chunk_range]
                 else:
-                    pool = multiprocessing.Pool(processes=sp.num_processes)
-                    seq_samp_list = [pool.apply(self.run_timestep, args=(t,)) for t in chunk_range]
+                    print(f'Using multiprocessing of timesteps {chunk_range}')
+                    # it appears as though the with statement is neccesssary when recreating Pools like this
+                    with multiprocessing.Pool(processes=sp.num_processes) as p:
+                        seq_samp_list = p.map(self.run_timestep, chunk_range)
                 self.cpx_sequence = [tup[0] for tup in seq_samp_list]
                 self.sampling = seq_samp_list[0][1]
 
@@ -281,6 +283,8 @@ class Telescope():
     def run_timestep(self, t):
         self.kwargs['iter'] = t
         return proper.prop_run(tp.prescription, 1, sp.grid_size, PASSVALUE=self.kwargs, QUIET=True)
+        # return np.zeros((1, len(sp.save_list), ap.n_wvl_init, 1 + len(ap.contrast),
+        #                  sp.grid_size, sp.grid_size), dtype=np.complex64), 0
 
     def pretty_sequence_shape(self):
 
