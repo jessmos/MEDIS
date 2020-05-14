@@ -185,7 +185,7 @@ class Wavefronts():
             setattr(self, plane_name, manipulator_output)
 
         if zero_outside:
-            print(f'Zeroing outside the beam after {plane_name}')
+            if sp.verbose: print(f'Zeroing outside the beam after {plane_name}')
             self.abs_zeros()
 
         # Saving complex field data after function is applied

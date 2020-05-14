@@ -21,7 +21,7 @@ from medis.utils import *
 ################################################################################################################
 # Aberrations
 ################################################################################################################
-def generate_maps(aber_vals, lens_diam, lens_name='lens'):
+def generate_maps(aber_vals, lens_diam, lens_name='lens', quasi_static=False):
     """
     generate PSD-defined aberration maps for a lens(mirror) using Proper
 
@@ -81,17 +81,10 @@ def generate_maps(aber_vals, lens_diam, lens_name='lens'):
     if not os.path.isfile(filename):
         saveFITS(aber_cube[0], filename)
 
-    # I think this part does quasi-static aberrations, but not sure if the random error is correct. On 7-10-19
-    for a in range(1, sp.numframes):
-        perms = np.random.rand(sp.grid_size, sp.grid_size) - 0.5
-        perms *= 0.05
-        phase += perms
-        aber_cube[a] = proper.prop_psd_errormap(wfo, rms_error, c_freq, high_power,
-                             MAP="prim_map", TPF=True, PHASE_HISTORY=phase)
-
-        filename = f"{iop.aberdir}/t{a}_{lens_name}.fits"
-        if not os.path.isfile(filename):
-            saveFITS(aber_cube[0], filename)
+    if quasi_static:
+        # todo implement monkey patch of proper.prop_psd_error that return phase too so it can be incremented with correlated gaussian noise
+        # See commit 48c77c0babd5c6fcbc681b4fdd0d2db9cf540695 for original implementation of this code
+        raise NotImplementedError
 
 
 def add_aber(wf, aberdir=None, step=0, lens_name=None):
@@ -115,7 +108,7 @@ def add_aber(wf, aberdir=None, step=0, lens_name=None):
     # Load in or Generate Aberration Map
     # iop.aberdata = f"gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
     # iop.aberdir = os.path.join(iop.testdir, iop.aberroot, iop.aberdata)
-    filename = f"{iop.aberdir}/t{step}_{lens_name}.fits"
+    filename = f"{iop.aberdir}/t{0}_{lens_name}.fits"
     # print(f'Adding Abberations from {filename}')
 
     # if not os.path.isfile(filename):

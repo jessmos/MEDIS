@@ -73,9 +73,12 @@ class Camera():
         else:
             if fields is None:
                 # make fields (or load if it already exists)
+                sp.checkpointing = None  # make sure the whole fields is loaded
                 telescope_sim = Telescope()
                 dataproduct = telescope_sim()
                 self.fields = dataproduct['fields']
+                assert len(self.fields) == sp.numframes, f"requested sp.numframes {sp.numframes} does not match the " \
+                    f"provided len(self.fields) {len(self.fields)}"
             else:
                 self.fields = fields
 
@@ -265,6 +268,7 @@ class Camera():
 
     def load_photonlist(self):
         """Load photon list from pipeline's photon table h5"""
+        import tables
         h5file = tables.open_file(iop.photonlist, "r")
         table = h5file.root.Photons.PhotonTable
         self.is_wave_cal = h5file.root.header.header.description.isWvlCalibrated

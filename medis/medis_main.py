@@ -137,9 +137,14 @@ class RunMedis():
             for (this_attr, this_val), (load_attr, load_val) in zip(self.params[p].__dict__.items(),
                                                                     loaded_params[p].__dict__.items()):
                 try:
-                    matches.append(this_attr == load_attr and np.all(load_val == this_val))
+                    match = this_attr == load_attr and np.all(load_val == this_val)
                 except ValueError:
-                    matches.append(False)
+                    match = False
+
+                if match == False:
+                    print(f'\n\tmismatch found: this_attr= {this_attr}, load_attr= {load_attr}, this_val= {this_val}, '
+                          f'load_val= {load_val}')
+                matches.append(match)
 
             match = np.all(matches)
             print(f"param: {p}, match: {match}")
