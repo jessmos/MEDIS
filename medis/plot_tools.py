@@ -29,7 +29,7 @@ rcParams['font.family'] = 'DejaVu Sans'
 # rcParams['mathtext.bf'] = 'Bitstream Vera Sans:bold'
 
 
-def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=None, show=True):
+def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=None, zlabel='Intensity', show=True):
     """
     Looks at a 2D array, has bunch of handles for plot.imshow
 
@@ -41,8 +41,6 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=N
     :param colormap: specify colormap as string
     :return:
     """
-    if colormap=='sunlight':
-        colormap = sunlight
     # Create figure & adjust subplot number, layout, size, whitespace
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -70,17 +68,16 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=N
         vlim = mean - nstd * std, mean + nstd * std
 
     # Setting Logscale
+    if colormap == 'sunlight':
+        colormap = sunlight
     norm = None if not logZ else (LogNorm() if vlim[0] > 0 else SymLogNorm(1e-7))
-    # if logZ:
-        # if np.min(image) <= 0:
     cax = ax.imshow(image, interpolation='none', origin='lower', vmin=vlim[0], vmax=vlim[1],
                     norm=norm, cmap=colormap)
-    clabel = "Intensity"
 
     # Plotting
     plt.title(title, fontweight='bold', fontsize=16)
     cb = plt.colorbar(cax)
-    cb.set_label(clabel)
+    cb.set_label(zlabel)
     if show:
         plt.show(block=True)
 
