@@ -17,6 +17,7 @@ import os
 import proper
 from pathlib import Path
 
+
 class IO_params:
     """
     Define file tree/structure to import and save data
@@ -162,7 +163,7 @@ class Astro_params:
         self.n_wvl_init = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
         self.n_wvl_final = None  # final number of wavelength bins in spectral cube after interpolation (None sets equal to n_wvl_init)
         self.interp_wvl = True  # Set to interpolate wavelengths from ap.n_wvl_init to ap.n_wvl_final
-        self.wvl_range = np.array([800, 1500]) / 1e9  # wavelength range in [m] (formerly ap.band)
+        self.wvl_range = np.array([800, 1500]) / 1e9  # wavelength range in [m]
             # eg. DARKNESS band is [800, 1500], J band =  [1100,1400])
 
     def __iter__(self):
