@@ -21,7 +21,7 @@ from medis.utils import *
 ################################################################################################################
 # Aberrations
 ################################################################################################################
-def generate_maps(aber_vals, lens_diam, lens_name='lens'):
+def generate_maps(aber_vals, lens_diam, lens_name='lens', quasi_static=False):
     """
     generate PSD-defined aberration maps for a lens(mirror) using Proper
 
