@@ -98,7 +98,7 @@ def gen_atmos(plot=False, debug=True):
         wavefronts.append(hcipy.Wavefront(hcipy.Field(np.ones(pupil_grid.size), pupil_grid), wavelength))
 
     if atmp.correlated_sampling:
-        # Damage Detection and Localization from Dense Network of Strain Sensors 
+        # Damage Detection and Localization from Dense Network of Strain Sensors
 
         # fancy sampling goes here
         normal = corrsequence(sp.numframes, atmp.tau/sp.sample_time)[1] * atmp.std
@@ -226,5 +226,6 @@ def get_filename(it, lamda, param_tup=None):
     else:
         atmosdir, sample_time, model = iop.atmosdir, sp.sample_time, atmp.model
 
-    return f'{atmosdir}/atmos_t{sample_time*it:.3f}_{model}_wvl{wave}.fits'
+    sigfig = int(np.abs(np.floor(np.log10(sp.sample_time))))
 
+    return f'{atmosdir}/atmos_t{sample_time*it:.6f}_{model}_wvl{wave}.fits'
