@@ -26,7 +26,7 @@ from datetime import datetime
 from pprint import pprint
 
 from medis.telescope import Telescope
-from medis.MKIDS import Camera
+# from medis.MKIDS import Camera
 from medis.params import sp, ap, tp, iop, atmp, cdip, mp
 
 ################################################################################################################
@@ -107,6 +107,12 @@ class RunMedis():
                         os.rename(iop.testdir, backup_testr)
                         self.make_testdir()
                     elif choice.lower() == 'p':
+                        if os.path.exists(f"{iop.testdir}/fields.h5"):
+                            # Don't overwrite the .pkl file if there is an existing h5 file.
+                            print(f"Existing h5 file found. \n"
+                                  f"Recommend saving as backup [R]\n"
+                                  f"Exiting\n")
+                            exit()
                         # Overwrite the .pkl files but keep aberration and atmosphere directories
                         os.remove(f"{iop.testdir}/params.pkl")
 

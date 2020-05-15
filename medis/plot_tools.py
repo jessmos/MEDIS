@@ -29,7 +29,7 @@ rcParams['font.family'] = 'DejaVu Sans'
 # rcParams['mathtext.bf'] = 'Bitstream Vera Sans:bold'
 
 
-def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=None, show=True):
+def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=None, zlabel='Intensity', show=True):
     """
     Looks at a 2D array, has bunch of handles for plot.imshow
 
@@ -41,8 +41,6 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=N
     :param colormap: specify colormap as string
     :return:
     """
-    if colormap=='sunlight':
-        colormap = sunlight
     # Create figure & adjust subplot number, layout, size, whitespace
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -70,19 +68,19 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=N
         vlim = mean - nstd * std, mean + nstd * std
 
     # Setting Logscale
+    if colormap == 'sunlight':
+        colormap = sunlight
     norm = None if not logZ else (LogNorm() if vlim[0] > 0 else SymLogNorm(1e-7))
-    # if logZ:
-        # if np.min(image) <= 0:
     cax = ax.imshow(image, interpolation='none', origin='lower', vmin=vlim[0], vmax=vlim[1],
                     norm=norm, cmap=colormap)
-    clabel = "Intensity"
 
     # Plotting
     plt.title(title, fontweight='bold', fontsize=16)
     cb = plt.colorbar(cax)
-    cb.set_label(clabel)
+    cb.set_label(zlabel)
     if show:
         plt.show(block=True)
+
 
 def grid(fields, title='body spectra', logZ=False, show=True, nstd=1, vlim=(None, None), cmap='inferno'):
     """
@@ -152,6 +150,7 @@ def grid(fields, title='body spectra', logZ=False, show=True, nstd=1, vlim=(None
 
     if show:
         plt.show(block=True)
+
 
 def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vlim=(None,None), subplt_cols=3,
                   dx=None, extract_center=False):
@@ -409,7 +408,8 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
         plot_plane = sp.save_list[p]
         plane = opx.extract_plane(cpx_seq, plot_plane)
         # converts to intensity of last timestep, THEN sums over wavelength, then sums over object
-        if plot_plane == "atmosphere" or plot_plane == "entrance_pupil":
+        if plot_plane == "atmosphere" or plot_plane == "entrance_pupil" or plot_plane == "woofer" \
+                or plot_plane == "tweeter" or plot_plane == "DM":
             plane = np.sum(np.angle(plane[-1]), axis=(0,1))
             logZ[p] = False
             vlim[p] = (None,None)

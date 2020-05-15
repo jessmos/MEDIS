@@ -20,6 +20,7 @@ from medis.params import ap, tp, sp
 from medis.utils import dprint
 from medis.distribution import planck
 
+
 class Wavefront(proper.WaveFront):
     """ Wrapper for proper.Wavefront that stores source and wavelength info """
 
@@ -33,6 +34,7 @@ class Wavefront(proper.WaveFront):
         for attr in dir(wavefront):
             if not hasattr(self, attr):
                 setattr(self, attr, getattr(wavefront, attr))
+
 
 class Wavefronts():
     """
@@ -137,21 +139,24 @@ class Wavefronts():
         The wavefront object has dimensions of shape=(n_wavelengths, n_astro_bodies, grid_sz, grid_sz)
 
         To save, you must pass in the keyword argument plane_name when you call this function from the prescription.
-        This function does not have a keyword argument for plane_name specifically, since you need to distinguish
-        it from the **kwargs you want to pass to the function that you are looping over.
+        Specifically for the AO/DM system, there is different behavior in the function depending on the plane name.
+        Therefore, we need to pass the plane_name through to ao.deformable_mirror. Otherwise, we jsut use it for saving
+        and we can pop it out of the kwargs list because no other functins use it for dependant functionality.
+
         If you are saving the plane at this location, keep in mind it is saved AFTER the function is applied. This
         is desirable for most functions but be careful when using it for prop_lens, etc
 
         :param func: function to be applied e.g. ap.add_aber()
-        :param plane_name: name the plane where this is called if you want to save the complex field data via save_plane
         :param args: args to be passed to the function
         :param kwargs: kwargs to be passed to the function
         :return: everything is just applied to the wfo, so nothing is returned in the traditional sense
         """
         if 'plane_name' in kwargs:
-            plane_name = kwargs.pop('plane_name')  # remove plane_name from **kwargs
-            # if plane_name not in sp.save_list:
-            #     plane_name = None
+            if kwargs['plane_name'] == 'woofer' or kwargs['plane_name'] == 'tweeter':
+                plane_name = kwargs['plane_name']
+                pass  # keep the plane_name in kwargs.
+            else:
+                plane_name = kwargs.pop('plane_name')  # remove plane_name from **kwargs
         elif 'lens_name' in kwargs:
             plane_name = kwargs['lens_name']
         else:
@@ -284,7 +289,9 @@ class Wavefronts():
         ax4.legend()
         # ax4.plot(np.sum(np.eye(ap.grid_size)*phase_afterdm,axis=1))
         plt.xlim([0, proper.prop_get_gridsize(wf)])
-        if title:
+        if not title:
+            title = input(f"Always Add A Title\n "
+                          f"Please Enter Title:")
             fig.suptitle(f"plane: {title}, lambda: {wf.lamda} m, body: {wf.name}", fontsize=18)
 
         plt.subplots_adjust(top=0.9)
@@ -373,6 +380,9 @@ def extract_center(wf):
     return smaller_wf
 
 
+####################################################################################################
+# Functions Relating to Masking the Pupil Plane
+####################################################################################################
 def circular_mask(h, w, center=None, radius=None):
     if center is None: # use the middle of the image
         center = (int(w/2), int(h/2))
@@ -387,17 +397,43 @@ def circular_mask(h, w, center=None, radius=None):
 
 
 def apodize_pupil(wf):
+    # phase_map = proper.prop_get_phase(wf)
+    # amp_map = proper.prop_get_amplitude(wf)
+    # h, w = wf.wfarr.shape[:2]
+    # wavelength = wf.lamda
+    # scale = ap.wvl_range[0] / wavelength
+    # inds = circular_mask(h, w, radius=scale * 0.95 * h * sp.beam_ratio / 2)  #TODO remove hardcoded sizing, especially if use is default
+    # mask = np.zeros_like(phase_map)
+    # mask[inds] = 1
+    # smooth_mask = gaussian_filter(mask, 1.5, mode='nearest')  #TODO remove hardcoded sizing, especially if use is default
+    # smoothed = phase_map * smooth_mask
+    # wf.wfarr = proper.prop_shift_center(amp_map * np.cos(smoothed) + 1j * amp_map * np.sin(smoothed))
     phase_map = proper.prop_get_phase(wf)
     amp_map = proper.prop_get_amplitude(wf)
     h, w = wf.wfarr.shape[:2]
     wavelength = wf.lamda
     scale = ap.wvl_range[0] / wavelength
-    inds = circular_mask(h, w, radius=scale * 0.95 * h * sp.beam_ratio / 2)
+    inds = circular_mask(h, w,
+                         radius=scale * 0.95 * h * sp.beam_ratio / 2)  # TODO remove hardcoded sizing, especially if use is default
     mask = np.zeros_like(phase_map)
     mask[inds] = 1
-    smooth_mask = gaussian_filter(mask, 1.5, mode='nearest')
+    smooth_mask = mask
     smoothed = phase_map * smooth_mask
     wf.wfarr = proper.prop_shift_center(amp_map * np.cos(smoothed) + 1j * amp_map * np.sin(smoothed))
+
+
+def abs_zeros(wf):
+    """
+    zeros everything outside the pupil
+
+    This function attempts to figure out where the edges of the pupil are by determining if either the real
+     or imaginary part of the complex-valued E-field is zero at a gridpoint. If so, it sets the full cpmplex
+     value to zero, so 0+0j
+    """
+    bad_locs = np.logical_or(np.real(wf) == -0, np.imag(wf) == -0)
+    wf[bad_locs] = 0 + 0j
+
+    return wf
 
 
 ################################################################################################################
@@ -439,20 +475,6 @@ def prop_pass_lens(wf, fl_lens, dist):
     """
     proper.prop_lens(wf, fl_lens)
     proper.prop_propagate(wf, dist)
-
-
-def abs_zeros(wf):
-    """
-    zeros everything outside the pupil
-
-    This function attempts to figure out where the edges of the pupil are by determining if either the real
-     or imaginary part of the complex-valued E-field is zero at a gridpoint. If so, it sets the full cpmplex
-     value to zero, so 0+0j
-    """
-    bad_locs = np.logical_or(np.real(wf) == -0, np.imag(wf) == -0)
-    wf[bad_locs] = 0 + 0j
-
-    return wf
 
 
 def rotate_sky(wf, it):
@@ -510,12 +532,17 @@ def offset_companion(wf):
         # wf = wf * np.sqrt(ap.contrast[wf.ib-1] * cont_scaling[wf.iw])
 
 
-def check_sampling(tstep, wfo, location, line_info, units=None):
+####################################################################################################
+# Check Sampling & Misc Tools
+####################################################################################################
+def check_sampling(wf, tstep, location, line_info, units=None):
     """
     checks the sampling of the wavefront at the given location and prints to console
 
+    mostly reformats the output of proper.prop_get_sampling into human-readable format
+
+    :param wf: wavefront object
     :param tstep: timestep, will only check for first timestep, so when tstep==0
-    :param wfo: wavefront object
     :param location: string that identifies where call is being made
     :param line_info: info on the line number and function name from where check_sampling was called
         example: getframeinfo(stack()[0][0])
@@ -523,24 +550,25 @@ def check_sampling(tstep, wfo, location, line_info, units=None):
     :param units: desired units of returned print statement; options are 'mm,'um','nm','arcsec','rad'
     :return: prints sampling to the command line
     """
-    if tstep == 0:
-        print(f"From {line_info.filename}:{line_info.lineno}\n Sampling at {location}")
-        for w in range(wfo.wf_collection.shape[0]):
-            check_sampling = proper.prop_get_sampling(wfo.wf_collection[w,0])
-            if units == 'mm':
-                print(f"sampling at wavelength={wfo.wsamples[w]*1e9:.0f}nm is {check_sampling:.4f} m")
-            elif units == 'um':
-                print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling*1e6:.1f} um")
-            elif units == 'nm':
-                print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling*1e9:.1f} nm")
-            elif units == 'arcsec':
-                check_sampling = proper.prop_get_sampling_arcsec(wfo.wf_collection[w, 0])
-                print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling*1e3:.2f} mas")
-            elif units == 'rad':
-                check_sampling = proper.prop_get_sampling_radians(wfo.wf_collection[w, 0])
-                print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling:.3f} rad")
-            else:
-                print(f"sampling at wavelength={wfo.wsamples[w] * 1e9:.0f}nm is {check_sampling} m")
+    if tstep == 0 and wf.ib == 0:
+        if wf.iw == 0:
+            print(f"\nFrom {line_info.filename}:{line_info.lineno}\n Sampling at {location}")
+
+        check_sampling = proper.prop_get_sampling(wf)
+        if units == 'mm':
+            print(f"sampling at wavelength={wf.lamda * 1e9:.0f}nm is {check_sampling*1e3:.4f} mm")
+        elif units == 'um':
+            print(f"sampling at wavelength={wf.lamda * 1e9:.0f}nm is {check_sampling*1e6:.1f} um")
+        elif units == 'nm':
+            print(f"sampling at wavelength={wf.lamda * 1e9:.0f}nm is {check_sampling*1e9:.1f} nm")
+        elif units == 'arcsec':
+            check_sampling = proper.prop_get_sampling_arcsec(wf)
+            print(f"sampling at wavelength={wf.lamda * 1e9:.0f}nm is {check_sampling*1e3:.2f} mas")
+        elif units == 'rad':
+            check_sampling = proper.prop_get_sampling_radians(wf)
+            print(f"sampling at wavelength={wf.lamda * 1e9:.0f}nm is {check_sampling:.3f} rad")
+        else:
+            print(f"sampling at wavelength={wf.lamda * 1e9:.0f}nm is {check_sampling} m")
 
 
 def unwrap_phase_zeros(phasemap):

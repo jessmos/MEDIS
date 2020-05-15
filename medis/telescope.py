@@ -273,7 +273,7 @@ class Telescope():
                                                     sp.grid_size), dtype=np.complex)
                     self.kwargs['AO_field'] = np.zeros((ap.n_wvl_init, sp.grid_size,
                                                         sp.grid_size), dtype=np.complex)
-                self.cpx_sequence[it], sampling = self.run_timestep(t)
+                self.cpx_sequence[it], self.sampling = self.run_timestep(t)
 
             print('************************')
             if sp.save_to_disk: self.save_fields(self.cpx_sequence)
