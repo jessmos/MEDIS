@@ -296,7 +296,7 @@ class Telescope():
         """
 
         if len(np.shape(self.cpx_sequence)) == 6:
-            samps = ['timesteps', 'save planes', 'wavelengths', 'num obj', 'x', 'y']
+            samps = ['timesteps', 'save planes', 'wavelengths', 'astronomical bodies', 'x', 'y']
             delim = ', '
             print(f"Shape of cpx_sequence = " \
                 f"{delim.join([samp + ':' + str(length) for samp, length in zip(samps, np.shape(self.cpx_sequence))])}")
