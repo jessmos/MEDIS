@@ -101,12 +101,18 @@ def grid(fields, title='body spectra', logZ=False, show=True, nstd=1, vlim=(None
     assert fields.ndim > 2
     if np.iscomplexobj(fields.flat[0]):
         fields = np.abs(fields)**2  # convert to intensity if complex
-    if len(fields.shape) == 6:
-        fields = fields[:, -1]  # slice out detector plane if not done already
-    if len(fields.shape) == 5:
-        fields = fields[0]  # slice out first timestep
+    while len(fields.shape) > 4:
+        try:
+            boring_ind = fields.shape.index(1)
+            fields = np.mean(fields, axis=boring_ind)
+        except ValueError:
+            fields = fields[0]  # if none are zero slice out first dimension
     while len(fields.shape) < 4:
         fields = fields[:,np.newaxis]
+
+    slices = np.int_(np.ceil(np.array(fields.shape)[:2]/5))
+    fields = fields[::slices[0],::slices[1]]
+    print(f'fields being sliced by {slices} making new fields size {fields.shape}')
     nwave, nobj, x, y = fields.shape
 
     try:
