@@ -61,17 +61,17 @@ class Telescope():
     def __init__(self, usesave=True):
         self.usesave=usesave
 
-        self.save_exists = True if os.path.exists(iop.telescope) else False  # the whole telescope object
         self.fields_exists = True if os.path.exists(iop.fields) else False  # just the fields ndarray
+        self.save_exists = True if os.path.exists(iop.telescope) else False  # the whole telescope object
 
-        if self.save_exists:
+        if self.fields_exists:
+            self.load_fields()
+        elif self.save_exists:
             print(f"\nLoading telescope instance from\n\n\t{iop.telescope}\n")
             with open(iop.telescope, 'rb') as handle:
                 load = pickle.load(handle)
                 self.__dict__ = load.__dict__  # replace the contents
                 self.save_exists = True
-        elif self.fields_exists:
-            self.load_fields()
         else:
             print(f"\nInitialising new telescope instance\n")
             # copy over the prescription
