@@ -11,13 +11,46 @@ import astropy.io.fits as fits
 import hcipy
 import proper
 from skimage.restoration import unwrap_phase
+# from mkidpipeline.speckle.genphotonlist_IcIsIr import corrsequence
+from scipy import special
 
 from medis.params import iop, ap, tp, sp, atmp
 from medis.utils import dprint, clipped_zoom
 from medis.optics import circular_mask
 
+def recursion(r,g, f, sqrt1mf2, n):
+    for i in range(1, n):
+        r[i] = r[i - 1]*f + g[i]*sqrt1mf2
+    return r
 
-def gen_atmos(plot=False):
+def corrsequence(Ttot, tau):
+    """
+    Generate a sequence of correlated Gaussian noise, correlation time
+    tau.  Algorithm is recursive and from Markus Deserno.  The
+    recursion is implemented as an explicit for loop but has a lower
+    computational cost than converting uniform random variables to
+    modified-Rician random variables.
+
+    Arguments:
+    Ttot: int, the total integration time in microseconds.
+    tau: float, the correlation time in microseconds.
+
+    Returns:
+    t: a list of integers np.arange(0, Ttot)
+    r: a correlated Gaussian random variable, zero mean and unit variance, array of length Ttot
+
+    """
+
+    t = np.arange(Ttot)
+    g = np.random.normal(0, 1, Ttot)
+    r = np.zeros(g.shape)
+    f = np.exp(-1. / tau)
+    sqrt1mf2 = np.sqrt(1 - f ** 2)
+    r = recursion(r, g, f, sqrt1mf2, g.shape[0])
+
+    return t, r
+
+def gen_atmos(plot=False, debug=True):
     """
     generates atmospheric phase distortions using hcipy (updated from original using CAOS)
 
@@ -28,6 +61,8 @@ def gen_atmos(plot=False):
 
     :param plot: turn plotting on or off
     :return:
+
+    todo add simple mp.Pool.map code to make maps in parrallel
     """
     if sp.verbose: dprint("Making New Atmosphere Model")
     # Saving Parameters
@@ -46,7 +81,15 @@ def gen_atmos(plot=False):
         layers = [hcipy.InfiniteAtmosphericLayer(pupil_grid, atmp.cn_sq, atmp.L0, atmp.vel, atmp.h, 2)]
     elif atmp.model == 'hcipy_standard':
         # Make multi-layer atmosphere
-        layers = hcipy.make_standard_atmospheric_layers(pupil_grid, atmp.outer_scale)
+        # layers = hcipy.make_standard_atmospheric_layers(pupil_grid, atmp.L0)
+        heights = np.array([500, 1000, 2000, 4000, 8000, 16000])
+        velocities = np.array([10, 10, 10, 10, 10, 10])
+        Cn_squared = np.array([0.2283, 0.0883, 0.0666, 0.1458, 0.3350, 0.1350]) * 3.5e-12
+
+        layers = []
+        for h, v, cn in zip(heights, velocities, Cn_squared):
+            layers.append(hcipy.InfiniteAtmosphericLayer(pupil_grid, cn, atmp.L0, v, h, 2))
+
     elif atmp.model == 'evolving':
         raise NotImplementedError
     atmos = hcipy.MultiLayerAtmosphere(layers, scintilation=False)
@@ -54,16 +97,39 @@ def gen_atmos(plot=False):
     for wavelength in wsamples:
         wavefronts.append(hcipy.Wavefront(hcipy.Field(np.ones(pupil_grid.size), pupil_grid), wavelength))
 
+    if atmp.correlated_sampling:
+        # Damage Detection and Localization from Dense Network of Strain Sensors 
+
+        # fancy sampling goes here
+        normal = corrsequence(sp.numframes, atmp.tau/sp.sample_time)[1] * atmp.std
+        uniform = (special.erf(normal / np.sqrt(2)) + 1)
+
+        times = np.cumsum(uniform) * sp.sample_time
+
+        if debug:
+            import matplotlib.pylab as plt
+            plt.plot(normal)
+            plt.figure()
+            plt.plot(uniform)
+            plt.figure()
+            plt.hist(uniform)
+            plt.figure()
+            plt.plot(np.arange(0, sp.numframes * sp.sample_time, sp.sample_time))
+            plt.plot(times)
+            plt.show()
+    else:
+        times = np.arange(0, sp.numframes * sp.sample_time, sp.sample_time)
+
     ###########################################
     # Evolving Wavefront using HCIpy tools
     ###########################################
-    for it, t in enumerate(np.arange(0, sp.numframes*sp.sample_time, sp.sample_time)):
+    for it, t in enumerate(times):
         atmos.evolve_until(t)
         for iw, wf in enumerate(wavefronts):
             wf2 = atmos.forward(wf)
 
             filename = get_filename(it, wsamples[iw], (iop.atmosdir, sp.sample_time,
-                                    atmp.model))
+                                                       atmp.model))
             dprint(f"atmos file = {filename}")
             hdu = fits.ImageHDU(wf2.phase.reshape(sp.grid_size, sp.grid_size))
             hdu.header['PIXSIZE'] = tp.entrance_d/sp.grid_size
