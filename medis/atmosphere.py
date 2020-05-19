@@ -100,7 +100,6 @@ def add_atmos(wf, it, param_tup=None, spatial_zoom=False):
 
         # Check for Existing File)
         atmos_map = get_filename(it, wavelength, param_tup)
-        if sp.verbose: dprint(f"Atmos map applied is {atmos_map}")
         if not os.path.exists(atmos_map):
             # todo remove when all test scripts use the new format
             print('atmospheres should be created at the beginng, not on the fly')
