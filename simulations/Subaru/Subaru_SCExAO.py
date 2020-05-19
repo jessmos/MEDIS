@@ -71,7 +71,8 @@ primary_aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies 
                      'c': [3.1, 0.5]}
 # ----------------------------
 # AO188 DM
-tp.act_woofer = 14  # approximately a 188 DM (14*14=169)
+tp.act_woofer = 15  # approximately a 188 DM (14*14=169) but then we include +2 pixels because the dm map is oversized
+                    # by 2 pixels around the edge of the array
 
 # ----------------------------
 # AO188 OAP1
@@ -97,10 +98,12 @@ OAP2_aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4
 # ------------------------------
 # Coronagraph
 tp.cg_type = 'Gaussian'
-tp.cg_size = 3  # physical size or lambda/D size
+# tp.cg_size = 3  # physical size or lambda/D size
+tp.cg_size = 2  # physical size or lambda/D size
+
 tp.cg_size_units = "l/D"  # "m" or "l/D"
 tp.fl_cg_lens = 0.1021  # m
-tp.lyot_size = 0.75  # units are in fraction of surface blocked
+tp.lyot_size = 0.9  # units are in fraction of surface blocked
 
 # ------------------------------
 # SCExAO
@@ -181,7 +184,9 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
                             **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
 
     # Test Sampling
-    # opx.check_sampling(PASSVALUE['iter'], wfo, "initial", getframeinfo(stack()[0][0]), units='mm')
+    if sp.verbose:
+        wfo.loop_collection(opx.check_sampling, PASSVALUE['iter'], "Telescope Aperture",
+                            getframeinfo(stack()[0][0]), units='mm')
     # Testing Primary Focus (instead of propagating to focal plane)
     # wfo.loop_collection(opx.prop_pass_lens, tp.flen_nsmyth, tp.flen_nsmyth)  # test only going to prime focus
 
@@ -204,7 +209,8 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     # AO System
     if tp.use_ao:
         WFS_map = ao.open_loop_wfs(wfo)
-        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], None, plane_name='woofer')  # don't use PASSVALUE['WFS_map'] here because open loop
+        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], apodize=True,
+                            plane_name='woofer', debug=sp.debug)  # don't use PASSVALUE['WFS_map'] here because open loop
     # ------------------------------------------------
     wfo.loop_collection(proper.prop_propagate, tp.dist_dm_ao2)
 
@@ -226,7 +232,8 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     # AO System
     if tp.use_ao:
         WFS_map = ao.open_loop_wfs(wfo)
-        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], None, tp, plane_name='tweeter')
+        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], apodize=True,
+                            plane_name='tweeter', debug=sp.debug)
     # ------------------------------------------------
     wfo.loop_collection(proper.prop_propagate, tp.fl_sl)
 
@@ -234,7 +241,7 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     # wfo.loop_collection(aber.add_aber, tp.d_ao2, OAP2_aber_vals,
     #                        step=PASSVALUE['iter'], lens_name='ao188-OAP2')
     # wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)
-    wfo.loop_collection(opx.prop_pass_lens, tp.fl_sl, tp.fl_sl, plane_name='focus')  #tp.dist_sl2_focus
+    wfo.loop_collection(opx.prop_pass_lens, tp.fl_sl, tp.fl_sl, plane_name='post-DM-focus')  #tp.dist_sl2_focus
     # Coronagraph
     # settings should be put into tp, and are not implicitly passed here
     wfo.loop_collection(cg.coronagraph, occulter_mode=tp.cg_type, plane_name='coronagraph')
@@ -247,7 +254,8 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     cpx_planes, sampling = wfo.focal_plane()
 
     if sp.verbose:
-        opx.check_sampling(PASSVALUE['iter'], wfo, "focal plane", getframeinfo(stack()[0][0]), units='nm')
+        wfo.loop_collection(opx.check_sampling, PASSVALUE['iter'], "focal plane",
+                            getframeinfo(stack()[0][0]), units='nm')
         # opx.check_sampling(PASSVALUE['iter'], wfo, "focal plane", getframeinfo(stack()[0][0]), units='arcsec')
 
     if sp.verbose:

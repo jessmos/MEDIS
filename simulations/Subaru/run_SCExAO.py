@@ -35,13 +35,13 @@ sp.closed_loop = False
 
 # Grid Parameters
 sp.focused_sys = True
-sp.beam_ratio = 0.2  # parameter dealing with the sampling of the beam in the pupil/focal plane
+sp.beam_ratio = 0.18  # parameter dealing with the sampling of the beam in the pupil/focal plane
 sp.grid_size = 512  # creates a nxn array of samples of the wavefront
 sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
 
 # Companion
 ap.companion = True
-ap.contrast = [1e-1]
+ap.contrast = [5e-2]
 ap.companion_xy = [[5, -5]]  # units of this are lambda/tp.entrance_d
 ap.n_wvl_init = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
 ap.n_wvl_final = None  # final number of wavelength bins in spectral cube after interpolation (None sets equal to n_wvl_init)
@@ -52,8 +52,8 @@ ap.wvl_range = np.array([800, 1400]) / 1e9  # wavelength range in [m] (formerly 
 
 # Toggles for Aberrations and Control
 tp.obscure = False
-tp.use_atmos = False
-tp.use_aber = True
+tp.use_atmos = True
+tp.use_aber = False
 tp.use_ao = True
 tp.use_cdi = False
 
@@ -64,10 +64,12 @@ sp.spectra_cols = 3  # number of subplots per row in view_spectra
 sp.show_tseries = False  # Plot full timeseries of white light frames
 sp.tseries_cols = 5  # number of subplots per row in view_timeseries
 sp.show_planes = True
+sp.verbose = True
+sp.debug = False
 
 # Saving
 sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
-sp.save_list = ['atmosphere', 'entrance_pupil','woofer', 'focus', 'coronagraph', 'detector']  # list of locations in optics train to save
+sp.save_list = ['entrance_pupil','woofer', 'tweeter', 'post-DM-focus', 'coronagraph', 'detector']  # list of locations in optics train to save
 
 if __name__ == '__main__':
     # =======================================================================
@@ -128,7 +130,7 @@ if __name__ == '__main__':
 
     # Plotting Selected Plane
     if sp.show_planes:
-        vlim = [(None, None), (None, None), (None, None), (None, None), (None, None), (None, None)]
+        vlim = [(None, None), (None, None), (None, None), (1e-6,1e-3), (1e-7,1e-3), (1e-7,1e-3)]
         # vlim = [(None,None), (None,None), (None,None), (None,None)]  # (1e-2,1e-1) (7e-4, 6e-4)
         logZ = [True, False, False, True, True, True]
         if sp.save_list:

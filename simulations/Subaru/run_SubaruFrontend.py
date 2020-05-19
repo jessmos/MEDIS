@@ -43,21 +43,22 @@ sp.closed_loop = True
 
 # Grid Parameters
 sp.focused_sys = True
-sp.beam_ratio = 0.15  # parameter dealing with the sampling of the beam in the pupil/focal plane
+sp.beam_ratio = 0.18  # parameter dealing with the sampling of the beam in the pupil/focal plane
 sp.grid_size = 512  # creates a nxn array of samples of the wavefront
 sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
 
 # Companion
-ap.companion = True
+ap.companion = False
 ap.contrast = [1e-1]
 ap.companion_xy = [[5, -5]]  # units of this are lambda/tp.entrance_d
 
 # Toggles for Aberrations and Control
 tp.obscure = False
 tp.use_atmos = True
-tp.use_aber = True
+tp.use_aber = False
 tp.use_ao = True
-tp.act_woofer = 14
+tp.act_woofer = 16  # A 14x14 grid gives the closest nact to 188 (169 act). But, we oversizze the DM by one actuator in
+                    # each direction in the DM code, so a 16x16 grid gives a roughly 14x14 grid over the beam
 cdip.use_cdi = False
 
 # Plotting
@@ -67,6 +68,7 @@ sp.spectra_cols = 3  # number of subplots per row in view_spectra
 sp.show_tseries = False  # Plot full timeseries of white light frames
 sp.tseries_cols = 5  # number of subplots per row in view_timeseries
 sp.show_planes = True
+sp.debug = True
 
 # Saving
 sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
