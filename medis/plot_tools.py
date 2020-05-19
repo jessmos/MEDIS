@@ -61,7 +61,9 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=N
         plt.yticks(tic_spacing, scale)
         plt.xlabel('[um]')
 
-    if vlim == (None, None):
+    # Setting z-axis by mean
+    # if vlim == (None, None):
+    if vlim == (-1, -1):  # Hack this to have it not be default. Only use it if you want it purposely
         nstd = 2
         std = np.std(image)
         mean = np.mean(image)
@@ -76,8 +78,8 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=N
 
     # Plotting
     plt.title(title, fontweight='bold', fontsize=16)
-    cb = plt.colorbar(cax)
-    cb.set_label(zlabel)
+    # cb = plt.colorbar(cax)
+    # cb.set_label(zlabel)
     if show:
         plt.show(block=True)
 
@@ -402,12 +404,17 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
         plot_plane = sp.save_list[p]
         plane = opx.extract_plane(cpx_seq, plot_plane)
         # converts to intensity of last timestep, THEN sums over wavelength, then sums over object
-        if plot_plane == "atmosphere" or plot_plane == "entrance_pupil" or plot_plane == "woofer" \
-                or plot_plane == "tweeter" or plot_plane == "DM":
+        if plot_plane == "atmosphere" or plot_plane == "entrance_pupil":
             plane = np.sum(np.angle(plane[-1]), axis=(0,1))
             logZ[p] = False
             vlim[p] = (None,None)
             phs = " Phase"
+        elif plot_plane == "woofer" or plot_plane == "tweeter" or plot_plane == "DM":
+            plane = np.sum(np.angle(plane[-1]), axis=(0))
+            plane = plane[0]
+            logZ[p] = False
+            vlim[p] = (None, None)
+            phs = " phase"
         else:
             plane = np.sum(opx.cpx_to_intensity(plane[-1]), axis=(0,1))
             phs = ""
@@ -447,25 +454,29 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
             plt.ylabel(axlabel, fontsize=8)
 
         # Z-axis scale
+        if phs == ' phase':
+            cmap = sunlight
+        else:
+            cmap = "YlGnBu_r"
         if logZ[p]:
             if vlim[p][0] is not None and vlim[p][0] <= 0:
                 ax.set_title(f"{sp.save_list[p]}"+phs)
                 im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[p][0], vmax=vlim[p][1],
                                norm=SymLogNorm(linthresh=1e-5),
-                               cmap="YlGnBu_r")
+                               cmap=cmap)
                 cb = fig.colorbar(im)
                 # clabel = "Log Normalized Intensity"
             else:
                 ax.set_title(f"{sp.save_list[p]}"+phs)
                 im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[p][0], vmax=vlim[p][1],
-                               norm=LogNorm(), cmap="YlGnBu_r")  #(1e-6,1e-3)
+                               norm=LogNorm(), cmap=cmap)  #(1e-6,1e-3)
                 cb = fig.colorbar(im)
                 # clabel = "Log Normalized Intensity"
                 # cb.set_label(clabel)
         else:
             ax.set_title(f"{sp.save_list[p]}"+phs)
             im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[p][0], vmax=vlim[p][1],
-                           cmap="YlGnBu_r")  #  "twilight"
+                           cmap=cmap)  #  "twilight"
             cb = fig.colorbar(im)  #
             # clabel = "Normalized Intensity"
             # cb.set_label(clabel)
