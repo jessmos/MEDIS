@@ -96,6 +96,7 @@ class Camera():
         self.dark_pix_frac = mp.dark_pix_frac
         self.hot_pix = mp.hot_pix
         self.lod = mp.lod
+        self.max_count = mp.max_count
 
         self.QE_map_all = self.array_QE(plot=False)
         # self.max_count = mp.max_count
@@ -127,7 +128,7 @@ class Camera():
     def __call__(self, *args, **kwargs):
         if not (self.save_exists or self.photons_exists):
             # todo implement chunking for large datasets
-            self.rebinned_cube =  np.abs(np.sum(self.fields[:, -1, :, :], axis=2)) ** 2  # select detector plane and sum over objects
+            self.rebinned_cube = np.abs(np.sum(self.fields[:, -1], axis=2)) ** 2  # select detector plane and sum over objects
             self.rebinned_cube = self.rescale_cube(self.rebinned_cube)  # interpolate onto pixel spacing
 
             if sp.quick_detect and self.product == 'rebinned_cube':
@@ -139,6 +140,7 @@ class Camera():
                 self.rebinned_cube *= num_fake_events
                 self.photons = None
             else:
+                # max_steps = self.max_chunk()
                 self.photons = self.get_photons(self.rebinned_cube)
                 if sp.degrade_photons:
                     self.photons = self.degrade_photons(self.photons)
@@ -154,6 +156,20 @@ class Camera():
             self.save_instance()
 
         return {'photons': self.photons, 'rebinned_cube': self.rebinned_cube}
+
+    def max_chunk(self):
+        """
+        Determines the maximum duration each chunk can be to fit within the memory limit
+
+        :return: integer
+        """
+        self.timestep_size = 4 * 16 / 8  # in Bytes
+
+        max_chunk = sp.memory_limit*1e9 // self.timestep_size
+        print(f'Each timestep is predicted to be {self.timestep_size/1.e6} MB, meaning no more than {max_chunk} time '
+              f'steps can fit in the memory at one time')
+
+        return max_chunk
 
     def save_photontable(self, index=('ultralight', 6), timesort=False, chunkshape=None, shuffle=True, bitshuffle=False,
                         ndx_shuffle=True, ndx_bitshuffle=False):
@@ -324,13 +340,12 @@ class Camera():
         """
 
         if mp.QE_var:
-            datacube *= self.QE_map[:datacube.shape[1],:datacube.shape[1]]
+            datacube *= self.QE_map.T
 
         num_events = int(ap.star_flux * sp.sample_time * np.sum(datacube) * sp.numframes)
 
-        if sp.verbose:
-            print(f"star flux: {ap.star_flux}, cube sum: {np.sum(datacube)}, numframes: {sp.numframes},"
-                  f"num events: {num_events}")
+        print(f"star flux: {ap.star_flux}, cube sum: {np.sum(datacube)}, numframes: {sp.numframes},"
+              f"num events: {num_events}")
 
         photons = self.sample_cube(datacube, num_events)
         photons[0] = self.assign_time(photons[0])
@@ -406,7 +421,7 @@ class Camera():
             plt.ylabel('#')
             plt.hist(responsivity)
             plt.show()
-        responsivity = np.reshape(responsivity, self.array_size[::-1])
+        responsivity = np.reshape(responsivity, self.array_size)
         if plot:
             quick2D(responsivity)#plt.imshow(QE)
             # plt.show()
@@ -514,7 +529,7 @@ class Camera():
         idx = np.delete(idx, bad)
 
         distortion = np.random.normal(np.zeros((photons[1].shape[0])),
-                                      sigs[idx,np.int_(photons[3]), np.int_(photons[2])])
+                                      sigs[idx,np.int_(photons[2]), np.int_(photons[3])])
 
         photons[1] += distortion
 
