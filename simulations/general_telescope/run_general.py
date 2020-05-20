@@ -32,7 +32,7 @@ sp.numframes = 2
 sp.focused_sys = False
 sp.beam_ratio = 0.3  # parameter dealing with the sampling of the beam in the pupil/focal plane
 sp.grid_size = 512  # creates a nxn array of samples of the wavefront
-sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
+sp.maskd_size = 512  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
 sp.closed_loop = False
 
 # Toggles for Aberrations and Control

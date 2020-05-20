@@ -126,7 +126,8 @@ class RunMedis():
     def check_params(self):
         """ Check all param classes at this stage. Some params are updated in Telescope and Camera and those params
          should be checked against each other at that stage of the pipeline"""
-
+         #TODO check that the naming conventions of atmosphere and aberration maps match the new file format rather
+         #TODO than only checking the directory name
         with open(iop.params_logs, 'rb') as handle:
             loaded_params = pickle.load(handle)
 
