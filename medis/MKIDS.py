@@ -20,7 +20,7 @@ from medis.plot_tools import grid, quick2D
 
 
 class Camera():
-    def __init__(self, fields=None, usesave=False, product='photons'):
+    def __init__(self, usesave=False, product='photons'):
         """
         Creates a simulation for the MKID Camera to create a series of photons from the fields sequence
 
@@ -62,26 +62,14 @@ class Camera():
         self.is_wave_cal = False
 
         self.save_exists = True if os.path.exists(self.name) else False  # whole Camera instance
-        self.photons_exists = True if os.path.exists(iop.photonlist) else False  # just the photonlist
+        self.photontable_exists = True if os.path.exists(iop.photonlist) else False  # just the photonlist
 
         if self.save_exists and self.usesave:
             load = self.load_instance()
             self.__dict__ = load.__dict__
             self.save_exists = True  # just in case the saved obj didn't have this set to True
-        elif self.photons_exists and self.usesave:
-            self.load_photonlist()
-        else:
-            if fields is None:
-                # make fields (or load if it already exists)
-                sp.checkpointing = None  # make sure the whole fields is loaded
-                telescope_sim = Telescope()
-                dataproduct = telescope_sim()
-                self.fields = dataproduct['fields']
-                assert len(self.fields) == sp.numframes, f"requested sp.numframes {sp.numframes} does not match the " \
-                    f"provided len(self.fields) {len(self.fields)}"
-            else:
-                self.fields = fields
 
+        else:
             # create device
             self.create_device()
 
@@ -97,6 +85,7 @@ class Camera():
         self.hot_pix = mp.hot_pix
         self.lod = mp.lod
         self.max_count = mp.max_count
+        self.numframes = sp.numframes  # sometimes numframes is different for different cams
 
         self.QE_map_all = self.array_QE(plot=False)
         # self.max_count = mp.max_count
@@ -125,10 +114,22 @@ class Camera():
 
         print('\nInitialized MKID device parameters\n')
 
-    def __call__(self, *args, **kwargs):
-        if not (self.save_exists or self.photons_exists):
+    def __call__(self, fields=None, abs_step=0, index=('ultralight', 6), populate_subsidiaries=True, *args, **kwargs):
+        if fields is None:
+            # make fields (or load if it already exists)
+            sp.checkpointing = None  # make sure the whole fields is loaded
+            telescope_sim = Telescope()
+            dataproduct = telescope_sim()
+            fields = dataproduct['fields']
+            assert len(fields) == sp.numframes, f"requested sp.numframes {sp.numframes} does not match the " \
+                f"provided len(fields) {len(fields)}"
+
+        if self.photontable_exists and self.usesave:
+            self.load_photontable()
+
+        else:
             # todo implement chunking for large datasets
-            self.rebinned_cube = np.abs(np.sum(self.fields[:, -1], axis=2)) ** 2  # select detector plane and sum over objects
+            self.rebinned_cube = np.abs(np.sum(fields[:, -1], axis=2)) ** 2  # select detector plane and sum over objects
             self.rebinned_cube = self.rescale_cube(self.rebinned_cube)  # interpolate onto pixel spacing
 
             if sp.quick_detect and self.product == 'rebinned_cube':
@@ -140,24 +141,29 @@ class Camera():
                 self.rebinned_cube *= num_fake_events
                 self.photons = None
             else:
-                # max_steps = self.max_chunk()
-                self.photons = self.get_photons(self.rebinned_cube)
-                if sp.degrade_photons:
-                    self.photons = self.degrade_photons(self.photons)
+                max_steps = self.max_chunk(self.rebinned_cube)
+                num_chunks = int(np.ceil(len(self.rebinned_cube)/max_steps))
+                dprint(len(self.rebinned_cube), max_steps, len(self.rebinned_cube)/max_steps, num_chunks)
+                self.photons = np.empty((4,0))
+                for ic in range(num_chunks):
+                    self.photons = self.get_photons(self.rebinned_cube[ic*max_steps:(ic+1)*max_steps],
+                                                    chunk_step=abs_step + ic*max_steps)
+                    if sp.degrade_photons:
+                        self.photons = self.degrade_photons(self.photons)
 
-                if self.product == 'photons':
-                    self.save_photontable()
-                    self.rebinned_cube = None
+                    if self.product == 'photons':
+                        self.save_photontable(photonlist=self.photons, index=index,
+                                              populate_subsidiaries=populate_subsidiaries)
 
-                elif self.product == 'rebinned_cube':
-                    self.rebinned_cube = self.rebin_list(self.photons)
-                    self.photons = None
+                    elif self.product == 'rebinned_cube':
+                        self.rebinned_cube[ic*max_steps:(ic+1)*max_steps] = self.rebin_list(photons,
+                                                                                            time_inds=[ic*max_steps,(ic+1)*max_steps])
 
             self.save_instance()
 
         return {'photons': self.photons, 'rebinned_cube': self.rebinned_cube}
 
-    def max_chunk(self):
+    def max_chunk(self, datacube):
         """
         Determines the maximum duration each chunk can be to fit within the memory limit
 
@@ -165,14 +171,24 @@ class Camera():
         """
         self.timestep_size = 4 * 16 / 8  # in Bytes
 
+        max_counts = 50e6
+        num_events = self.num_from_cube(datacube)
+
+        #todo implement chunking
+        # assert len(datacube) % 2 == 0 or len(datacube) % 5 == 0
+        # round_nums = [1,2,5]
+        # num_chunks = np.ceil(num_events/max_counts)
+        # nice_cut = round_nums[num_chunks % len(round_nums)] * 10**(num_chunks //len(round_nums))
+
         max_chunk = sp.memory_limit*1e9 // self.timestep_size
+        max_chunk = 1 # 50e6
         print(f'Each timestep is predicted to be {self.timestep_size/1.e6} MB, meaning no more than {max_chunk} time '
               f'steps can fit in the memory at one time')
 
         return max_chunk
 
-    def save_photontable(self, index=('ultralight', 6), timesort=False, chunkshape=None, shuffle=True, bitshuffle=False,
-                        ndx_shuffle=True, ndx_bitshuffle=False):
+    def save_photontable(self, photonlist=[], index=('ultralight', 6), timesort=False, chunkshape=None, shuffle=True, bitshuffle=False,
+                        ndx_shuffle=True, ndx_bitshuffle=False, populate_subsidiaries=True):
         """
         save the photonlist in the MKIDPipeline format (https://github.com/MazinLab/MKIDPipeline)
 
@@ -191,34 +207,42 @@ class Camera():
         beammap = np.arange(mp.array_size[0]*mp.array_size[1]).reshape(mp.array_size)
         flagmap = np.zeros_like(beammap)
 
-        xs = np.int_(self.photons[2])
-        ys = np.int_(self.photons[3])
-
-        ResID = beammap[xs, ys]
-        photons = np.zeros(len(self.photons[0]),
-                           dtype=np.dtype([('ResID', np.uint32), ('Time', np.uint32), ('Wavelength', np.float32),
-                                           ('SpecWeight', np.float32), ('NoiseWeight', np.float32)]))
-
-        photons['ResID'] = ResID
-        photons['Time'] = self.photons[0] * 1e6 # seconds -> microseconds
-        photons['Wavelength'] = self.wave_cal(self.photons[1])
-        if timesort:
-            photons.sort(order=('Time', 'ResID'))
-            getLogger(__name__).warning('Sorting photon data on time for {}'.format(iop.photonlist))
-        elif not np.all(photons['ResID'][:-1] <= photons['ResID'][1:]):
-            getLogger(__name__).warning('binprocessor.extract returned data that was not sorted on ResID, sorting'
-                                        '({})'.format(iop.photonlist))
-            photons.sort(order=('ResID', 'Time'))
-
         h5file = tables.open_file(iop.photonlist, mode="a", title="MKID Photon File")
-        group = h5file.create_group("/", 'Photons', 'Photon Information')
         filter = tables.Filters(complevel=1, complib='blosc:lz4', shuffle=shuffle, bitshuffle=bitshuffle,
                                 fletcher32=False)
-        table = h5file.create_table(group, name='PhotonTable', description=ObsFileCols, title="Photon Datatable",
-                                    expectedrows=len(photons), filters=filter, chunkshape=chunkshape)
-        table.append(photons)
 
-        getLogger(__name__).debug('Table Populated for {}'.format(iop.photonlist))
+        if "/Photons" not in h5file:
+            group = h5file.create_group("/", 'Photons', 'Photon Information')
+            table = h5file.create_table(group, name='PhotonTable', description=ObsFileCols, title="Photon Datatable",
+                                        expectedrows=len(photonlist), filters=filter, chunkshape=chunkshape)
+        else:
+            table = h5file.root.Photons.PhotonTable
+
+        if photonlist != []:
+            xs = np.int_(photonlist[2])
+            ys = np.int_(photonlist[3])
+    
+            ResID = beammap[xs, ys]
+            photons = np.zeros(len(photonlist[0]),
+                               dtype=np.dtype([('ResID', np.uint32), ('Time', np.uint32), ('Wavelength', np.float32),
+                                               ('SpecWeight', np.float32), ('NoiseWeight', np.float32)]))
+    
+            photons['ResID'] = ResID
+            photons['Time'] = photonlist[0] * 1e6 # seconds -> microseconds
+            photons['Wavelength'] = self.wave_cal(photonlist[1])
+            if timesort:
+                photons.sort(order=('Time', 'ResID'))
+                getLogger(__name__).warning('Sorting photon data on time for {}'.format(iop.photonlist))
+            elif not np.all(photons['ResID'][:-1] <= photons['ResID'][1:]):
+                getLogger(__name__).warning('binprocessor.extract returned data that was not sorted on ResID, sorting'
+                                            '({})'.format(iop.photonlist))
+                photons.sort(order=('ResID', 'Time'))
+
+
+            table.append(photons)
+    
+            getLogger(__name__).debug('Table Populated for {}'.format(iop.photonlist))
+            
         if index:
             index_filter = tables.Filters(complevel=1, complib='blosc:lz4', shuffle=ndx_shuffle,
                                           bitshuffle=ndx_bitshuffle,
@@ -241,48 +265,51 @@ class Camera():
         else:
             getLogger(__name__).debug('Skipping Index Generation for {}'.format(iop.photonlist))
 
-        group = h5file.create_group("/", 'BeamMap', 'Beammap Information', filters=filter)
-        h5file.create_array(group, 'Map', beammap, 'resID map')
-        h5file.create_array(group, 'Flag', flagmap, 'flag map')
-        getLogger(__name__).debug('Beammap Attached to {}'.format(iop.photonlist))
+        if populate_subsidiaries:
+            group = h5file.create_group("/", 'BeamMap', 'Beammap Information', filters=filter)
+            h5file.create_array(group, 'Map', beammap, 'resID map')
+            h5file.create_array(group, 'Flag', flagmap, 'flag map')
+            getLogger(__name__).debug('Beammap Attached to {}'.format(iop.photonlist))
 
-        h5file.create_group('/', 'header', 'Header')
-        headerTable = h5file.create_table('/header', 'header', ObsHeader, 'Header')
-        headerContents = headerTable.row
-        headerContents['isWvlCalibrated'] = True
-        headerContents['isFlatCalibrated'] = True
-        headerContents['isSpecCalibrated'] = True
-        headerContents['isLinearityCorrected'] = True
-        headerContents['isPhaseNoiseCorrected'] = True
-        headerContents['isPhotonTailCorrected'] = True
-        headerContents['timeMaskExists'] = False
-        headerContents['startTime'] = int(time.time())
-        headerContents['expTime'] = np.ceil(sp.sample_time * sp.numframes)
-        headerContents['wvlBinStart'] = ap.wvl_range[0] * 1e9
-        headerContents['wvlBinEnd'] = ap.wvl_range[1] * 1e9
-        headerContents['energyBinWidth'] = 0.1  #todo check this
-        headerContents['target'] = ''
-        headerContents['dataDir'] = iop.testdir
-        headerContents['beammapFile'] = ''
-        headerContents['wvlCalFile'] = ''
-        headerContents['fltCalFile'] = ''
-        headerContents['metadata'] = ''
+            h5file.create_group('/', 'header', 'Header')
+            headerTable = h5file.create_table('/header', 'header', ObsHeader, 'Header')
+            headerContents = headerTable.row
+            headerContents['isWvlCalibrated'] = True
+            headerContents['isFlatCalibrated'] = True
+            headerContents['isSpecCalibrated'] = True
+            headerContents['isLinearityCorrected'] = True
+            headerContents['isPhaseNoiseCorrected'] = True
+            headerContents['isPhotonTailCorrected'] = True
+            headerContents['timeMaskExists'] = False
+            headerContents['startTime'] = int(time.time())
+            headerContents['expTime'] = np.ceil(sp.sample_time * sp.numframes)
+            headerContents['wvlBinStart'] = ap.wvl_range[0] * 1e9
+            headerContents['wvlBinEnd'] = ap.wvl_range[1] * 1e9
+            headerContents['energyBinWidth'] = 0.1  #todo check this
+            headerContents['target'] = ''
+            headerContents['dataDir'] = iop.testdir
+            headerContents['beammapFile'] = ''
+            headerContents['wvlCalFile'] = ''
+            headerContents['fltCalFile'] = ''
+            headerContents['metadata'] = ''
 
-        out = StringIO()
-        yaml.dump({'flags': mkidcore.pixelflags.FLAG_LIST}, out)
-        out = out.getvalue().encode()
-        if len(out) > mkidcore.headers.METADATA_BLOCK_BYTES:  # this should match mkidcore.headers.ObsHeader.metadata
-            raise ValueError("Too much metadata! {} KB needed, {} allocated".format(len(out) // 1024,
-                                                                                    mkidcore.headers.METADATA_BLOCK_BYTES // 1024))
-        headerContents['metadata'] = out
+            out = StringIO()
+            yaml.dump({'flags': mkidcore.pixelflags.FLAG_LIST}, out)
+            out = out.getvalue().encode()
+            if len(out) > mkidcore.headers.METADATA_BLOCK_BYTES:  # this should match mkidcore.headers.ObsHeader.metadata
+                raise ValueError("Too much metadata! {} KB needed, {} allocated".format(len(out) // 1024,
+                                                                                        mkidcore.headers.METADATA_BLOCK_BYTES // 1024))
+            headerContents['metadata'] = out
 
-        headerContents.append()
-        getLogger(__name__).debug('Header Attached to {}'.format(iop.photonlist))
+            headerContents.append()
+            getLogger(__name__).debug('Header Attached to {}'.format(iop.photonlist))
 
         h5file.close()
         getLogger(__name__).debug('Done with {}'.format(iop.photonlist))
 
-    def load_photonlist(self):
+        # self.photontable_exists = True
+
+    def load_photontable(self):
         """Load photon list from pipeline's photon table h5"""
         import tables
         h5file = tables.open_file(iop.photonlist, "r")
@@ -329,7 +356,10 @@ class Camera():
             return None
         return obj
 
-    def get_photons(self, datacube, plot=False):
+    def num_from_cube(self, datacube):
+        return int(ap.star_flux * sp.sample_time * np.sum(datacube))
+
+    def get_photons(self, datacube, chunk_step=0, plot=False):
         """
         Given an intensity spectralcube and timestep create a quantized photon list
 
@@ -342,12 +372,13 @@ class Camera():
         if mp.QE_var:
             datacube *= self.QE_map.T
 
-        num_events = int(ap.star_flux * sp.sample_time * np.sum(datacube) * sp.numframes)
+        num_events = self.num_from_cube(datacube)
 
-        print(f"star flux: {ap.star_flux}, cube sum: {np.sum(datacube)}, numframes: {sp.numframes},"
+        if sp.verbose: print(f"star flux: {ap.star_flux}, cube sum: {np.sum(datacube)}, numframes: {self.numframes},"
               f"num events: {num_events}")
 
         photons = self.sample_cube(datacube, num_events)
+        photons[0] += chunk_step
         photons[0] = self.assign_time(photons[0])
         photons[1] = self.assign_phase(photons[1])
 
@@ -724,12 +755,14 @@ class Camera():
 
         return datacube
 
-    def rebin_list(self, photons):
+    def rebin_list(self, photons, time_inds=None):
         phase_band = self.phase_cal(ap.wvl_range)
-        bins = [np.linspace(0, sp.sample_time * sp.numframes, sp.numframes + 1),
+        if not time_inds:
+            time_inds = [0, self.numframes]
+        bins = [np.linspace(sp.sample_time * time_inds[0], sp.sample_time * time_inds[1], time_inds[1] - time_inds[0] + 1),
                 np.linspace(phase_band[0], phase_band[1], ap.n_wvl_final + 1),
-                range(mp.array_size[0] + 1),
-                range(mp.array_size[1] + 1)]
+                range(self.array_size[0] + 1),
+                range(self.array_size[1] + 1)]
         if self.is_wave_cal:
             bins[1] = self.wave_cal(np.linspace(phase_band[0], phase_band[1], ap.n_wvl_final + 1))
         rebinned_cube, _ = np.histogramdd(photons.T, bins)
@@ -742,6 +775,8 @@ class Camera():
         scaling_map = max_counts / image
         scaling_map[scaling_map > 1] = 1
         scaled_cube = datacube * scaling_map
+        dprint(f'datacube went from {np.sum(datacube)} to {np.sum(scaled_cube)} '
+               f'(factor of {np.sum(scaled_cube)/np.sum(datacube)}) during max count cut')
 
         return scaled_cube
 
@@ -815,23 +850,27 @@ class Camera():
                     npixcounts = slice[x,y]
                     photons[:,:,x*npixcounts:(x+1)*npixcounts,y*npixcounts:(y+1)*npixcounts] = [x,y]
 
-    def rescale_cube(self, rebinned_cube):
-        if mp.resamp:
-            nyq_sampling = ap.wvl_range[0]*360*3600/(4*np.pi*tp.entrance_d)
-            self.sampling = nyq_sampling*sp.beam_ratio*2  # nyq sampling happens at sp.beam_ratio = 0.5
-            x = np.arange(-sp.grid_size*self.sampling/2, sp.grid_size*self.sampling/2, self.sampling)
-            xnew = np.arange(-self.array_size[0]*self.platescale/2, self.array_size[0]*self.platescale/2, self.platescale)
-            ynew = np.arange(-self.array_size[1]*self.platescale/2, self.array_size[1]*self.platescale/2, self.platescale)
-            mkid_cube = np.zeros((rebinned_cube.shape[0], rebinned_cube.shape[1], self.array_size[0], self.array_size[1]))
-            for d, datacube in enumerate(rebinned_cube):
-                for s, slice in enumerate(datacube):
-                    f = interpolate.interp2d(x, x, slice, kind='cubic')
-                    mkid_cube[d, s] = f(ynew, xnew)
-            mkid_cube = mkid_cube*np.sum(datacube)/np.sum(mkid_cube)
-            # grid(mkid_cube, logZ=True, show=True, extract_center=False, title='post')
-            rebinned_cube = mkid_cube
+    def rescale_cube(self, rebinned_cube, conserve=True):
+        if conserve:
+            total = np.sum(rebinned_cube)
+        nyq_sampling = ap.wvl_range[0]*360*3600/(4*np.pi*tp.entrance_d)
+        self.sampling = nyq_sampling*sp.beam_ratio*2  # nyq sampling happens at sp.beam_ratio = 0.5
+        x = np.arange(-sp.grid_size*self.sampling/2, sp.grid_size*self.sampling/2, self.sampling)
+        xnew = np.arange(-self.array_size[0]*self.platescale/2, self.array_size[0]*self.platescale/2, self.platescale)
+        ynew = np.arange(-self.array_size[1]*self.platescale/2, self.array_size[1]*self.platescale/2, self.platescale)
+        mkid_cube = np.zeros((rebinned_cube.shape[0], rebinned_cube.shape[1], self.array_size[0], self.array_size[1]))
+        for d, datacube in enumerate(rebinned_cube):
+            for s, slice in enumerate(datacube):
+                f = interpolate.interp2d(x, x, slice, kind='cubic')
+                mkid_cube[d, s] = f(ynew, xnew)
+        mkid_cube = mkid_cube*np.sum(datacube)/np.sum(mkid_cube)
+        # grid(mkid_cube, logZ=True, show=True, extract_center=False, title='post')
+        rebinned_cube = mkid_cube
 
         rebinned_cube[rebinned_cube < 0] *= -1
+
+        if conserve:
+            rebinned_cube *= total/np.sum(rebinned_cube)
 
         return rebinned_cube
 
