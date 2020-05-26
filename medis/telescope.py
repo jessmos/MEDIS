@@ -251,7 +251,7 @@ class Telescope():
                     # it appears as though the with statement is neccesssary when recreating Pools like this
                     with multiprocessing.Pool(processes=sp.num_processes) as p:
                         seq_samp_list = p.map(self.run_timestep, chunk_range)
-                self.cpx_sequence = [tup[0] for tup in seq_samp_list]
+                self.cpx_sequence = np.array([tup[0] for tup in seq_samp_list])
                 self.sampling = seq_samp_list[0][1]
 
                 if ap.n_wvl_init < ap.n_wvl_final:
@@ -338,7 +338,10 @@ class Telescope():
          """
         print(f"Loading fields from {iop.fields}")
         h5file = tables.open_file(iop.fields, mode="r", title="MEDIS Electric Fields File")
-        self.cpx_sequence = h5file.root.data[span[0]:span[1]]
+        if span[1] == -1:
+            self.cpx_sequence = h5file.root.data[span[0]:]
+        else:
+            self.cpx_sequence = h5file.root.data[span[0]:span[1]]
         h5file.close()
         self.pretty_sequence_shape()
         self.sampling = None

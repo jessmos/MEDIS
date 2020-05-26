@@ -114,7 +114,7 @@ class Camera():
 
         print('\nInitialized MKID device parameters\n')
 
-    def __call__(self, fields=None, abs_step=0, index=('ultralight', 6), populate_subsidiaries=True, *args, **kwargs):
+    def __call__(self, fields=None, abs_step=0, finalise_photontable=True, *args, **kwargs):
         if fields is None:
             # make fields (or load if it already exists)
             sp.checkpointing = None  # make sure the whole fields is loaded
@@ -152,12 +152,16 @@ class Camera():
                         self.photons = self.degrade_photons(self.photons)
 
                     if self.product == 'photons':
-                        self.save_photontable(photonlist=self.photons, index=index,
-                                              populate_subsidiaries=populate_subsidiaries)
+                        self.save_photontable(photonlist=self.photons, index=None, populate_subsidiaries=False)
 
                     elif self.product == 'rebinned_cube':
-                        self.rebinned_cube[ic*max_steps:(ic+1)*max_steps] = self.rebin_list(photons,
+                        self.rebinned_cube[ic*max_steps:(ic+1)*max_steps] = self.rebin_list(self.photons,
                                                                                             time_inds=[ic*max_steps,(ic+1)*max_steps])
+                # only give the option to index and add Header after all MKID chunks are completed and even then it can be overwritten
+                # for the opportunity to have chunked fields
+                if finalise_photontable and self.product == 'photons':
+                    self.save_photontable(photonlist=[], index=('ultralight', 6), populate_subsidiaries=True)
+                    self.photontable_exists = True
 
             self.save_instance()
 
@@ -169,10 +173,10 @@ class Camera():
 
         :return: integer
         """
-        self.timestep_size = 4 * 16 / 8  # in Bytes
 
-        max_counts = 50e6
+        # max_counts = 50e6
         num_events = self.num_from_cube(datacube)
+        self.photons_size = num_events * 4 * 16 / 8  # in Bytes
 
         #todo implement chunking
         # assert len(datacube) % 2 == 0 or len(datacube) % 5 == 0
@@ -180,10 +184,11 @@ class Camera():
         # num_chunks = np.ceil(num_events/max_counts)
         # nice_cut = round_nums[num_chunks % len(round_nums)] * 10**(num_chunks //len(round_nums))
 
-        max_chunk = sp.memory_limit*1e9 // self.timestep_size
-        max_chunk = 1 # 50e6
-        print(f'Each timestep is predicted to be {self.timestep_size/1.e6} MB, meaning no more than {max_chunk} time '
+        max_chunk = int(sp.memory_limit*1e9 // self.photons_size)
+        # max_chunk = 1 # 50e6
+        print(f'Each observation is predicted to be {self.photons_size/1.e6} MB, meaning no more than {max_chunk} time '
               f'steps can fit in the memory at one time')
+        max_chunk = min([max_chunk, len(datacube)])
 
         return max_chunk
 

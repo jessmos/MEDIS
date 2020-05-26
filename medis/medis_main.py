@@ -173,13 +173,13 @@ class RunMedis():
                     fields = self.tel.load_fields(span=(ichunk*self.tel.chunk_steps, (ichunk+1)*self.tel.chunk_steps))['fields']
 
                     dataproduct = self.cam(fields=fields, abs_step=ichunk*self.tel.chunk_steps,
-                                           index=None, populate_subsidiaries=False)
+                                           finalise_photontable=False)
 
                 if self.product == 'photons' and not self.cam.photontable_exists:
                     self.cam.save_photontable(photonlist=[], index=('ultralight', 6), populate_subsidiaries=True)
                     self.cam.photontable_exists = True
                     self.cam.save_instance()
-                    
+
                 print('Returning the observation data for the final chunk only')
 
         return dataproduct
