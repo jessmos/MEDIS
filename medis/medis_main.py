@@ -156,33 +156,38 @@ class RunMedis():
         """ Get fields from Telescope and optionally then get photons from Camera. This looks complicated because of
          the possibility to chunk in both Telescope and Camera but simplifies a lot if both have num_chunk = 1"""
 
-        # get the telescope configuration
-        self.tel = Telescope(usesave=sp.save_to_disk)  # checking of class's cache etc is left to the class
-        
-        #load or generate the fields
-        dataproduct = self.tel()
+        if self.product == 'fields':
+            # get the telescope configuration
+            self.tel = Telescope(usesave=sp.save_to_disk)  # checking of class's cache etc is left to the class
 
-        if self.product != 'fields':  # job is finished if user just wants fields
-            
-            # get the camera configuratoin
-            self.cam = Camera(usesave=sp.save_to_disk, product=self.product)
-            if self.tel.num_chunks == 1:
-                dataproduct = self.cam(fields=self.tel.cpx_sequence)
+            #load or generate the fields
+            observation = self.tel()
+
+        else:
+            self.cam = Camera(usesave=sp.save_to_disk, product=self.product)  # get the camera configuratoin
+            if self.cam.photontable_exists:
+                observation = self.cam()
             else:
-                for ichunk in range(int(self.tel.num_chunks)):
-                    fields = self.tel.load_fields(span=(ichunk*self.tel.chunk_steps, (ichunk+1)*self.tel.chunk_steps))['fields']
+                self.tel = Telescope(usesave=sp.save_to_disk)
+                self.tel()
 
-                    dataproduct = self.cam(fields=fields, abs_step=ichunk*self.tel.chunk_steps,
-                                           finalise_photontable=False)
+                if self.tel.num_chunks == 1:
+                    observation = self.cam(fields=self.tel.cpx_sequence)
+                else:
+                    for ichunk in range(int(self.tel.num_chunks)):
+                        fields = self.tel.load_fields(span=(ichunk*self.tel.chunk_steps, (ichunk+1)*self.tel.chunk_steps))['fields']
 
-                if self.product == 'photons' and not self.cam.photontable_exists:
-                    self.cam.save_photontable(photonlist=[], index=('ultralight', 6), populate_subsidiaries=True)
-                    self.cam.photontable_exists = True
-                    self.cam.save_instance()
+                        observation = self.cam(fields=fields, abs_step=ichunk*self.tel.chunk_steps,
+                                               finalise_photontable=False)
 
-                print('Returning the observation data for the final chunk only')
+                    if self.product == 'photons' and not self.cam.photontable_exists:
+                        self.cam.save_photontable(photonlist=[], index=('ultralight', 6), populate_subsidiaries=True)
+                        self.cam.photontable_exists = True
+                        self.cam.save_instance()
 
-        return dataproduct
+                    print('Returning the observation data for the final chunk only')
+
+        return observation
 
 
 if __name__ == '__main__':
