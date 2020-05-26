@@ -115,19 +115,19 @@ class Camera():
         print('\nInitialized MKID device parameters\n')
 
     def __call__(self, fields=None, abs_step=0, finalise_photontable=True, *args, **kwargs):
-        if fields is None:
-            # make fields (or load if it already exists)
-            sp.checkpointing = None  # make sure the whole fields is loaded
-            telescope_sim = Telescope()
-            dataproduct = telescope_sim()
-            fields = dataproduct['fields']
-            assert len(fields) == sp.numframes, f"requested sp.numframes {sp.numframes} does not match the " \
-                f"provided len(fields) {len(fields)}"
-
         if self.photontable_exists and self.usesave:
             self.load_photontable()
 
         else:
+            assert fields is not None, 'fields must be passed in order to sample photons'
+            #     # make fields (or load if it already exists)
+            #     sp.checkpointing = None  # make sure the whole fields is loaded
+            #     telescope_sim = Telescope()
+            #     dataproduct = telescope_sim()
+            #     fields = dataproduct['fields']
+            #     assert len(fields) == sp.numframes, f"requested sp.numframes {sp.numframes} does not match the " \
+            #         f"provided len(fields) {len(fields)}"
+
             # todo implement chunking for large datasets
             self.rebinned_cube = np.abs(np.sum(fields[:, -1], axis=2)) ** 2  # select detector plane and sum over objects
             self.rebinned_cube = self.rescale_cube(self.rebinned_cube)  # interpolate onto pixel spacing
@@ -167,7 +167,7 @@ class Camera():
 
         return {'photons': self.photons, 'rebinned_cube': self.rebinned_cube}
 
-    def max_chunk(self, datacube):
+    def max_chunk(self, datacube, round_chunk=True):
         """
         Determines the maximum duration each chunk can be to fit within the memory limit
 
@@ -178,17 +178,24 @@ class Camera():
         num_events = self.num_from_cube(datacube)
         self.photons_size = num_events * 4 * 16 / 8  # in Bytes
 
-        #todo implement chunking
-        # assert len(datacube) % 2 == 0 or len(datacube) % 5 == 0
-        # round_nums = [1,2,5]
-        # num_chunks = np.ceil(num_events/max_counts)
-        # nice_cut = round_nums[num_chunks % len(round_nums)] * 10**(num_chunks //len(round_nums))
-
         max_chunk = int(sp.memory_limit*1e9 // self.photons_size)
         # max_chunk = 1 # 50e6
-        print(f'Each observation is predicted to be {self.photons_size/1.e6} MB, meaning no more than {max_chunk} time '
-              f'steps can fit in the memory at one time')
+        print(f'This observation will produce {num_events}, which is {self.photons_size/1.e6} MB, meaning no more than '
+              f'{max_chunk} time steps can fit in the memory at one time')
         max_chunk = min([max_chunk, len(datacube)])
+
+        if round_chunk:
+            # get nice max cut
+            round_nums = [1, 2, 5]
+            nice_cut = 0
+            i = 0
+            while nice_cut <= max_chunk:
+                nice_cut = round_nums[i % len(round_nums)] * 10 ** (i // len(round_nums))  # [1,2,5,10,20,50,100,200,...]
+                i += 1
+
+            max_chunk = round_nums[(i - 2) % len(round_nums)] * 10 ** ((i - 2) // len(round_nums))  # we want the nice value thats below max_chunk so go back 2
+
+        print(f'Input cubes will be split up into time length {max_chunk}')
 
         return max_chunk
 
