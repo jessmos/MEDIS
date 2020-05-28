@@ -56,7 +56,7 @@ def generate_maps(aber_vals, lens_diam, lens_name='lens', quasi_static=False):
 
     # create blank lens wavefront for proper to add phase to
     wfo = proper.prop_begin(lens_diam, 1., sp.grid_size, sp.beam_ratio)
-    aber_cube = np.zeros((sp.numframes, sp.grid_size, sp.grid_size   ))
+    aber_cube = np.zeros((1, sp.grid_size, sp.grid_size))
 
     # Randomly select a value from the range of values for each constant
     # rms_error = np.random.normal(aber_vals['a'][0], aber_vals['a'][1])
@@ -65,8 +65,8 @@ def generate_maps(aber_vals, lens_diam, lens_name='lens', quasi_static=False):
 
     rms_error, c_freq, high_power = aber_vals
 
-    perms = np.random.rand(sp.numframes, sp.grid_size, sp.grid_size)-0.5
-    perms *= 1e-7
+    # perms = np.random.rand(sp.numframes, sp.grid_size, sp.grid_size)-0.5
+    # perms *= 1e-7
 
     phase = 2 * np.pi * np.random.uniform(size=(sp.grid_size, sp.grid_size)) - np.pi
     aber_cube[0] = proper.prop_psd_errormap(wfo, rms_error, c_freq, high_power, TPF=True, PHASE_HISTORY=phase)
