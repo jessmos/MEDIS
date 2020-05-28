@@ -114,19 +114,12 @@ class Camera():
 
         print('\nInitialized MKID device parameters\n')
 
-    def __call__(self, fields=None, abs_step=0, finalise_photontable=True, *args, **kwargs):
+    def __call__old(self, fields=None, abs_step=0, finalise_photontable=True, *args, **kwargs):
         if self.photontable_exists and self.usesave:
             self.load_photontable()
 
         else:
             assert fields is not None, 'fields must be passed in order to sample photons'
-            #     # make fields (or load if it already exists)
-            #     sp.checkpointing = None  # make sure the whole fields is loaded
-            #     telescope_sim = Telescope()
-            #     dataproduct = telescope_sim()
-            #     fields = dataproduct['fields']
-            #     assert len(fields) == sp.numframes, f"requested sp.numframes {sp.numframes} does not match the " \
-            #         f"provided len(fields) {len(fields)}"
 
             # todo implement chunking for large datasets
             self.rebinned_cube = np.abs(np.sum(fields[:, -1], axis=2)) ** 2  # select detector plane and sum over objects
@@ -155,8 +148,8 @@ class Camera():
                         self.save_photontable(photonlist=self.photons, index=None, populate_subsidiaries=False)
 
                     elif self.product == 'rebinned_cube':
-                        self.rebinned_cube[ic*max_steps:(ic+1)*max_steps] = self.rebin_list(self.photons,
-                                                                                            time_inds=[ic*max_steps,(ic+1)*max_steps])
+                        self.rebinned_cube[ic*max_steps:(ic+1)*max_steps] = self.rebin_list(self.photons, time_inds=[ic*max_steps,(ic+1)*max_steps])
+
                 # only give the option to index and add Header after all MKID chunks are completed and even then it can be overwritten
                 # for the opportunity to have chunked fields
                 if finalise_photontable and self.product == 'photons':
@@ -167,6 +160,72 @@ class Camera():
 
         return {'photons': self.photons, 'rebinned_cube': self.rebinned_cube}
 
+    def quantize(self, fields, abs_step=0):
+        self.rebinned_cube = np.abs(np.sum(fields[:, -1], axis=2)) ** 2  # select detector plane and sum over objects
+        self.rebinned_cube = self.rescale_cube(self.rebinned_cube)  # interpolate onto pixel spacing
+
+        if sp.quick_detect and self.product == 'rebinned_cube':
+            num_fake_events = int(ap.star_flux * sp.sample_time * np.sum(self.rebinned_cube))
+
+            if sp.verbose:
+                print(f"star flux: {ap.star_flux}, cube sum: {np.sum(self.rebinned_cube)}, num fake events: {num_fake_events}")
+
+            self.rebinned_cube *= num_fake_events
+            self.photons = None
+
+        else:
+            max_steps = self.max_chunk(self.rebinned_cube)
+            num_chunks = int(np.ceil(len(self.rebinned_cube) / max_steps))
+            dprint(len(self.rebinned_cube), max_steps, len(self.rebinned_cube) / max_steps, num_chunks)
+            self.photons = np.empty((4, 0))
+            if self.product == 'photons':
+                if num_chunks == 1:
+                    self.photons = self.get_photons(self.rebinned_cube)
+                    if self.usesave: self.save_photontable(photonlist=self.photons, index=('ultralight', 6), populate_subsidiaries=True)
+                else:
+                    for ic in range(num_chunks):
+                        cspan = (ic * max_steps, (ic + 1) * max_steps)
+                        self.photons = self.get_photons(self.rebinned_cube[cspan[0]: cspan[1]], chunk_step=abs_step + cspan[0])
+                        if self.usesave: self.save_photontable(photonlist=self.photons, index=None, populate_subsidiaries=False)
+
+                    # only give the option to index and add Header after all MKID chunks are completed and even then it
+                    # can be overwritten for the opportunity to have chunked fields
+                    if self.usesave:
+                        self.save_photontable(photonlist=[], index=('ultralight', 6), populate_subsidiaries=True)
+                        self.photontable_exists = True
+
+                self.save_instance()
+                return {'photons': self.photons}
+
+            elif self.product == 'rebinned_cube':
+                if num_chunks == 1:
+                    self.photons = self.get_photons(self.rebinned_cube)
+                    self.rebinned_cube = self.rebin_list(self.photons)
+                else:
+                    for ic in range(num_chunks):
+                        cspan = (ic * max_steps, (ic + 1) * max_steps)
+                        self.photons = self.get_photons(self.rebinned_cube[cspan[0]: cspan[1]], chunk_step=abs_step + cspan[0])
+                        self.rebinned_cube[cspan[0]: cspan[1]] = self.rebin_list(self.photons, time_inds=[cspan[0], cspan[1]])
+
+                self.save_instance()
+                return {'rebinned_cube': self.rebinned_cube}
+
+    def __call__(self, fields=None, abs_step=0):
+        """
+        Generate observation data with Camera
+
+        Parameters
+        ----------
+        separate_objects: bool
+            Generate photons from all targets at once or generate separate lists for each object. Separate lists are
+            neccesary for training PCD algorithm
+        """
+        if self.photontable_exists and self.usesave:
+            return self.load_photontable()
+
+        else:
+            return self.quantize(fields, abs_step)
+
     def max_chunk(self, datacube, round_chunk=True):
         """
         Determines the maximum duration each chunk can be to fit within the memory limit
@@ -176,13 +235,13 @@ class Camera():
 
         # max_counts = 50e6
         num_events = self.num_from_cube(datacube)
-        self.photons_size = num_events * 4 * 16 / 8  # in Bytes
+        self.photons_size = num_events * 32  # in Bytes (verified using photons[:,0].nbytes)
 
-        max_chunk = int(sp.memory_limit*1e9 // self.photons_size)
-        # max_chunk = 1 # 50e6
-        print(f'This observation will produce {num_events}, which is {self.photons_size/1.e6} MB, meaning no more than '
-              f'{max_chunk} time steps can fit in the memory at one time')
-        max_chunk = min([max_chunk, len(datacube)])
+        max_chunk = sp.memory_limit*1e9 / self.photons_size
+        # max_chunk = 1
+        print(f'This observation will produce {num_events} photons, which is {self.photons_size/1e9} GB, meaning no '
+              f'more than {max_chunk} of this observation can fit in the memory at one time')
+        max_chunk = min([len(datacube)*max_chunk, len(datacube)])
 
         if round_chunk:
             # get nice max cut
@@ -339,6 +398,8 @@ class Camera():
         self.rebinned_cube = None
         print(f"Loaded photon list from table at{h5file}")
 
+        return {'photons': self.photons}
+
     def save_instance(self):
         """
         Save the whole Camera instance
@@ -387,7 +448,7 @@ class Camera():
         num_events = self.num_from_cube(datacube)
 
         if sp.verbose: print(f"star flux: {ap.star_flux}, cube sum: {np.sum(datacube)}, numframes: {self.numframes},"
-              f"num events: {num_events}")
+              f"num events: {num_events:e}")
 
         photons = self.sample_cube(datacube, num_events)
         photons[0] += chunk_step
@@ -396,6 +457,9 @@ class Camera():
 
         if plot:
             grid(self.rebin_list(photons), title='get_photons')
+
+        if sp.degrade_photons:
+            photons = self.degrade_photons(photons)
 
         return photons
 
