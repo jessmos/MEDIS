@@ -142,7 +142,7 @@ class Telescope():
                 ap.contrast = []
 
             if ap.companion and len(ap.spectra) != len(ap.contrast)+1 != len(ap.companion_xy)+1:
-                print('Please ensure number of sources is consistent')
+                print(f'Please ensure number of sources is consistent: {len(ap.spectra)}, {len(ap.contrast)+1}, {len(ap.companion_xy)+1}')
                 raise IndexError
 
             if not isinstance(ap.n_wvl_final, int):
