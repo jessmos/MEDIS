@@ -64,9 +64,9 @@ class Telescope():
         self.fields_exists = True if os.path.exists(iop.fields) else False  # just the fields ndarray
         self.save_exists = True if os.path.exists(iop.telescope) else False  # the whole telescope object
 
-        if self.fields_exists:
-            self.load_fields()
-        elif self.save_exists:
+        # if self.fields_exists:
+        #     self.load_fields()
+        if self.save_exists:
             print(f"\nLoading telescope instance from\n\n\t{iop.telescope}\n")
             with open(iop.telescope, 'rb') as handle:
                 load = pickle.load(handle)
@@ -142,7 +142,7 @@ class Telescope():
                 ap.contrast = []
 
             if ap.companion and len(ap.spectra) != len(ap.contrast)+1 != len(ap.companion_xy)+1:
-                print('Please ensure number of sources is consistent')
+                print(f'Please ensure number of sources is consistent: {len(ap.spectra)}, {len(ap.contrast)+1}, {len(ap.companion_xy)+1}')
                 raise IndexError
 
             if not isinstance(ap.n_wvl_final, int):
@@ -182,7 +182,9 @@ class Telescope():
 
     def __call__(self, *args, **kwargs):
         """ Take the observation (generate the fields sequence) """
-        if not self.save_exists and not self.fields_exists:
+        if self.fields_exists:
+            self.load_fields()
+        else:
             print('\n\n\tBeginning Telescope Simulation with MEDIS\n\n')
             start = time.time()
 
@@ -230,6 +232,8 @@ class Telescope():
 
         if self.markov:  # time steps are independent
             ceil_num_chunks = int(np.ceil(self.num_chunks))
+            if ceil_num_chunks > 1:
+                print('Only partial observation will be in memory at one time')
             final_chunk_size = sp.numframes-int(np.floor(self.num_chunks))*self.chunk_steps
             for ichunk in range(ceil_num_chunks):
                 fractional_step = final_chunk_size != 0 and ichunk == ceil_num_chunks-1
@@ -247,7 +251,7 @@ class Telescope():
                     # it appears as though the with statement is neccesssary when recreating Pools like this
                     with multiprocessing.Pool(processes=sp.num_processes) as p:
                         seq_samp_list = p.map(self.run_timestep, chunk_range)
-                self.cpx_sequence = [tup[0] for tup in seq_samp_list]
+                self.cpx_sequence = np.array([tup[0] for tup in seq_samp_list])
                 self.sampling = seq_samp_list[0][1]
 
                 if ap.n_wvl_init < ap.n_wvl_final:
@@ -327,14 +331,17 @@ class Telescope():
 
         h5file.close()
 
-    def load_fields(self):
+    def load_fields(self, span=(0,-1)):
         """ load fields h5
 
          warning sampling is not currently stored in h5. It is stored in telescope.pkl however
          """
         print(f"Loading fields from {iop.fields}")
         h5file = tables.open_file(iop.fields, mode="r", title="MEDIS Electric Fields File")
-        self.cpx_sequence = h5file.root.data[:]
+        if span[1] == -1:
+            self.cpx_sequence = h5file.root.data[span[0]:]
+        else:
+            self.cpx_sequence = h5file.root.data[span[0]:span[1]]
         h5file.close()
         self.pretty_sequence_shape()
         self.sampling = None

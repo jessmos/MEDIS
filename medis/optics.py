@@ -292,7 +292,7 @@ class Wavefronts():
         if not title:
             title = input(f"Always Add A Title\n "
                           f"Please Enter Title:")
-            fig.suptitle(f"plane: {title}, lambda: {wf.lamda} m, body: {wf.name}", fontsize=18)
+        fig.suptitle(f"plane: {title}, lambda: {wf.lamda} m, body: {wf.name}", fontsize=18)
 
         plt.subplots_adjust(top=0.9)
 

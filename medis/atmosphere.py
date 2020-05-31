@@ -130,7 +130,7 @@ def gen_atmos(plot=False, debug=True):
 
             filename = get_filename(it, wsamples[iw], (iop.atmosdir, sp.sample_time,
                                                        atmp.model))
-            dprint(f"atmos file = {filename}")
+            if sp.verbose: dprint(f"atmos file = {filename}")
             hdu = fits.ImageHDU(wf2.phase.reshape(sp.grid_size, sp.grid_size))
             hdu.header['PIXSIZE'] = tp.entrance_d/sp.grid_size
             hdu.writeto(filename, overwrite=True)
