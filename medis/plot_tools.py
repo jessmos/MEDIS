@@ -78,8 +78,8 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=N
 
     # Plotting
     plt.title(title, fontweight='bold', fontsize=16)
-    # cb = plt.colorbar(cax)
-    # cb.set_label(zlabel)
+    cb = plt.colorbar(cax)
+    cb.set_label(zlabel)
     if show:
         plt.show(block=True)
 
@@ -155,7 +155,7 @@ def grid(fields, title='body spectra', logZ=False, show=True, nstd=1, vlim=(None
 
 
 def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vlim=(None,None), subplt_cols=3,
-                  dx=None, extract_center=False):
+                  dx=None):
     """
     view plot of intensity in each wavelength bin at a single (last) timestep
 
@@ -181,7 +181,7 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
     # Title
     if title is None:
         warnings.warn("Plots without titles: Don't Do It!")
-        # title = input("Please Enter Title: ")
+        title = input("Please Enter Title: ")
         pass
     fig.suptitle(title, fontweight='bold', fontsize=16)
 
@@ -191,6 +191,8 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
     for w in range(n_colors):
         ax = fig.add_subplot(gs[w])
         ax.set_title(r'$\lambda$ = ' + f"{w_string[w]} nm")
+
+        slice = opx.extract_center(datacube[w])
 
         # X,Y lables
         if dx is not None:
@@ -205,11 +207,6 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
             plt.yticks(tic_spacing, tic_lables, fontsize=6)
             # plt.xlabel('[um]', fontsize=8)
             # plt.ylabel('[um]', fontsize=8)
-
-        if extract_center:
-            slice = opx.extract_center(datacube[w])
-        else:
-            slice = datacube[w]
 
         # Z-axis scale
         if logZ:
@@ -358,7 +355,7 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
         plt.show(block=True)
 
 
-def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, None), subplt_cols=3,
+def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=[None, None], subplt_cols=3,
                  dx=None):
     """
     view plot of intensity in each wavelength bin at a single (last) timestep
@@ -394,6 +391,7 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
     fig.suptitle(title, fontweight='bold', fontsize=16)
 
     # Small Hack to repeat axis if defaults used
+    np.array(vlim)
     if len(logZ) == 1:
         logZ = np.repeat(logZ,len(sp.save_list))
     if len(vlim) == 2:
@@ -407,34 +405,35 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
         ##################
         # Standard-Way
         # [timestep, plane, wavelength, object, x, y]
+        # converts to intensity of last timestep, THEN sums over wavelength, then sums over object
         plot_plane = sp.save_list[p]
         plane = opx.extract_plane(cpx_seq, plot_plane)
-        # converts to intensity of last timestep, THEN sums over wavelength, then sums over object
+        # Distinguish plotting z-axis in phase units or intensity units
         if plot_plane == "atmosphere" or plot_plane == "entrance_pupil":
             plane = np.sum(np.angle(plane[-1]), axis=(0,1))
+            plane = opx.extract_center(plane)
             logZ[p] = False
-            vlim[p] = (None,None)
-            phs = " Phase"
+            vlim[p] = [None, None]
+            phs = " phase"
         elif plot_plane == "woofer" or plot_plane == "tweeter" or plot_plane == "DM":
+            # only show the star phase map since phase at other bodies just offsets to shift focal plane position
             plane = np.sum(np.angle(plane[-1]), axis=(0))
             plane = plane[0]
+            plane = opx.extract_center(plane)
             logZ[p] = False
-            vlim[p] = (None, None)
+            vlim[p] = [-np.pi, np.pi]
             phs = " phase"
         else:
             plane = np.sum(opx.cpx_to_intensity(plane[-1]), axis=(0,1))
             phs = ""
-        plane = opx.extract_center(plane)
         ### Retreiving Data- Custom selection of plane ###
         # plot_plane = sp.save_list[w]
         # plane = opx.extract_plane(cpx_seq, plot_plane)
         # # plane = opx.cpx_to_intensity(plane[-1])
-        # dprint(f"plane shape is {plane.shape}")
         # plane = opx.extract_center(np.angle(plane[0,1,1]))  # wavelengths, objects
-        # dprint(f"plane shape is {plane.shape}")
 
         # Converting Sampling Units to Readable numbers
-        if dx[p,0] < 1e-6:
+        if dx[p,0] < 1e-5:
             dx[p,:] *= 1e6  # [convert to um]
             axlabel = 'um'
         elif dx[p,0] < 1e-3:
@@ -449,14 +448,13 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=(None, No
         # X,Y lables
         if dx is not None:
             # dprint(f"sampling = {sampl[w]}")
-            tic_spacing = np.linspace(0, sp.maskd_size, 5)  # 5 (# of ticks) is just set by hand, arbitrarily chosen
+            tic_spacing = np.linspace(0, plane.shape[0], 5)  # 5 (# of ticks) is just set by hand, arbitrarily chosen
             tic_lables = np.round(
-                np.linspace(-dx[p,0] * sp.maskd_size / 2, dx[p,0] * sp.maskd_size / 2, 5)).astype(int)  # nsteps must be same as tic_spacing
+                np.linspace(-dx[p,0] * plane.shape[0] / 2, dx[p,0] * plane.shape[0] / 2, 5)).astype(int)  # nsteps must be same as tic_spacing
             tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
             tic_spacing[-1] = tic_spacing[-1] - 1  # hack for edge effects
             plt.xticks(tic_spacing, tic_lables, fontsize=6)
             plt.yticks(tic_spacing, tic_lables, fontsize=6)
-            # plt.xlabel('[um]', fontsize=8)
             plt.ylabel(axlabel, fontsize=8)
 
         # Z-axis scale
