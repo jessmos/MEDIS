@@ -64,85 +64,89 @@ def gen_atmos(plot=False, debug=True):
 
     todo add simple mp.Pool.map code to make maps in parrallel
     """
-    if sp.verbose: dprint("Making New Atmosphere Model")
-    # Saving Parameters
-    # np.savetxt(iop.atmosconfig, ['Grid Size', 'Wvl Range', 'Number of Frames', 'Layer Strength', 'Outer Scale', 'Velocity', 'Scale Height', cp.model])
-    # np.savetxt(iop.atmosconfig, ['ap.grid_size', 'ap.wvl_range', 'ap.numframes', 'atmp.cn_sq', 'atmp.L0', 'atmp.vel', 'atmp.h', 'cp.model'])
-    # np.savetxt(iop.atmosconfig, [ap.grid_size, ap.wvl_range, ap.numframes, atmp.cn_sq, atmp.L0, atmp.vel, atmp.h, cp.model], fmt='%s')
-
-    wsamples = np.linspace(ap.wvl_range[0], ap.wvl_range[1], ap.n_wvl_init)
-    wavefronts = []
-
-    ##################################
-    # Initiate HCIpy Atmosphere Type
-    ##################################
-    pupil_grid = hcipy.make_pupil_grid(sp.grid_size, tp.entrance_d)
-    if atmp.model == 'single':
-        layers = [hcipy.InfiniteAtmosphericLayer(pupil_grid, atmp.cn_sq, atmp.L0, atmp.vel, atmp.h, 2)]
-    elif atmp.model == 'hcipy_standard':
-        # Make multi-layer atmosphere
-        # layers = hcipy.make_standard_atmospheric_layers(pupil_grid, atmp.L0)
-        heights = np.array([500, 1000, 2000, 4000, 8000, 16000])
-        velocities = np.array([10, 10, 10, 10, 10, 10])
-        Cn_squared = np.array([0.2283, 0.0883, 0.0666, 0.1458, 0.3350, 0.1350]) * 3.5e-12
-
-        layers = []
-        for h, v, cn in zip(heights, velocities, Cn_squared):
-            layers.append(hcipy.InfiniteAtmosphericLayer(pupil_grid, cn, atmp.L0, v, h, 2))
-
-    elif atmp.model == 'evolving':
-        raise NotImplementedError
-    atmos = hcipy.MultiLayerAtmosphere(layers, scintilation=False)
-
-    for wavelength in wsamples:
-        wavefronts.append(hcipy.Wavefront(hcipy.Field(np.ones(pupil_grid.size), pupil_grid), wavelength))
-
-    if atmp.correlated_sampling:
-        # Damage Detection and Localization from Dense Network of Strain Sensors
-
-        # fancy sampling goes here
-        normal = corrsequence(sp.numframes, atmp.tau/sp.sample_time)[1] * atmp.std
-        uniform = (special.erf(normal / np.sqrt(2)) + 1)
-
-        times = np.cumsum(uniform) * sp.sample_time
-
-        if debug:
-            import matplotlib.pylab as plt
-            plt.plot(normal)
-            plt.figure()
-            plt.plot(uniform)
-            plt.figure()
-            plt.hist(uniform)
-            plt.figure()
-            plt.plot(np.arange(0, sp.numframes * sp.sample_time, sp.sample_time))
-            plt.plot(times)
-            plt.show()
+    if tp.use_atmos is False:
+        pass  # only make new atmosphere map if using the atmosphere
     else:
-        times = np.arange(0, sp.numframes * sp.sample_time, sp.sample_time)
 
-    ###########################################
-    # Evolving Wavefront using HCIpy tools
-    ###########################################
-    for it, t in enumerate(times):
-        atmos.evolve_until(t)
-        for iw, wf in enumerate(wavefronts):
-            wf2 = atmos.forward(wf)
+        if sp.verbose: dprint("Making New Atmosphere Model")
+        # Saving Parameters
+        # np.savetxt(iop.atmosconfig, ['Grid Size', 'Wvl Range', 'Number of Frames', 'Layer Strength', 'Outer Scale', 'Velocity', 'Scale Height', cp.model])
+        # np.savetxt(iop.atmosconfig, ['ap.grid_size', 'ap.wvl_range', 'ap.numframes', 'atmp.cn_sq', 'atmp.L0', 'atmp.vel', 'atmp.h', 'cp.model'])
+        # np.savetxt(iop.atmosconfig, [ap.grid_size, ap.wvl_range, ap.numframes, atmp.cn_sq, atmp.L0, atmp.vel, atmp.h, cp.model], fmt='%s')
 
-            filename = get_filename(it, wsamples[iw], (iop.atmosdir, sp.sample_time,
-                                                       atmp.model))
-            if sp.verbose: dprint(f"atmos file = {filename}")
-            hdu = fits.ImageHDU(wf2.phase.reshape(sp.grid_size, sp.grid_size))
-            hdu.header['PIXSIZE'] = tp.entrance_d/sp.grid_size
-            hdu.writeto(filename, overwrite=True)
+        wsamples = np.linspace(ap.wvl_range[0], ap.wvl_range[1], ap.n_wvl_init)
+        wavefronts = []
 
-            if plot and iw == 0:
-                import matplotlib.pyplot as plt
-                from medis.twilight_colormaps import sunlight
+        ##################################
+        # Initiate HCIpy Atmosphere Type
+        ##################################
+        pupil_grid = hcipy.make_pupil_grid(sp.grid_size, tp.entrance_d)
+        if atmp.model == 'single':
+            layers = [hcipy.InfiniteAtmosphericLayer(pupil_grid, atmp.cn_sq, atmp.L0, atmp.vel, atmp.h, 2)]
+        elif atmp.model == 'hcipy_standard':
+            # Make multi-layer atmosphere
+            # layers = hcipy.make_standard_atmospheric_layers(pupil_grid, atmp.L0)
+            heights = np.array([500, 1000, 2000, 4000, 8000, 16000])
+            velocities = np.array([10, 10, 10, 10, 10, 10])
+            Cn_squared = np.array([0.2283, 0.0883, 0.0666, 0.1458, 0.3350, 0.1350]) * 3.5e-12
+
+            layers = []
+            for h, v, cn in zip(heights, velocities, Cn_squared):
+                layers.append(hcipy.InfiniteAtmosphericLayer(pupil_grid, cn, atmp.L0, v, h, 2))
+
+        elif atmp.model == 'evolving':
+            raise NotImplementedError
+        atmos = hcipy.MultiLayerAtmosphere(layers, scintilation=False)
+
+        for wavelength in wsamples:
+            wavefronts.append(hcipy.Wavefront(hcipy.Field(np.ones(pupil_grid.size), pupil_grid), wavelength))
+
+        if atmp.correlated_sampling:
+            # Damage Detection and Localization from Dense Network of Strain Sensors
+
+            # fancy sampling goes here
+            normal = corrsequence(sp.numframes, atmp.tau/sp.sample_time)[1] * atmp.std
+            uniform = (special.erf(normal / np.sqrt(2)) + 1)
+
+            times = np.cumsum(uniform) * sp.sample_time
+
+            if debug:
+                import matplotlib.pylab as plt
+                plt.plot(normal)
                 plt.figure()
-                plt.title(f"Atmosphere Phase Map t={t} lambda={eformat(wsamples[iw], 3, 2)}")
-                hcipy.imshow_field(wf2.phase, cmap=sunlight)
-                plt.colorbar()
-                plt.show(block=True)
+                plt.plot(uniform)
+                plt.figure()
+                plt.hist(uniform)
+                plt.figure()
+                plt.plot(np.arange(0, sp.numframes * sp.sample_time, sp.sample_time))
+                plt.plot(times)
+                plt.show()
+        else:
+            times = np.arange(0, sp.numframes * sp.sample_time, sp.sample_time)
+
+        ###########################################
+        # Evolving Wavefront using HCIpy tools
+        ###########################################
+        for it, t in enumerate(times):
+            atmos.evolve_until(t)
+            for iw, wf in enumerate(wavefronts):
+                wf2 = atmos.forward(wf)
+
+                filename = get_filename(it, wsamples[iw], (iop.atmosdir, sp.sample_time,
+                                                           atmp.model))
+                if sp.verbose: dprint(f"atmos file = {filename}")
+                hdu = fits.ImageHDU(wf2.phase.reshape(sp.grid_size, sp.grid_size))
+                hdu.header['PIXSIZE'] = tp.entrance_d/sp.grid_size
+                hdu.writeto(filename, overwrite=True)
+
+                if plot and iw == 0:
+                    import matplotlib.pyplot as plt
+                    from medis.twilight_colormaps import sunlight
+                    plt.figure()
+                    plt.title(f"Atmosphere Phase Map t={t} lambda={eformat(wsamples[iw], 3, 2)}")
+                    hcipy.imshow_field(wf2.phase, cmap=sunlight)
+                    plt.colorbar()
+                    plt.show(block=True)
 
 
 def add_atmos(wf, it, param_tup=None, spatial_zoom=False):
@@ -168,6 +172,7 @@ def add_atmos(wf, it, param_tup=None, spatial_zoom=False):
         atmos_map = get_filename(it, wavelength, param_tup)
         if not os.path.exists(atmos_map):
             # todo remove when all test scripts use the new format
+            # TODO check for new file name convention in addition to directory name
             print('atmospheres should be created at the beginng, not on the fly')
             raise NotImplementedError
             gen_atmos(params, plot=True)
