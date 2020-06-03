@@ -19,7 +19,7 @@ import medis.medis_main as mm
 #################################################################################################
 #################################################################################################
 #################################################################################################
-testname = 'SCExAO-test2'
+testname = 'SCExAO-test1'
 iop.update_datadir(f"/home/captainkay/mazinlab/MKIDSim/CDIsim_data/")
 iop.update_testname(testname)
 iop.makedir()
@@ -35,7 +35,7 @@ sp.closed_loop = False
 
 # Grid Parameters
 sp.focused_sys = True
-sp.beam_ratio = 0.18  # parameter dealing with the sampling of the beam in the pupil/focal plane
+sp.beam_ratio = 0.08  # parameter dealing with the sampling of the beam in the pupil/focal plane
 sp.grid_size = 512  # creates a nxn array of samples of the wavefront
 sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
 
@@ -49,11 +49,18 @@ ap.interp_wvl = False  # Set to interpolate wavelengths from ap.n_wvl_init to ap
 ap.wvl_range = np.array([800, 1400]) / 1e9  # wavelength range in [m] (formerly ap.band)
 # eg. DARKNESS band is [800, 1500], J band =  [1100,1400])
 
+# CDI
+cdip.use_cdi = True
+cdip.probe_w = 10  # [actuator coordinates] width of the probe
+cdip.probe_h = 30  # [actuator coordinates] height of the probe
+cdip.probe_center = 15  # [actuator coordinates] center position of the probe
+cdip.probe_amp = 2e-6  # [m] probe amplitude, scale should be in units of actuator height limits
+
 
 # Toggles for Aberrations and Control
 tp.obscure = False
 tp.use_atmos = True
-tp.use_aber = False
+tp.use_aber = True
 tp.use_ao = True
 tp.use_cdi = False
 
@@ -64,12 +71,14 @@ sp.spectra_cols = 3  # number of subplots per row in view_spectra
 sp.show_tseries = False  # Plot full timeseries of white light frames
 sp.tseries_cols = 5  # number of subplots per row in view_timeseries
 sp.show_planes = True
+sp.maskd_size = 256
 sp.verbose = True
 sp.debug = False
 
 # Saving
 sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
 sp.save_list = ['entrance_pupil','woofer', 'tweeter', 'post-DM-focus', 'coronagraph', 'detector']  # list of locations in optics train to save
+
 
 if __name__ == '__main__':
     # =======================================================================
@@ -88,7 +97,7 @@ if __name__ == '__main__':
     focal_plane = opx.extract_plane(cpx_sequence, 'detector')  # eliminates astro_body axis
     # convert to intensity THEN sum over object, keeping the dimension of tstep even if it's one
     focal_plane = np.sum(opx.cpx_to_intensity(focal_plane), axis=2)
-    fp_sampling = sampling[-1,:]
+    fp_sampling = np.copy(sampling[cpx_sequence.shape[1]-1,:])  # numpy arrays have some weird effects that make copying the array necessary
 
     # =======================================================================
     # Plotting
@@ -103,7 +112,7 @@ if __name__ == '__main__':
                            # f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio} ",
                            # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
                 logZ=True,
-                dx=fp_sampling[0],
+                dx=fp_sampling,
                 vlim=(None,None))  # (1e-3, 1e-1)
 
     # Plotting Spectra at last tstep
@@ -115,7 +124,7 @@ if __name__ == '__main__':
                             # f"Beam Ratio = {sp.beam_ratio:.4f}",#  sampling = {sampling*1e6:.4f} [um/gridpt]",
                       logZ=True,
                       subplt_cols=sp.spectra_cols,
-                      vlim=(1e-10, 1e-4),
+                      vlim=(1e-7, 1e-3),
                       dx=fp_sampling)
 
     # Plotting Timeseries in White Light
@@ -130,7 +139,7 @@ if __name__ == '__main__':
 
     # Plotting Selected Plane
     if sp.show_planes:
-        vlim = [(None, None), (None, None), (None, None), (1e-6,1e-3), (1e-7,1e-3), (1e-7,1e-3)]
+        vlim = [(None, None), (None, None), (None, None), (1e-7,1e-3), (1e-7,1e-3), (1e-7,1e-3)]
         # vlim = [(None,None), (None,None), (None,None), (None,None)]  # (1e-2,1e-1) (7e-4, 6e-4)
         logZ = [True, False, False, True, True, True]
         if sp.save_list:

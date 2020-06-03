@@ -143,8 +143,6 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
                            **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
     wfo.loop_collection(proper.prop_define_entrance, plane_name='entrance_pupil')  # normalizes abs intensity
 
-    wfo.quicklook()
-
     if ap.companion:
         # Must do this after all calls to prop_define_entrance
         wfo.loop_collection(opx.offset_companion)
@@ -152,7 +150,8 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
                                **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
 
     # Test Sampling
-    # opx.check_sampling(PASSVALUE['iter'], wfo, "initial", getframeinfo(stack()[0][0]), units='mm')
+    if sp.verbose:
+        opx.check_sampling(PASSVALUE['iter'], wfo, "initial", getframeinfo(stack()[0][0]), units='mm')
     # Testing Primary Focus (instead of propagating to focal plane)
     # wfo.loop_collection(opx.prop_pass_lens, tp.flen_nsmyth, tp.flen_nsmyth)  # test only going to prime focus
 
@@ -176,7 +175,7 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # AO System
     if tp.use_ao:
         WFS_map = ao.open_loop_wfs(wfo)
-        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], apodize=True, plane_name='woofer',
+        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], plane_name='woofer',
                             debug=sp.debug)  # don't use PASSVALUE['WFS_map'] here because open loop
     # ------------------------------------------------
     wfo.loop_collection(proper.prop_propagate, tp.dist_dm_ao2)
@@ -190,9 +189,9 @@ def Subaru_frontend(empty_lamda, grid_size, PASSVALUE):
     # Focal Plane
     # #######################################
     # Check Sampling in focal plane
-    # opx.check_sampling(PASSVALUE['iter'], wfo, "focal plane", getframeinfo(stack()[0][0]), units='nm')
-    wfo.loop_collection(opx.check_sampling, PASSVALUE['iter'], "focal plane",
-                        getframeinfo(stack()[0][0]), units='nm')
+    if sp.verbose:
+        wfo.loop_collection(opx.check_sampling, PASSVALUE['iter'], "focal plane",
+                            getframeinfo(stack()[0][0]), units='nm')
 
     # wfo.focal_plane fft-shifts wfo from Fourier Space (origin==lower left corner) to object space (origin==center)
     cpx_planes, sampling = wfo.focal_plane()
