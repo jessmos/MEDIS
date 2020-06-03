@@ -14,7 +14,7 @@ from medis.utils import dprint
 from medis.plot_tools import quick2D
 
 
-def CDIprobe(theta, iw):
+def CDIprobe(theta, nact, iw):
     """
     apply a probe shape to DM to achieve CDI
 
@@ -28,39 +28,48 @@ def CDIprobe(theta, iw):
     and supply the probe height as an additive height to the DM map, which is passed to the prop_dm function.
 
     :param theta: desired phase of the probe
+    :param nact: number of actuators in the mirror, should change if 'woofer' or 'tweeter'
     :param iw: index of wavelength number in ap.wvl_range
     :return: height of phase probes to add to the DM map in adaptive.py
     """
-    x = np.linspace(-1/2, 1/2, tp.ao_act)
+    x = np.linspace(-1/2, 1/2, nact)
     y = x
     X,Y = np.meshgrid(x, y)
 
-    probe = cdip.probe_amp * np.sinc(cdip.probe_w * X) \
-                           * np.sinc(cdip.probe_h * Y) \
-                           * np.sin(2*np.pi*cdip.probe_center*X + theta)
-    # dprint(f"CDI Probe: Min={np.min(probe)*1e9:.2f} nm, Max={np.max(probe)*1e9:.2f} nm")
-
-    # if cdip.show_probe and iw == 0 and theta == cdip.phase_list[0]:
-        # quick2D(probe, title=f"Phase Probe at " r'$\theta$' + f"={cdip.phase_list[iw]/np.pi:.2f}" + r'$\pi$',
-        #         vlim=(-1e-6, 1e-6),
-        #         colormap="YlGnBu_r")  # logZ=True)
+    probe = cdip.probe_amp * np.sinc(cdip.probe_w * X) * np.sinc(cdip.probe_h * Y) \
+                * np.sin(2*np.pi*cdip.probe_center*X + theta)
 
     # Testing FF propagation
     if cdip.show_probe and iw == 0 and theta == cdip.phase_list[0]:
-        probe_ft = (1/np.square(2*np.pi)) * np.fft.ifftshift(np.fft.fft2(np.fft.fftshift(probe)))
+        from matplotlib import pyplot as plt
+        probe_ft = (1/np.sqrt(2*np.pi)) * np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(probe)))
 
-        # quick2D(probe_ft.real,
-        #         title=f"Real FFT of CDI probe, " r'$\theta$' + f"={cdip.phase_list[iw]/np.pi:.2f}" + r'$\pi$',
-        #         vlim=(-1e-6, 1e-6),
-        #         colormap="YlGnBu_r")
+        fig, ax = plt.subplots(1, 3, figsize=(12, 5))
+        fig.subplots_adjust(wspace=0.5)
+        ax1, ax2, ax3 = ax.flatten()
+
+        fig.suptitle(f"Probe Amp = {cdip.probe_amp}, Dimensions {cdip.probe_w}x{cdip.probe_h}, "
+                     f"center={cdip.probe_center}, " + r'$\theta$' + f"={theta/np.pi}" + r'$\pi$')
+
+        im1 = ax1.imshow(probe, interpolation='none', origin='lower')
+        ax1.set_title(f"Probe on DM \n(dm coordinates)")
+        cb = fig.colorbar(im1, ax=ax1)
+
+        im2 = ax2.imshow(np.sqrt(probe_ft.imag ** 2 + probe_ft.real ** 2), interpolation='none', origin='lower')
+        ax2.set_title("Focal Plane Amplitude")
+        cb = fig.colorbar(im2, ax=ax2)
+
+        ax3.imshow(np.arctan2(probe_ft.imag, probe_ft.real), interpolation='none', origin='lower', cmap='hsv')
+        ax3.set_title("Focal Plane Phase")
+
         # quick2D(probe_ft.imag,
         #         title=f"Imag FFT of CDI probe, " r'$\theta$' + f"={cdip.phase_list[iw]/np.pi:.2f}" + r'$\pi$',
         #         vlim=(-1e-6, 1e-6),
         #         colormap="YlGnBu_r")
-        quick2D(np.arctan2(probe_ft.imag, probe.real),
-                title="Phase of Probe",
-                # vlim=(-1e-6, 1e-6),
-                colormap="YlGnBu_r")
+        # quick2D(np.arctan2(probe_ft.imag, probe.real),
+        #         title="Phase of Probe",
+        #         # vlim=(-1e-6, 1e-6),
+        #         colormap="YlGnBu_r")
 
     return probe
 
