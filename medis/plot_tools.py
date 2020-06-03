@@ -29,7 +29,8 @@ rcParams['font.family'] = 'DejaVu Sans'
 # rcParams['mathtext.bf'] = 'Bitstream Vera Sans:bold'
 
 
-def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None), colormap=None, zlabel='Intensity', show=True):
+def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None),
+            colormap='YlGnBu_r', zlabel='Intensity', show=True):
     """
     Looks at a 2D array, has bunch of handles for plot.imshow
 
