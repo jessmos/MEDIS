@@ -25,35 +25,11 @@ from medis.optics import check_sampling, apodize_pupil, unwrap_phase_zeros as un
 from medis.utils import dprint
 from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
 
-# def ao(wf, WFS_map, theta):
-#     if sp.closed_loop:
-#         deformable_mirror(wf, WFS_map, theta)
-#     else:
-#         WFS_map = open_loop_wfs(wf)  # overwrite WFS_map
-#         # dprint(f"WFS_ma.shape = {WFS_map.shape}")
-#         deformable_mirror(wf, WFS_map, theta)
-#
-
-def make_speckle_kxy(kx, ky, amp, dm_phase):
-    """given an kx and ky wavevector,
-    generates a NxN flatmap that has
-    a speckle at that position"""
-    N = tp.ao_act
-    dmx, dmy   = np.meshgrid(
-                    np.linspace(-0.5, 0.5, N),
-                    np.linspace(-0.5, 0.5, N))
-
-    xm=dmx*kx*2.0*np.pi
-    ym=dmy*ky*2.0*np.pi
-    # print 'DM phase', dm_phase
-    ret = amp*np.cos(xm + ym +  dm_phase)
-    return ret
-
 
 ################################################################################
 # Deformable Mirror
 ################################################################################
-def deformable_mirror(wf, WFS_map, iter, previous_output, apodize=True, plane_name=None, debug=False):
+def deformable_mirror(wf, WFS_map, iter, previous_output=None, apodize=False, plane_name='', debug=False):
     """
     combine different DM actuator commands into single map to send to prop_dm
 
@@ -77,23 +53,24 @@ def deformable_mirror(wf, WFS_map, iter, previous_output, apodize=True, plane_na
     :param WFS_map: wavefront sensor map, should be in units of phase delay
     :param previous_output:
     :param iter: the current index of iteration (which timestep this is)
-    :param plane_name: name of plane (should be 'woofer' or 'tweeter' for best functionality
-    :return: nothing is returned, but the probe map has been applied to the DM via proper.prop_dm
+    :param plane_name: name of plane (should be 'woofer' or 'tweeter' for best functionality)
+    :return: nothing is returned, but the probe map has been applied to the DM via proper.prop_dm. DM plane post DM
+        application can be saved via the sp.save_list functionality
     """
     assert np.logical_xor(WFS_map is None, previous_output is None)
 
     # AO Actuator Count from DM Type
-    if plane_name == 'tweeter' and hasattr('tp','act_tweeter'):
+    if plane_name == 'tweeter' and hasattr(tp,'act_tweeter'):
         nact = tp.act_tweeter
-    elif plane_name == 'woofer' and hasattr('tp','act_woofer'):
+    elif plane_name == 'woofer' and hasattr(tp,'act_woofer'):
         nact = tp.act_woofer
     else:
         nact = tp.ao_act
 
     # DM Coordinates
     nact_across_pupil = nact - 2  # number of full DM actuators across pupil (oversizing DM extent)
-    dm_xc = (nact / 2) - 0.5  # The location of the optical axis (center of the wavefront) on the DM in
-    dm_yc = (nact / 2) - 0.5  # actuator units. First actuator is centered on (0.0, 0.0). The 0.5 is a
+    dm_xc = (nact / 2)   # The location of the optical axis (center of the wavefront) on the DM in
+    dm_yc = (nact / 2)   # actuator units. First actuator is centered on (0.0, 0.0). The 0.5 is a
     #  parameter introduced/tuned by Rupert to remove weird errors (address this).
     # KD verified this needs to be here or else suffer weird errors 9/19
     # TODO address/remove the 0.5 in DM x,y coordinates
@@ -103,7 +80,6 @@ def deformable_mirror(wf, WFS_map, iter, previous_output, apodize=True, plane_na
     ############################
     d_beam = 2 * proper.prop_get_beamradius(wf)  # beam diameter
     act_spacing = d_beam / nact_across_pupil  # actuator spacing [m]
-    # map_spacing = proper.prop_get_sampling(wfo.wf_collection[iw,0])
 
     #######
     # AO
@@ -116,18 +92,19 @@ def deformable_mirror(wf, WFS_map, iter, previous_output, apodize=True, plane_na
     #########
     # Waffle
     #########
-
     if tp.satelite_speck['apply'] and plane_name is not 'woofer':
-        waffle = make_speckle_kxy(tp.satelite_speck['xloc'], tp.satelite_speck['yloc'], tp.satelite_speck['amp'], tp.satelite_speck['phase'])
-        waffle += make_speckle_kxy(tp.satelite_speck['xloc'], -tp.satelite_speck['yloc'], tp.satelite_speck['amp'], tp.satelite_speck['phase'])
+        waffle = make_speckle_kxy(tp.satelite_speck['xloc'], tp.satelite_speck['yloc'],
+                                  tp.satelite_speck['amp'], tp.satelite_speck['phase'])
+        waffle += make_speckle_kxy(tp.satelite_speck['xloc'], -tp.satelite_speck['yloc'],
+                                   tp.satelite_speck['amp'], tp.satelite_speck['phase'])
         dm_map += waffle
 
     #######
     # CDI
     ######
-    if cdip.use_cdi:
+    if cdip.use_cdi and plane_name == cdip.which_DM:
         # dprint(f"Applying CDI probe, lambda = {wfo.wsamples[iw]*1e9:.2f} nm")
-        probe = cdi.CDIprobe(iter)
+        probe = cdi.CDIprobe(iter, nact, wf.iw)
         # Add Probe to DM map
         dm_map = dm_map + probe
 
@@ -142,35 +119,42 @@ def deformable_mirror(wf, WFS_map, iter, previous_output, apodize=True, plane_na
     #########################
     # proper.prop_dm
     #########################
-
-    if debug:
-        pre_ao = unwrap_phase(proper.prop_get_phase(wf)) * wf.lamda / (2 * np.pi)
+    if debug and wf.ib == 0:
+        pre_ao_amp = proper.prop_get_amplitude(wf)
+        pre_ao_phase = proper.prop_get_phase(wf)
+        pre_ao_dist = unwrap_phase(proper.prop_get_phase(wf)) * wf.lamda / (2 * np.pi)
+        dprint(f"lambda = {wf.lamda}, d_beam = {d_beam}")
 
     dmap = proper.prop_dm(wf, dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
 
-    if debug:
-        check_sampling(0, wf, "E-Field after DM", getframeinfo(stack()[0][0]),
-                       units='um')  # check sampling from optics.py
+    if debug and wf.iw == 0 and wf.ib == 0:
+        dprint(plane_name)
+        check_sampling(wf, iter, plane_name+' DM pupil plane', getframeinfo(stack()[0][0]), units='mm')
 
         import matplotlib.pylab as plt
         post_ao = unwrap_phase(proper.prop_get_phase(wf)) * wf.lamda / (2 * np.pi)
-        quick2D(dm_map, title='dm_map', show=False)#, vlim=(-0.5e-7,0.5e-7))
-        quick2D(pre_ao, title='unwrapped wavefront before DM', show=False)#, vlim=(-0.5e-7,0.5e-7))
-        quick2D(dmap, title='the phase map prop_dm is applying', show=False)#, vlim=(-0.5e-7,0.5e-7))
-        plt.figure()
-        plt.plot(pre_ao[len(pre_ao)//2], label=f'pre_ao 1D cut, row {len(pre_ao)//2}')
-        plt.plot(2*dmap[len(dmap)//2], label=f'dmap 1D cut (x2), row {len(dmap)//2}')
-        plt.plot((pre_ao + (2*dmap))[len(dmap)//2], label='difference')
-        plt.legend()
-        plt.xlim(sp.grid_size//2*np.array([1-sp.beam_ratio*1.1, 1+sp.beam_ratio*1.1]))
-        quick2D(pre_ao + (2*dmap), title='diff', show=False, vlim=(-0.5e-7,0.5e-7))
-        quick2D(post_ao, title='unwrapped wavefront after DM', show=False, vlim=(-0.5e-7,0.5e-7))
-        quick2D(proper.prop_get_phase(wf), title='wavefront after DM in phase units', show=True, colormap='sunlight')
+        # quick2D(pre_ao_dist*1e9, title='unwrapped wavefront before DM', zlabel='nm', show=False)  # , vlim=(-0.5e-7,0.5e-7))
+        quick2D(dm_map*1e9, title=f'{plane_name} dm_map (actuator coordinates)', zlabel='nm', show=True)#, vlim=(-0.5e-7,0.5e-7))
+        # quick2D(np.abs(pre_ao_amp)**2, title='Pre-AO Intensity', show=False)#, vlim=(-0.5e-7,0.5e-7))
+        # quick2D(dmap, title='the phase map prop_dm is applying', zlabel='distance (m)', show=False)#, vlim=(-0.5e-7,0.5e-7))
+        # plt.figure()
+        # plt.plot(pre_ao_dist[len(pre_ao_dist)//2], label=f'pre_ao 1D cut, row {len(pre_ao_dist)//2}')
+        # plt.plot(2*dmap[len(dmap)//2], label=f'dmap 1D cut (x2), row {len(dmap)//2}')
+        # plt.plot((pre_ao_dist + (2*dmap))[len(dmap)//2], label='difference')
+        # plt.legend()
+        # plt.xlim(sp.grid_size//2*np.array([1-sp.beam_ratio*1.1, 1+sp.beam_ratio*1.1]))
+        # quick2D(pre_ao + (2*dmap), title='diff', zlabel='m', show=False, vlim=(-0.5e-7,0.5e-7))
+        # quick2D(post_ao, title='unwrapped wavefront after DM', zlabel='m', show=False, vlim=(-0.5e-7,0.5e-7))
+        # quick2D(np.abs(proper.prop_get_amplitude(wf))**2, title='wavefront after DM intensity', show=False)
+        # quick2D(proper.prop_get_phase(wf), title='wavefront after DM in phase units', zlabel='Phase',
+        #          show=True)  # colormap='sunlight',
 
     if apodize:
-        apodize_pupil(wf)
+        # apodize_pupil(wf)
+        hardmask_pupil(wf)
 
     return dmap
+
 
 ################################################################################
 # Ideal AO
@@ -215,19 +199,23 @@ def quick_ao(wf, nact, WFS_map):
     ############################
     d_beam = 2 * proper.prop_get_beamradius(wf)  # beam diameter
     act_spacing = d_beam / nact_across_pupil  # actuator spacing [m]
-    # map_spacing = proper.prop_get_sampling(wfo.wf_collection[iw,0])
 
     ###################################
     # Cropping the Beam from WFS map
     ###################################
     # cropping here by beam_ratio rather than d_beam is valid since the beam size was initialized
     #  using the scaled beam_ratios when the wfo was created
-    # dprint(f"{WFS_map[0,0,0]}")
     ao_map = WFS_map[
-             sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2)+1:
-             sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+2,
-             sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2)+1:
-             sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+2]
+             # sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2)+1:
+             # sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+2,
+             # sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2)+1:
+             # sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+2]
+             sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2)-1:
+             sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+1,
+             sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2)-1:
+             sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+1]
+    # dprint(f"WFS map coordinates are {sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2)-1},"
+    #        f"{sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+1}")
 
     ########################################################
     # Interpolating the WFS map onto the actuator spacing
@@ -238,10 +226,10 @@ def quick_ao(wf, nact, WFS_map):
     sigma = [nyquist_dm/2.355, nyquist_dm/2.355]  # assume we want sigma to be twice the HWHM
     ao_map = ndimage.gaussian_filter(ao_map, sigma=sigma, mode='nearest')
 
-    # f = interpolate.interp2d(range(ao_map.shape[0]), range(ao_map.shape[0]), ao_map, kind='cubic')
-    # ao_map = f(np.linspace(0,ao_map.shape[0],nact), np.linspace(0,ao_map.shape[0], nact))
-    map_spacing = proper.prop_get_sampling(wf)
-    ao_map = proper.prop_magnify(ao_map, map_spacing / act_spacing, nact, QUICK=True)
+    f = interpolate.interp2d(range(ao_map.shape[0]), range(ao_map.shape[0]), ao_map, kind='cubic')
+    ao_map = f(np.linspace(0,ao_map.shape[0],nact), np.linspace(0,ao_map.shape[0], nact))
+    # map_spacing = proper.prop_get_sampling(wf)
+    # ao_map = proper.prop_magnify(ao_map, map_spacing / act_spacing, nact, QUICK=True)
 
     ################################################
     # Converting phase delay to DM actuator height
@@ -283,28 +271,104 @@ def open_loop_wfs(wfo, plane_name='wfs'):
     saves the unwrapped phase [arctan2(imag/real)] of the wfo.wf_collection at each wavelength
 
     It is an idealized image (exact copy) of the wavefront phase per wavelength. Only the map for the first object
-    (the star) is saved
+    (the star) is saved. We have initialized
+
+    Here we hardmask on the WFS map to be a circle around the beam in the pupil plane. This hard masking prevents the
+     DM from acting on non-beam signal, since the DM modelled by proper is a nxn square array, but the beam is nominally
+     circular for circular apertures.
 
     #TODO the way this is saved for naming the WFS_map is going to break if you want to do closed loop WFS on a
-    #woofer-tweeter system
+    #TODO woofer-tweeter system
 
     :param wfo: wavefront object
+    :param plane_name: name of the plane to enable or disable saving the WFS map
     :return: array containing only the unwrapped phase delay of the wavefront; shape=[n_wavelengths], units=radians
     """
+    from skimage.restoration import unwrap_phase
+
     star_wf = wfo.wf_collection[:, 0]
     WFS_map = np.zeros((len(star_wf), sp.grid_size, sp.grid_size))
-    from skimage.restoration import unwrap_phase
+
     for iw in range(len(star_wf)):
+        hardmask_pupil(star_wf[iw])
         phasemap = proper.prop_get_phase(star_wf[iw])
-        # combination of abs_zeros and masking allows phase unwrap to work without discontiuities sometimes occur
-        masked_phase = np.ma.masked_equal(phasemap, 0)
-        WFS_map[iw] = unwrap_phase(masked_phase, wrap_around=[False, False])
+        WFS_map[iw] = unwrap_phase(phasemap, wrap_around=[False, False])
         WFS_map[iw][phasemap==0] = 0
+
     if 'open_loop_wfs' in sp.save_list or sp.closed_loop:
         wfo.save_plane(location='WFS_map')
 
     return WFS_map
 
+
+def hardmask_pupil(wf):
+    """
+    hard-edged circular mask of the pupil plane.
+
+    Masks out the WFS map outside of the beam since the DM modeled by proper can only be a square nxn grid of actuators,
+    and thus the influence function surrounding each DM actuator could  be affecting on-beam pixels, even if the
+    actuator is acting on off-beam signal. In other words, even if a cornerDM actuator doesn't actuate on the beam,
+    if there was non-zero signal in the WFS map, it will try to act on it, and it could 'influence' nearby DM actuators
+    that are acting on the beam.
+
+    This hard-edged mask is different from prop_circular_aperture in that it does not anti-alias the edges of the mask
+    based on the 'fill factor' of the edge pixels. Instead, it has a boolean mask to zero everything > a fixed radius,
+    in this case determined by the grid size and beam ratio of each wavefront passed into it.
+
+    :param wf: a single wavefront
+    :return: nothing is returned but the wf passed into it has been masked
+
+    """
+    phase_map = proper.prop_get_phase(wf)
+    amp_map = proper.prop_get_amplitude(wf)
+
+    # Sizing the Mask
+    h, w = wf.wfarr.shape[:2]
+    center = (int(w / 2), int(h / 2))
+    radius = np.ceil(sp.grid_size * wf.beam_ratio / 2)  # Should scale with wavelength if sp.focused_system=False,
+                                                        # np.ceil used to oversize map so don't clip the beam
+    # Making the Circular Boolean Mask
+    # Y, X = np.ogrid[:h, :w]
+    Y, X = np.mgrid[:h, :w]
+    dist_from_center = np.sqrt((X - center[0]) ** 2 + (Y - center[1]) ** 2)
+    inds = dist_from_center <= radius
+
+    # Applying the Mask to the Complex Array
+    mask = np.zeros_like(phase_map)
+    mask[inds] = 1
+    masked = phase_map * mask
+    wf.wfarr = proper.prop_shift_center(amp_map * np.cos(masked) + 1j * amp_map * np.sin(masked))
+
+    if sp.debug and wf.ib == 0:
+        dprint(f"Radius of hard-edge pupil mask is {radius} pixels")
+        from medis.plot_tools import quick2D
+        quick2D(masked, title=f"Masked phase map in hardmask_pupil, lambda={wf.lamda*1e9} nm", zlabel='phase?')
+
+
+def make_speckle_kxy(kx, ky, amp, dm_phase):
+    """given an kx and ky wavevector,
+    generates a NxN flatmap that has
+    a speckle at that position"""
+    N = tp.ao_act
+    dmx, dmy   = np.meshgrid(
+                    np.linspace(-0.5, 0.5, N),
+                    np.linspace(-0.5, 0.5, N))
+
+    xm=dmx*kx*2.0*np.pi
+    ym=dmy*ky*2.0*np.pi
+    # print 'DM phase', dm_phase
+    ret = amp*np.cos(xm + ym +  dm_phase)
+    return ret
+
+
+# def ao(wf, WFS_map, theta):
+#     if sp.closed_loop:
+#         deformable_mirror(wf, WFS_map, theta)
+#     else:
+#         WFS_map = open_loop_wfs(wf)  # overwrite WFS_map
+#         # dprint(f"WFS_ma.shape = {WFS_map.shape}")
+#         deformable_mirror(wf, WFS_map, theta)
+#
 ################################################################################
 # Full AO
 ################################################################################

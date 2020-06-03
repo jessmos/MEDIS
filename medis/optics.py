@@ -140,8 +140,8 @@ class Wavefronts():
 
         To save, you must pass in the keyword argument plane_name when you call this function from the prescription.
         Specifically for the AO/DM system, there is different behavior in the function depending on the plane name.
-        Therefore, we need to pass the plane_name through to ao.deformable_mirror. Otherwise, we jsut use it for saving
-        and we can pop it out of the kwargs list because no other functins use it for dependant functionality.
+        Therefore, we need to pass the plane_name through to ao.deformable_mirror. Otherwise, we just use it for saving
+        and we can pop it out of the kwargs list because no other functions use it for dependant functionality.
 
         If you are saving the plane at this location, keep in mind it is saved AFTER the function is applied. This
         is desirable for most functions but be careful when using it for prop_lens, etc
@@ -176,7 +176,8 @@ class Wavefronts():
                 if not plane_name in sp.skip_planes:
                     manipulator_output[io][iw] = func(wavefront, *args, **kwargs)
 
-        if self.debug and not plane_name in sp.skip_planes:
+        # Show phase and amplitude of the plane during debugging
+        if self.debug and not plane_name in sp.skip_planes and plane_name is not None:
             self.quicklook(title=plane_name)
 
         manipulator_output = np.array(manipulator_output)
@@ -262,37 +263,41 @@ class Wavefronts():
         if wf == None:
             wf = self.wf_collection[0,0]
 
-        after_dm = proper.prop_get_amplitude(wf)
-        phase_afterdm = proper.prop_get_phase(wf)
+        amp_map = proper.prop_get_amplitude(wf)
+        phase_map = proper.prop_get_phase(wf)
 
         fig = plt.figure(figsize=(12, 10))
-        ax1 = plt.subplot2grid((3, 2), (0, 0), rowspan=2)
-        ax2 = plt.subplot2grid((3, 2), (0, 1), rowspan=2)
-        ax3 = plt.subplot2grid((3, 2), (2, 0))
-        ax4 = plt.subplot2grid((3, 2), (2, 1))
+        ax1 = plt.subplot2grid((1, 2), (0, 0), rowspan=2)  # ((shape of grid to place axis x,y),(location x,y))
+        ax2 = plt.subplot2grid((1, 2), (0, 1), rowspan=2)
+        # ax3 = plt.subplot2grid((3, 2), (2, 0))
+        # ax4 = plt.subplot2grid((3, 2), (2, 1))
         if logZ:
-            ax1.imshow(after_dm, origin='lower', cmap="YlGnBu_r", norm=LogNorm())
+            im1 = ax1.imshow(amp_map, origin='lower', cmap="YlGnBu_r", norm=LogNorm())
         else:
-            ax1.imshow(after_dm, origin='lower', cmap="YlGnBu_r")
-
+            im1 = ax1.imshow(amp_map, origin='lower', cmap="YlGnBu_r")
         ax1.set_title('Amplitude Map')
-        ax2.imshow(phase_afterdm, origin='lower', cmap=sunlight)  # , vmin=-0.5, vmax=0.5)
+        plt.colorbar(im1, ax=ax1)
+
+        im2 = ax2.imshow(phase_map, origin='lower', cmap=sunlight)  # , vmin=-0.5, vmax=0.5)
         ax2.set_title('Phase Map')
+        plt.colorbar(im2, ax=ax2)
 
-        ax3.plot(after_dm[int(sp.grid_size / 2)])
-        ax3.plot(np.sum(np.eye(sp.grid_size) * after_dm, axis=1), label=f'row {int(sp.grid_size / 2)}')
-        ax3.legend()
-
-        # plt.plot(np.sum(after_dm,axis=1)/after_dm[128,128])
-
-        ax4.plot(phase_afterdm[int(sp.grid_size / 2)], label=f'row {int(sp.grid_size / 2)}')
-        ax4.legend()
-        # ax4.plot(np.sum(np.eye(ap.grid_size)*phase_afterdm,axis=1))
-        plt.xlim([0, proper.prop_get_gridsize(wf)])
+        # ax3.plot(after_dm[int(sp.grid_size / 2)])
+        # ax3.plot(np.sum(np.eye(sp.grid_size) * after_dm, axis=1), label=f'row {int(sp.grid_size / 2)}')
+        # ax3.legend()
+        #
+        # # plt.plot(np.sum(after_dm,axis=1)/after_dm[128,128])
+        #
+        # ax4.plot(phase_afterdm[int(sp.grid_size / 2)], label=f'row {int(sp.grid_size / 2)}')
+        # ax4.legend()
+        # # ax4.plot(np.sum(np.eye(ap.grid_size)*phase_afterdm,axis=1))
+        # plt.xlim([0, proper.prop_get_gridsize(wf)])
         if not title:
             title = input(f"Always Add A Title\n "
-                          f"Please Enter Title:")
-        fig.suptitle(f"plane: {title}, lambda: {wf.lamda} m, body: {wf.name}", fontsize=18)
+                          f"Please Enter Plane Name:")
+            fig.suptitle(f"plane: {title}, lambda: {wf.lamda} m, body: {wf.name}", fontsize=18)
+        else:
+            fig.suptitle(f"plane: {title}, lambda: {wf.lamda} m, body: {wf.name}", fontsize=18)
 
         plt.subplots_adjust(top=0.9)
 
@@ -390,34 +395,24 @@ def circular_mask(h, w, center=None, radius=None):
         radius = min(center[0], center[1], w-center[0], h-center[1])
 
     Y, X = np.ogrid[:h, :w]
+    # Y, X = np.mgrid[:h, :w]
     dist_from_center = np.sqrt((X - center[0])**2 + (Y-center[1])**2)
 
     mask = dist_from_center <= radius
+
     return mask
 
 
 def apodize_pupil(wf):
-    # phase_map = proper.prop_get_phase(wf)
-    # amp_map = proper.prop_get_amplitude(wf)
-    # h, w = wf.wfarr.shape[:2]
-    # wavelength = wf.lamda
-    # scale = ap.wvl_range[0] / wavelength
-    # inds = circular_mask(h, w, radius=scale * 0.95 * h * sp.beam_ratio / 2)  #TODO remove hardcoded sizing, especially if use is default
-    # mask = np.zeros_like(phase_map)
-    # mask[inds] = 1
-    # smooth_mask = gaussian_filter(mask, 1.5, mode='nearest')  #TODO remove hardcoded sizing, especially if use is default
-    # smoothed = phase_map * smooth_mask
-    # wf.wfarr = proper.prop_shift_center(amp_map * np.cos(smoothed) + 1j * amp_map * np.sin(smoothed))
     phase_map = proper.prop_get_phase(wf)
     amp_map = proper.prop_get_amplitude(wf)
     h, w = wf.wfarr.shape[:2]
     wavelength = wf.lamda
     scale = ap.wvl_range[0] / wavelength
-    inds = circular_mask(h, w,
-                         radius=scale * 0.95 * h * sp.beam_ratio / 2)  # TODO remove hardcoded sizing, especially if use is default
+    inds = circular_mask(h, w, radius=scale * 0.95 * h * sp.beam_ratio / 2)  #TO DO remove hardcoded sizing, especially if use is default
     mask = np.zeros_like(phase_map)
     mask[inds] = 1
-    smooth_mask = mask
+    smooth_mask = gaussian_filter(mask, 1.5, mode='nearest')  #TO DO remove hardcoded sizing, especially if use is default
     smoothed = phase_map * smooth_mask
     wf.wfarr = proper.prop_shift_center(amp_map * np.cos(smoothed) + 1j * amp_map * np.sin(smoothed))
 
