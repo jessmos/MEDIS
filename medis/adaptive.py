@@ -211,9 +211,9 @@ def quick_ao(wf, nact, WFS_map):
              # sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2)+1:
              # sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+2]
              sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2)-1:
-             sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+1,
+             sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+2,
              sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2)-1:
-             sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+1]
+             sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+2]
     # dprint(f"WFS map coordinates are {sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2)-1},"
     #        f"{sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+1}")
 
