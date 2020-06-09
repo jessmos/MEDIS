@@ -185,21 +185,22 @@ class Telescope_params:
         self.fnum_primary = 12  # f-number of primary
         self.flen_primary = 25  # [m] focal length of primary
 
-        self.use_atmos = True
-        self.obscure = False
-        self.legs_frac = 0.03
+        self.use_atmos = True  # Create and apply atmospheric maps (units in phase delay)
+        self.obscure = False  # Obscure the primary by the secondary mirror
+        self.legs_frac = 0.03  # fractional width of the legs relative to the secondary mirror diameter
 
         # AO System Settings
-        self.use_ao = True
+        self.use_ao = True  # if False, and DM returns an idealized 'flat'
         self.ao_act = 60  # number of actuators on the DM on one axis (proper only models nxn square DMs)
         self.piston_error = False  # flag for allowing error on DM surface shape
         self.fit_dm = True  # flag to use DM surface fitting (see proper manual pg 52, the FIT switch)
         self.satelite_speck = {'apply': False, 'phase': np.pi / 5., 'amp': 12e-9, 'xloc': 12, 'yloc': 12}
 
         # Ideal Detector Params (not bothering with MKIDs yet)
-        self.detector = 'ideal'  # 'MKIDs'
-        self.array_size = np.array([129, 129])  # np.array([125,80])
-        self.wavecal_coeffs = [1.e9 / 12, -157]  # assume linear for now 800nm = -90deg, 1500nm = -30deg
+        #TODO Rupert should these be moved into mkid params? Are they still used?
+        # self.detector = 'ideal'  # 'MKIDs'
+        # self.array_size = np.array([129, 129])  # np.array([125,80])
+        # self.wavecal_coeffs = [1.e9 / 12, -157]  # assume linear for now 800nm = -90deg, 1500nm = -30deg
                                                 # used to make phase cubes. I assume this has something to do with the
                                                 # QE of MKIDs at different wavelengths?
         self.pix_shift = [0, 0]  # False?  Shifts the central star to off-axis (mimics conex mirror, tip/tilt error)
