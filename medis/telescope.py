@@ -176,9 +176,9 @@ class Telescope():
 
             # Initialize CDI probes
             if cdip.use_cdi is True:
-                self.theta_series = cdi.gen_CDI_phase_stream()
+                cdip.theta_series = cdi.gen_CDI_phase_stream()
             else:
-                self.theta_series = np.zeros(sp.numframes) * np.nan  # string of Nans #todo comment seems wrong - check
+                cdip.theta_series = np.zeros(sp.numframes) * np.nan  # string of Nans
 
     def __call__(self, *args, **kwargs):
         """ Take the observation (generate the fields sequence) """
@@ -227,7 +227,7 @@ class Telescope():
         """ Create fields tensor for an initialised Telecope instance """
 
         t0 = sp.startframe
-        self.kwargs = {'theta_series': self.theta_series}
+        self.kwargs = {}
         self.cpx_sequence = None
 
         if self.markov:  # time steps are independent
@@ -261,7 +261,6 @@ class Telescope():
                 if sp.save_to_disk: self.save_fields(self.cpx_sequence)
 
         else:
-            print('*** This is untested ***')
             self.cpx_sequence = np.zeros((sp.numframes, len(sp.save_list),
                                           ap.n_wvl_init, 1 + len(ap.contrast),
                                           sp.grid_size, sp.grid_size), dtype=np.complex)
