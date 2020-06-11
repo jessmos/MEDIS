@@ -186,6 +186,9 @@ class Wavefronts():
             setattr(self, plane_name, manipulator_output)
 
         if zero_outside:
+            dprint('Rupert--debug this for gen_telescope. You shouldnt need this after correct masking of WFS map')
+            #TODO Rupert verifies if abs_zeros is still necessary. Gen telescope should use new version of adaptive
+            # that eliminates the need for abs_zeros (unless other things are wrong in optical train
             if sp.verbose: print(f'Zeroing outside the beam after {plane_name}')
             self.abs_zeros()
 
