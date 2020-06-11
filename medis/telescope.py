@@ -180,6 +180,12 @@ class Telescope():
             else:
                 cdip.theta_series = np.zeros(sp.numframes) * np.nan  # string of Nans
 
+            # Remove AO planes from save_list if use_ao is False
+            if not tp.use_ao and 'woofer' in sp.save_list:
+                sp.save_list.remove('woofer')
+            if not tp.use_ao and 'tweeter' in sp.save_list:
+                sp.save_list.remove('tweeter')
+
     def __call__(self, *args, **kwargs):
         """ Take the observation (generate the fields sequence) """
         if self.fields_exists:
