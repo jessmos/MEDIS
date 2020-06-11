@@ -67,7 +67,7 @@ class Telescope():
         # if self.fields_exists:
         #     self.load_fields()
         if self.save_exists:
-            print(f"\nLoading telescope instance from\n\n\t{iop.telescope}\n")
+            print(f"\nLoading telescope instance from\n\t{iop.telescope}\n")
             with open(iop.telescope, 'rb') as handle:
                 load = pickle.load(handle)
                 self.__dict__ = load.__dict__  # replace the contents
@@ -88,18 +88,15 @@ class Telescope():
                 raise FileExistsError
 
             fullprescription = fullprescription[0]
-            print(f'Using prescription {fullprescription}')
             if os.path.exists(self.target):
-                print(f"Prescription already exists at \n\n\t{self.target} \n\n... skipping copying\n\n")
+                print(f'Using prescription {fullprescription}\n')
             else:
-                print(f"Copying over prescription {fullprescription}")
+                print(f"Copying over prescription {fullprescription}\n")
 
                 if not os.path.isdir(iop.prescopydir):
                     os.makedirs(iop.prescopydir, exist_ok=True)
                 shutil.copyfile(fullprescription, self.target)
 
-            #import prescription params
-            # sys.path.insert(0, os.path.dirname(self.target))
             sys.path.insert(0, os.path.dirname(fullprescription))  # load from the original prescription incase user is editting
             pres_module = importlib.import_module(tp.prescription)
             tp.__dict__.update(pres_module.tp.__dict__)  #  update tp with the contents of the prescription
@@ -107,8 +104,8 @@ class Telescope():
             # initialize atmosphere
             iop.atmosdir = iop.atmosdir.format(sp.grid_size, sp.beam_ratio, sp.numframes)
             if glob.glob(iop.atmosdir+'/*.fits'):
-                print(f"Atmosphere maps already exist at \n\n\t{iop.atmosdir}"
-                      f" \n\n... skipping generation\n\n")
+                print(f"Atmosphere maps already exist at \n\t{iop.atmosdir}"
+                      f" \n... skipping generation\n\n")
             else:
                 if not os.path.isdir(iop.atmosdir):
                     os.makedirs(iop.atmosdir, exist_ok=True)
@@ -117,8 +114,8 @@ class Telescope():
             # initialize aberrations
             iop.aberdir = iop.aberdir.format(sp.grid_size, sp.beam_ratio, sp.numframes)
             if glob.glob(iop.aberdir + '/*.fits'):
-                print(f"Aberration maps already exist at \n\n\t{iop.aberdir} "
-                      f"\n\n... skipping generation\n\n")
+                print(f"Aberration maps already exist at \n\t{iop.aberdir} "
+                      f"\n... skipping generation\n\n")
             else:
                 if not os.path.isdir(iop.aberdir):
                     os.makedirs(iop.aberdir, exist_ok=True)
