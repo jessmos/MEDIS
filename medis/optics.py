@@ -173,11 +173,11 @@ class Wavefronts():
         manipulator_output = [[[] for _ in range(len(self.wsamples))] for _ in range(self.num_bodies)]
         for iw, sources in enumerate(self.wf_collection):
             for io, wavefront in enumerate(sources):
-                if not plane_name in sp.skip_planes:
+                if not func.__name__ in sp.skip_functions:
                     manipulator_output[io][iw] = func(wavefront, *args, **kwargs)
 
         # Show phase and amplitude of the plane during debugging
-        if self.debug and not plane_name in sp.skip_planes and plane_name is not None:
+        if self.debug and not func.__name__ in sp.skip_functions:
             self.quicklook(title=plane_name)
 
         manipulator_output = np.array(manipulator_output)

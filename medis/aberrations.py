@@ -99,23 +99,23 @@ def add_aber(wf, aberdir=None, step=0, lens_name=None):
     :return returns nothing but will act upon a given wavefront and apply new or loaded-in aberration map
     """
     # TODO this does not currently loop over time, so it is not using quasi-static abberations.
-    # if tp.use_aber is False:
-    #     pass  # don't do anything. Putting this type of check here allows universal toggling on/off rather than
-    #           # commenting/uncommenting in the proper perscription
-    # else:
+    if tp.use_aber is False:
+        pass  # don't do anything. Putting this type of check here allows universal toggling on/off rather than
+              # commenting/uncommenting in the proper perscription
+    else:
     # dprint("Adding Abberations")
 
-    # Load in or Generate Aberration Map
-    # iop.aberdata = f"gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
-    # iop.aberdir = os.path.join(iop.testdir, iop.aberroot, iop.aberdata)
-    filename = f"{iop.aberdir}/t{0}_{lens_name}.fits"
-    # print(f'Adding Abberations from {filename}')
+        # Load in or Generate Aberration Map
+        # iop.aberdata = f"gridsz{sp.grid_size}_bmratio{sp.beam_ratio}_tsteps{sp.numframes}"
+        # iop.aberdir = os.path.join(iop.testdir, iop.aberroot, iop.aberdata)
+        filename = f"{iop.aberdir}/t{0}_{lens_name}.fits"
+        # print(f'Adding Abberations from {filename}')
 
-    # if not os.path.isfile(filename):
-    #     generate_maps(aber_vals, d_lens, lens_name)
+        # if not os.path.isfile(filename):
+        #     generate_maps(aber_vals, d_lens, lens_name)
 
-    phase_map = readFITS(filename)
-    proper.prop_add_phase(wf, phase_map)     # Add Phase Map
+        phase_map = readFITS(filename)
+        proper.prop_add_phase(wf, phase_map)     # Add Phase Map
 
 
 def add_zern_ab(wf, zern_order=[2,3,4], zern_vals=np.array([175,-150,200])*1.0e-9):
@@ -139,7 +139,10 @@ def add_zern_ab(wf, zern_order=[2,3,4], zern_vals=np.array([175,-150,200])*1.0e-
     9 Y clover (trefoil)
     10 X clover (trefoil)
     """
-    proper.prop_zernikes(wf, zern_order, zern_vals)
+    if not tp.add_zern:
+        pass
+    else:
+        proper.prop_zernikes(wf, zern_order, zern_vals)
 
 
 def randomize_zern_values(zern_orders):
