@@ -19,7 +19,7 @@ import medis.medis_main as mm
 #################################################################################################
 #################################################################################################
 #################################################################################################
-testname = 'SCExAO-test1'
+testname = 'SCExAO-CDI1'
 iop.update_datadir(f"/home/captainkay/mazinlab/MKIDSim/CDIsim_data/")
 iop.update_testname(testname)
 iop.makedir()
@@ -40,7 +40,7 @@ sp.grid_size = 512  # creates a nxn array of samples of the wavefront
 sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
 
 # Companion
-ap.companion = True
+ap.companion = False
 ap.contrast = [5e-2]
 ap.companion_xy = [[5, -5]]  # units of this are lambda/tp.entrance_d
 ap.n_wvl_init = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
@@ -50,35 +50,38 @@ ap.wvl_range = np.array([800, 1400]) / 1e9  # wavelength range in [m] (formerly 
 # eg. DARKNESS band is [800, 1500], J band =  [1100,1400])
 
 # CDI
-cdip.use_cdi = True
+cdip.use_cdi = False
 cdip.probe_w = 10  # [actuator coordinates] width of the probe
 cdip.probe_h = 30  # [actuator coordinates] height of the probe
-cdip.probe_center = 15  # [actuator coordinates] center position of the probe
-cdip.probe_amp = 2e-6  # [m] probe amplitude, scale should be in units of actuator height limits
+cdip.probe_center = (15,15)  # [actuator coordinates] center position of the probe
+cdip.probe_amp = 2e-8  # [m] probe amplitude, scale should be in units of actuator height limits
+cdip.which_DM = 'tweeter'
+cdip.show_probe = True
+cdip.phs_intervals = np.pi/2
 
 
 # Toggles for Aberrations and Control
-tp.obscure = False
-tp.use_atmos = True
-tp.use_aber = True
-tp.use_ao = True
-tp.use_cdi = False
+tp.obscure = True
+tp.use_atmos = False
+tp.use_aber = False
+tp.add_zern = False
+tp.use_ao = False
+sp.skip_functions = ['add_obscurations']  # 'coronagraph'  skip_planes is based on plane_name, not based on function name. Can
 
 # Plotting
-sp.show_wframe = False  # plot white light image frame
+sp.show_wframe = True  # plot white light image frame
 sp.show_spectra = True  # Plot spectral cube at single timestep
 sp.spectra_cols = 3  # number of subplots per row in view_spectra
 sp.show_tseries = False  # Plot full timeseries of white light frames
 sp.tseries_cols = 5  # number of subplots per row in view_timeseries
 sp.show_planes = True
 sp.maskd_size = 256
-sp.verbose = True
+sp.verbose = False
 sp.debug = False
 
 # Saving
 sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
-sp.save_list = ['entrance_pupil','woofer', 'tweeter', 'post-DM-focus', 'coronagraph', 'detector']  # list of locations in optics train to save
-
+sp.save_list = ['entrance_pupil', 'woofer', 'tweeter', 'post-DM-focus',  'detector']  # list of locations in optics train to save
 
 if __name__ == '__main__':
     # =======================================================================
@@ -112,7 +115,7 @@ if __name__ == '__main__':
                            # f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio} ",
                            # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
                 logZ=True,
-                dx=fp_sampling,
+                dx=fp_sampling[0],
                 vlim=(None,None))  # (1e-3, 1e-1)
 
     # Plotting Spectra at last tstep
@@ -134,8 +137,8 @@ if __name__ == '__main__':
                                             f"AO={tp.use_ao}. CDI={cdip.use_cdi}",
                         subplt_cols=sp.tseries_cols,
                         logZ=True,
-                        vlim=(1e-10, 1e-4))
-                        # dx=fp_sampling[0])
+                        vlim=(1e-10, 1e-4),
+                        dx=fp_sampling[0])
 
     # Plotting Selected Plane
     if sp.show_planes:

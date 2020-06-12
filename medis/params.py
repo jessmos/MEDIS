@@ -123,7 +123,7 @@ class Simulation_params:
         # Reading/Saving Params
         self.save_to_disk = False  # Saves observation sequence (timestep, wavelength, x, y)
         self.save_list = ['detector']  # list of locations in optics train to save
-        self.skip_planes = []  # You can tell Wavefronts to ignore planes if it sees them by including the plane name here
+        self.skip_functions = []  # list of functions not to be applied universally by optics.Wavefronts.loop_over_function
         self.memory_limit = 10  # number of giga-bytes for sixcube of complex fields before chunking happens
         self.checkpointing = 500  # int or None number of timesteps before complex fields sixcube is saved
                                  # minimum of this and max allowed steps for memory reasons takes priority

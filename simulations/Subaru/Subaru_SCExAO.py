@@ -100,9 +100,9 @@ OAP2_aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4
 tp.cg_type = 'Gaussian'
 # tp.cg_size = 3  # physical size or lambda/D size
 tp.cg_size = 2  # physical size or lambda/D size
-
 tp.cg_size_units = "l/D"  # "m" or "l/D"
 tp.fl_cg_lens = 0.1021  # m
+# tp.fl_cg_lens = 0.255  # m
 tp.lyot_size = 0.9  # units are in fraction of surface blocked
 
 # ------------------------------
@@ -212,7 +212,7 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     # CPA from Effective Primary
     wfo.loop_collection(aber.add_aber, step=PASSVALUE['iter'], lens_name='effective-primary')
     # Zernike Aberrations- Low Order
-    # wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
+    wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
     wfo.loop_collection(opx.prop_pass_lens, tp.flen_nsmyth, tp.dist_nsmyth_ao1)
     ########################################
     # AO188 Propagation
@@ -224,14 +224,14 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     # AO System
     if tp.use_ao:
         WFS_map = ao.open_loop_wfs(wfo)
-        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], apodize=True,
-                            plane_name='woofer', debug=True)  # don't use PASSVALUE['WFS_map'] here because open loop
+        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], apodize=False,
+                            plane_name='woofer', debug=False)  # don't use PASSVALUE['WFS_map'] here because open loop
     # ------------------------------------------------
     wfo.loop_collection(proper.prop_propagate, tp.dist_dm_ao2)
 
     # AO188-OAP2
     wfo.loop_collection(aber.add_aber, step=PASSVALUE['iter'], lens_name='ao188-OAP2')
-    # wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)
+    wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)
     wfo.loop_collection(opx.prop_pass_lens, tp.fl_ao2, tp.dist_oap2_focus)
 
     ########################################
@@ -245,17 +245,18 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     # AO System
     if tp.use_ao:
         WFS_map = ao.open_loop_wfs(wfo)
-        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], apodize=True,
-                            plane_name='tweeter', debug=True)
+        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], apodize=False,
+                            plane_name='tweeter', debug=False)
     # ------------------------------------------------
     wfo.loop_collection(proper.prop_propagate, tp.fl_SxOAPG)  # from tweeter-DM to OAP2
 
     # SXExAO Reimaging 2
     wfo.loop_collection(aber.add_aber, step=PASSVALUE['iter'], lens_name='SxOAP2')
-    # wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)
+    wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)
     wfo.loop_collection(opx.prop_pass_lens, tp.fl_SxOAP2, tp.fl_SxOAP2, plane_name='post-DM-focus')  #tp.dist_sl2_focus
-    wfo.loop_collection(opx.check_sampling, PASSVALUE['iter'], "post-DM-focus",
-                        getframeinfo(stack()[0][0]), units='nm')
+
+    # wfo.loop_collection(opx.check_sampling, PASSVALUE['iter'], "post-DM-focus",
+    #                     getframeinfo(stack()[0][0]), units='nm')
 
     # Coronagraph
     # settings should be put into tp, and are not implicitly passed here
