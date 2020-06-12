@@ -325,10 +325,9 @@ def hardmask_pupil(wf):
     # Sizing the Mask
     h, w = wf.wfarr.shape[:2]
     center = (int(w / 2), int(h / 2))
-    radius = np.ceil(sp.grid_size * wf.beam_ratio / 2)  # Should scale with wavelength if sp.focused_system=False,
+    radius = np.floor(sp.grid_size * wf.beam_ratio / 2)  # Should scale with wavelength if sp.focused_system=False,
                                                         # np.ceil used to oversize map so don't clip the beam
     # Making the Circular Boolean Mask
-    # Y, X = np.ogrid[:h, :w]
     Y, X = np.mgrid[:h, :w]
     dist_from_center = np.sqrt((X - center[0]) ** 2 + (Y - center[1]) ** 2)
     inds = dist_from_center <= radius
