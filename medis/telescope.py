@@ -73,7 +73,6 @@ class Telescope():
                 self.__dict__ = load.__dict__  # replace the contents
                 self.save_exists = True
         else:
-            print(f"\nInitialising new telescope instance\n")
             # copy over the prescription
             iop.prescopydir = iop.prescopydir.format(tp.prescription)
             self.target = os.path.join(iop.prescopydir, tp.prescription+'.py')
@@ -103,7 +102,7 @@ class Telescope():
 
             # initialize atmosphere
             iop.atmosdir = iop.atmosdir.format(sp.grid_size, sp.beam_ratio, sp.numframes)
-            if glob.glob(iop.atmosdir+'/*.fits'):
+            if glob.glob(iop.atmosdir+'/*.fits') and sp.verbose:
                 print(f"Atmosphere maps already exist at \n\t{iop.atmosdir}"
                       f" \n... skipping generation\n\n")
             else:
@@ -113,7 +112,7 @@ class Telescope():
 
             # initialize aberrations
             iop.aberdir = iop.aberdir.format(sp.grid_size, sp.beam_ratio, sp.numframes)
-            if glob.glob(iop.aberdir + '/*.fits'):
+            if glob.glob(iop.aberdir + '/*.fits') and sp.verbose:
                 print(f"Aberration maps already exist at \n\t{iop.aberdir} "
                       f"\n... skipping generation\n\n")
             else:
@@ -171,7 +170,7 @@ class Telescope():
             modes = [sp.chunking, sp.ao_delay, self.parrallel,
                      sp.closed_loop]
 
-            # Initialize CDI probes
+            # Initialize List of phases of CDI probes to apply
             cp.theta_series = cdi.probe_phasestream()
 
             # Remove AO planes from save_list if use_ao is False
