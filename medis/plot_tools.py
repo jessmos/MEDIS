@@ -12,10 +12,11 @@ import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import ImageGrid
 import warnings
 
-from medis.params import tp, sp, iop, ap, cdip
+from medis.params import tp, sp, iop, ap, cp
 from medis.utils import dprint
 import medis.optics as opx
 from medis.twilight_colormaps import sunlight
+from proper import prop_get_beamradius
 
 # MEDIUM_SIZE = 17
 # plt.rc('font', size=MEDIUM_SIZE)  # controls default text sizes
@@ -73,7 +74,13 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None),
     # Setting Logscale
     if colormap == 'sunlight':
         colormap = sunlight
-    norm = None if not logZ else (LogNorm() if vlim[0] > 0 else SymLogNorm(1e-7))
+    if not logZ:
+        norm = None
+    elif vlim[0] is None or vlim[0] > 0:
+        norm = LogNorm()
+    else:
+        norm = SymLogNorm()
+    # norm = None if not logZ else LogNorm() if vlim[0] > 0 else SymLogNorm(1e-7))
     cax = ax.imshow(image, interpolation='none', origin='lower', vmin=vlim[0], vmax=vlim[1],
                     norm=norm, cmap=colormap)
 
@@ -199,7 +206,7 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
         if dx is not None:
             dx[w] = dx[w] * 1e6  # [convert to um]
             # dprint(f"sampling = {sampl[w]}")
-            tic_spacing = np.linspace(0, sp.maskd_size, 5)  # 5 (number of ticks) is set by hand, arbitrarily chosen
+            tic_spacing = np.linspace(0, slice.shape[0], 5)  # 5 (number of ticks) is set by hand, arbitrarily chosen
             tic_lables = np.round(
                 np.linspace(-dx[w] * sp.maskd_size / 2, dx[w] * sp.maskd_size / 2, 5)).astype(int)  # nsteps must be same as tic_spacing
             tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
@@ -262,9 +269,8 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
     plt.close('all')
 
     # Recreate CDI phase stream for plot titles
-    if cdip.use_cdi:
-        from medis.CDI import gen_CDI_phase_stream
-        phases = gen_CDI_phase_stream()
+    if cp.use_cdi:
+        phases = cp.theta_series
 
     # Create figure & adjust subplot number, layout, size, whitespace
     fig = plt.figure()
@@ -283,25 +289,25 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
     for t in range(n_tsteps):
         ax = fig.add_subplot(gs[t])
 
-        # Converting Sampling Units to Readable numbers
-        if dx[t] < 1e-6:
-            dx[t] *= 1e6  # [convert to um]
-            axlabel = 'um'
-        elif dx[t] < 1e-3:
-            dx[t] *= 1e3  # [convert to mm]
-            axlabel = 'mm'
-        elif 1e-2 > dx[t] > 1e-3:
-            dx[t] *= 1e2  # [convert to cm]
-            axlabel = 'cm'
-        else:
-            axlabel = 'm'
-
         # X,Y lables
         if dx is not None:
-            # dprint(f"sampling = {sampl[w]}")
-            tic_spacing = np.linspace(0, sp.maskd_size, 5)  # 5 (# of ticks) is just set by hand, arbitrarily chosen
+            # Converting Sampling Units to Readable numbers
+            if dx < 1e-6:
+                dx *= 1e6  # [convert to um]
+                axlabel = 'um'
+            elif dx < 1e-3:
+                dx *= 1e3  # [convert to mm]
+                axlabel = 'mm'
+            elif 1e-2 > dx > 1e-3:
+                dx *= 1e2  # [convert to cm]
+                axlabel = 'cm'
+            else:
+                axlabel = 'm'
+
+            # Setting Tick Spacing
+            tic_spacing = np.linspace(0, img_tseries[t].shape[0], 5)  # 5 (# of ticks) is just set by hand, arbitrarily chosen
             tic_lables = np.round(
-                np.linspace(-dx[t] * sp.maskd_size / 2, dx[t] * sp.maskd_size / 2, 5)).astype(
+                np.linspace(-dx * sp.maskd_size / 2, dx * sp.maskd_size / 2, 5)).astype(
                 int)  # nsteps must be same as tic_spacing
             tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
             tic_spacing[-1] = tic_spacing[-1] - 1  # hack for edge effects
@@ -312,7 +318,7 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
 
         if logZ:
             if vlim[0] is not None and vlim[0] <= 0:
-                if cdip.use_cdi and not np.isnan(phases[t]):
+                if cp.use_cdi and not np.isnan(phases[t]):
                     ax.set_title(f"t={t * sp.sample_time}, CDI" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
                 else:
                     ax.set_title(f"t={t*sp.sample_time}")
@@ -321,7 +327,7 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
                                norm=SymLogNorm(linthresh=1e-5), cmap="YlGnBu_r")
                 clabel = "Log Normalized Intensity"
             else:
-                if cdip.use_cdi and not np.isnan(phases[t]):
+                if cp.use_cdi and not np.isnan(phases[t]):
                     ax.set_title(f"t={t * sp.sample_time}, CDI" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
                 else:
                     ax.set_title(f"t={t * sp.sample_time}")
@@ -330,7 +336,7 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
                                norm=LogNorm(), cmap="YlGnBu_r")
                 clabel = "Log Normalized Intensity"
         else:
-            if cdip.use_cdi and not np.isnan(phases[t]):
+            if cp.use_cdi and not np.isnan(phases[t]):
                 ax.set_title(f"t={t * sp.sample_time}, CDI" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
             else:
                 ax.set_title(f"t={t * sp.sample_time}")
@@ -412,7 +418,7 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=[None, No
         # Distinguish plotting z-axis in phase units or intensity units
         if plot_plane == "atmosphere" or plot_plane == "entrance_pupil":
             plane = np.sum(np.angle(plane[-1]), axis=(0,1))
-            plane = opx.extract_center(plane)
+            plane = opx.extract_center(plane, new_size=np.int(sp.grid_size*sp.beam_ratio)+10)
             logZ[p] = False
             vlim[p] = [None, None]
             phs = " phase"
@@ -420,7 +426,7 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=[None, No
             # only show the star phase map since phase at other bodies just offsets to shift focal plane position
             plane = np.sum(np.angle(plane[-1]), axis=(0))
             plane = plane[0]
-            plane = opx.extract_center(plane)
+            plane = opx.extract_center(plane, new_size=np.int(sp.grid_size*sp.beam_ratio)+10)
             logZ[p] = False
             vlim[p] = [-np.pi, np.pi]
             phs = " phase"

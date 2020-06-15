@@ -16,7 +16,7 @@ specific prescription than the original optics_propagate, which had more toggles
 import numpy as np
 
 
-from medis.params import iop, sp, ap, tp, cdip, atmp, mp
+from medis.params import iop, sp, ap, tp, cp, atmp, mp
 from medis.utils import dprint
 import medis.optics as opx
 from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
@@ -58,8 +58,8 @@ tp.use_aber = False
 tp.use_ao = True
 tp.act_woofer = 16  # A 14x14 grid gives the closest nact to 188 (169 act). But, we oversize the DM by one actuator in
                     # each direction in the DM code, so a 16x16 grid gives a roughly 14x14 grid over the beam
-cdip.use_cdi = False
-cdip.probe_center = -12
+cp.use_cdi = False
+cp.probe_center = -12
 
 # Plotting
 sp.show_wframe = True  # Plot white light image frame
@@ -107,7 +107,7 @@ if __name__ == '__main__':
         img = np.sum(focal_plane[sp.numframes-1], axis=0)  # sum over wavelength
         quick2D(opx.extract_center(img), #focal_plane[sp.numframes-1]),
                 title=f"White light image at timestep {sp.numframes} \n"  # img
-                           f"AO={tp.use_ao}, CDI={cdip.use_cdi} ",
+                           f"AO={tp.use_ao}, CDI={cp.use_cdi} ",
                            # f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio} ",
                            # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
                 logZ=True,
@@ -119,7 +119,7 @@ if __name__ == '__main__':
         tstep = sp.numframes-1
         view_spectra(focal_plane[sp.numframes-1],
                       title=f"Intensity per Spectral Bin at Timestep {tstep} \n"
-                            f" AO={tp.use_ao}, CDI={cdip.use_cdi}",
+                            f" AO={tp.use_ao}, CDI={cp.use_cdi}",
                             # f"Beam Ratio = {sp.beam_ratio:.4f}",#  sampling = {sampling*1e6:.4f} [um/gridpt]",
                       logZ=True,
                       subplt_cols=sp.spectra_cols,
@@ -130,7 +130,7 @@ if __name__ == '__main__':
     if sp.show_tseries:
         img_tseries = np.sum(focal_plane, axis=1)  # sum over wavelength
         view_timeseries(img_tseries, title=f"White Light Timeseries\n"
-                                            f"AO={tp.use_ao}. CDI={cdip.use_cdi}",
+                                            f"AO={tp.use_ao}. CDI={cp.use_cdi}",
                         subplt_cols=sp.tseries_cols,
                         logZ=True,
                         vlim=(1e-6, 1e-3))

@@ -27,7 +27,7 @@ from pprint import pprint
 
 from medis.telescope import Telescope
 from medis.MKIDS import Camera
-from medis.params import sp, ap, tp, iop, atmp, cdip, mp
+from medis.params import sp, ap, tp, iop, atmp, cp, mp
 
 ################################################################################################################
 ################################################################################################################
@@ -68,7 +68,7 @@ class RunMedis():
 
         iop.update_testname(self.name)
         # for storing a checking between tests
-        self.params = {'ap': ap, 'tp': tp, 'atmp': atmp, 'cdip': cdip, 'iop': iop, 'sp': sp, 'mp': mp}
+        self.params = {'ap': ap, 'tp': tp, 'atmp': atmp, 'cp': cp, 'iop': iop, 'sp': sp, 'mp': mp}
 
         # show all the parameters input into the simulation (before some are updated by Telescope and Camera)
         if sp.verbose:
@@ -95,11 +95,11 @@ class RunMedis():
                 now = datetime.now().strftime("%m:%d:%Y_%H-%M-%S")
                 backup_testr = os.path.join(iop.datadir, self.name+'_backup_'+now)
                 if not sp.auto_load:
-                    choice = input(f'\n\n\tINPUT REQUIRED...\n\n'
+                    choice = input(f'\n\n\tINPUT REQUIRED...\n'
                                     f'Rename old testdir to {backup_testr} and start new simulation as {iop.testdir} [R],'
                                     f'\nor Quit [Q],'
                                     f'\nor overwrite the pickle file .pkl (keeps atmosphere and aberration maps) [P]?'
-                                    f'\nor ignore parameter difference and proceed with Loading original [L]?\n')
+                                    f'\nor ignore parameter difference and proceed with Loading original [L]?\n\n')
 
                     if choice.lower() == 'q':
                         exit()
@@ -133,7 +133,7 @@ class RunMedis():
 
         match_params = {}
         print(f"\nChecking Matching Params Classes:")
-        for p in ['ap','tp','atmp','cdip','iop','sp','mp']:
+        for p in ['ap','tp','atmp','iop','sp','mp','cp']:
             matches = []
             for (this_attr, this_val), (load_attr, load_val) in zip(self.params[p].__dict__.items(),
                                                                     loaded_params[p].__dict__.items()):

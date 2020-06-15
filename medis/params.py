@@ -309,37 +309,6 @@ class Device_params:
         return self.__str__().split(' ')[0].split('.')[-1]
 
 
-class CDI_params():
-    def __init__(self):
-        # General
-        self.use_cdi = False
-        self.show_probe = False  # False , flag to plot phase probe or not
-        self.which_DM = ''  # plane_name parameter of the DM to apply CDI probe to (must be a valid name for
-                            # the telescope sim you are running, eg 'tweeter'
-
-        # Probe Dimensions (extent in pupil plane coordinates)
-        self.probe_w = 10  # [actuator coordinates] width of the probe
-        self.probe_h = 30  # [actuator coordinates] height of the probe
-        self.probe_center = (15,15)  # [actuator coordinates] center position of the probe (should move off-center to
-                                    # avoid coronagraph)
-        self.probe_amp = 2e-6  # [m] probe amplitude, scale should be in units of actuator height limits
-
-        # Phase Sequence of Probes
-        self.phs_intervals = np.pi/4  # [rad] phase interval over [0, 2pi]
-        self.phase_list = np.arange(0, 2 * np.pi, self.phs_intervals)  # FYI not inclusive of 2pi endpoint
-        self.n_probes = len(self.phase_list)  # number of phase probes
-        self.phase_integration_time = 0.01  # [s]  How long in sec to apply each probe in teh sequence
-        self.null_time = 0.1  # [s]  time between repeating probe cycles (data to be nulled using probe info)
-        self.theta_series = []  # array to hold the probes to be applied
-
-    def __iter__(self):
-        for attr, value in self.__dict__.items():
-            yield attr, value
-
-    def __name__(self):
-        return self.__str__().split(' ')[0].split('.')[-1]
-
-
 class Atmos_params():
     """
     default params for making atmospheric models
@@ -369,12 +338,43 @@ class Atmos_params():
         return self.__str__().split(' ')[0].split('.')[-1]
 
 
+class CDI_params():
+    def __init__(self):
+        # General
+        self.use_cdi = False
+        self.show_probe = False  # False , flag to plot phase probe or not
+        self.which_DM = ''  # plane_name parameter of the DM to apply CDI probe to (must be a valid name for
+                            # the telescope sim you are running, eg 'tweeter'
+
+        # Probe Dimensions (extent in pupil plane coordinates)
+        self.probe_w = 10  # [actuator coordinates] width of the probe
+        self.probe_h = 30  # [actuator coordinates] height of the probe
+        self.probe_center = (15,15)  # [actuator coordinates] center position of the probe (should move off-center to
+                                    # avoid coronagraph)
+        self.probe_amp = 2e-6  # [m] probe amplitude, scale should be in units of actuator height limits
+
+        # Phase Sequence of Probes
+        self.phs_intervals = np.pi/4  # [rad] phase interval over [0, 2pi]
+        self.phase_list = np.arange(0, 2 * np.pi, self.phs_intervals)  # FYI not inclusive of 2pi endpoint
+        self.n_probes = len(self.phase_list)  # number of phase probes
+        self.phase_integration_time = 0.01  # [s]  How long in sec to apply each probe in the sequence
+        self.null_time = 0.1  # [s]  time between repeating probe cycles (data to be nulled using probe info)
+        self.theta_series = []  # array to hold the probes to be applied
+
+    def __iter__(self):
+        for attr, value in self.__dict__.items():
+            yield attr, value
+
+    def __name__(self):
+        return self.__str__().split(' ')[0].split('.')[-1]
+
+
 # Creating class structures
 ap = Astro_params()
 tp = Telescope_params()
 sp = Simulation_params()
 atmp = Atmos_params()
-cdip = CDI_params()
+cp = CDI_params()
 mp = MKID_params()
 dp = Device_params()
 iop = IO_params()  # Must call this last since IO_params uses ap and tp
@@ -385,4 +385,4 @@ proper.use_cubic_conv = True
 # print(proper.__version__)
 # proper.prop_init_savestate()
 
-params = {'ap':ap, 'tp':tp, 'atmp':atmp, 'cdip':cdip, 'iop':iop, 'sp':sp, 'mp':mp}
+params = {'ap':ap, 'tp':tp, 'atmp':atmp, 'cp':cp, 'iop':iop, 'sp':sp, 'mp':mp}

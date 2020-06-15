@@ -27,7 +27,7 @@ import numpy as np
 from inspect import getframeinfo, stack
 import proper
 
-from medis.params import iop, sp, ap, tp, cdip
+from medis.params import iop, sp, ap, tp, cp
 from medis.utils import dprint
 import medis.optics as opx
 import medis.aberrations as aber

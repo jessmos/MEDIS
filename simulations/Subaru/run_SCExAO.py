@@ -10,7 +10,7 @@ prescription or the default params themselves.
 """
 import numpy as np
 
-from medis.params import sp, tp, iop, ap, cdip
+from medis.params import sp, tp, iop, ap, cp
 from medis.utils import dprint
 import medis.optics as opx
 from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
@@ -30,7 +30,7 @@ tp.entrance_d = 7.9716
 tp.flen_primary = tp.entrance_d * 13.612
 
 # Simulation & Timing
-sp.numframes = 1
+sp.numframes = 6
 sp.closed_loop = False
 
 # Grid Parameters
@@ -40,7 +40,7 @@ sp.grid_size = 512  # creates a nxn array of samples of the wavefront
 sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
 
 # Companion
-ap.companion = False
+ap.companion = True
 ap.contrast = [5e-2]
 ap.companion_xy = [[5, -5]]  # units of this are lambda/tp.entrance_d
 ap.n_wvl_init = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
@@ -50,38 +50,38 @@ ap.wvl_range = np.array([800, 1400]) / 1e9  # wavelength range in [m] (formerly 
 # eg. DARKNESS band is [800, 1500], J band =  [1100,1400])
 
 # CDI
-cdip.use_cdi = False
-cdip.probe_w = 10  # [actuator coordinates] width of the probe
-cdip.probe_h = 30  # [actuator coordinates] height of the probe
-cdip.probe_center = (15,15)  # [actuator coordinates] center position of the probe
-cdip.probe_amp = 2e-8  # [m] probe amplitude, scale should be in units of actuator height limits
-cdip.which_DM = 'tweeter'
-cdip.show_probe = True
-cdip.phs_intervals = np.pi/2
+cp.use_cdi = True
+cp.probe_w = 10  # [actuator coordinates] width of the probe
+cp.probe_h = 30  # [actuator coordinates] height of the probe
+cp.probe_center = (10,10)  # [actuator coordinates] center position of the probe
+cp.probe_amp = 2e-8  # [m] probe amplitude, scale should be in units of actuator height limits
+cp.which_DM = 'tweeter'
+cp.phs_intervals = np.pi/2
 
 
 # Toggles for Aberrations and Control
-tp.obscure = True
+tp.obscure = False
 tp.use_atmos = False
 tp.use_aber = False
-tp.add_zern = False
-tp.use_ao = False
-sp.skip_functions = ['add_obscurations']  # 'coronagraph'  skip_planes is based on plane_name, not based on function name. Can
-
+tp.add_zern = False  # Just a note: zernike aberrations generate randomly each time the telescope is run, so introduces
+                     # potentially inconsistent results
+tp.use_ao = True
+sp.skip_functions = []  # skip_functions is based on function name, alternate way of on/off than the toggling
+                    # 'coronagraph' 'deformable_mirror' 'add_aber'
 # Plotting
 sp.show_wframe = True  # plot white light image frame
 sp.show_spectra = True  # Plot spectral cube at single timestep
 sp.spectra_cols = 3  # number of subplots per row in view_spectra
-sp.show_tseries = False  # Plot full timeseries of white light frames
+sp.show_tseries = True  # Plot full timeseries of white light frames
 sp.tseries_cols = 5  # number of subplots per row in view_timeseries
 sp.show_planes = True
 sp.maskd_size = 256
 sp.verbose = False
-sp.debug = False
 
 # Saving
 sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
-sp.save_list = ['entrance_pupil', 'woofer', 'tweeter', 'post-DM-focus',  'detector']  # list of locations in optics train to save
+sp.save_list = [ 'woofer', 'tweeter',   'detector']  # list of locations in optics train to save 'entrance_pupil',
+                # 'entrance_pupil','post-DM-focus', 'coronagraph',
 
 if __name__ == '__main__':
     # =======================================================================
@@ -111,7 +111,7 @@ if __name__ == '__main__':
         img = np.sum(focal_plane[sp.numframes-1], axis=0)  # sum over wavelength
         quick2D(opx.extract_center(img), #focal_plane[sp.numframes-1]),
                 title=f"White light image at timestep {sp.numframes} \n"  # img
-                           f"AO={tp.use_ao}, CDI={cdip.use_cdi} ",
+                           f"AO={tp.use_ao}, CDI={cp.use_cdi} ",
                            # f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio} ",
                            # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
                 logZ=True,
@@ -123,7 +123,7 @@ if __name__ == '__main__':
         tstep = sp.numframes-1
         view_spectra(focal_plane[sp.numframes-1],
                       title=f"Intensity per Spectral Bin at Timestep {tstep} \n"
-                            f" AO={tp.use_ao}, CDI={cdip.use_cdi}",
+                            f" AO={tp.use_ao}, CDI={cp.use_cdi}",
                             # f"Beam Ratio = {sp.beam_ratio:.4f}",#  sampling = {sampling*1e6:.4f} [um/gridpt]",
                       logZ=True,
                       subplt_cols=sp.spectra_cols,
@@ -134,7 +134,7 @@ if __name__ == '__main__':
     if sp.show_tseries:
         img_tseries = np.sum(focal_plane, axis=1)  # sum over wavelength
         view_timeseries(img_tseries, title=f"White Light Timeseries\n"
-                                            f"AO={tp.use_ao}. CDI={cdip.use_cdi}",
+                                            f"AO={tp.use_ao}. CDI={cp.use_cdi}",
                         subplt_cols=sp.tseries_cols,
                         logZ=True,
                         vlim=(1e-10, 1e-4),

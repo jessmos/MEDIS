@@ -19,8 +19,7 @@ from inspect import getframeinfo, stack
 import matplotlib.pylab as plt
 import proper
 
-from medis.params import sp, tp, ap, cdip
-import medis.CDI as cdi
+from medis.params import sp, tp, cp
 from medis.optics import check_sampling, apodize_pupil, unwrap_phase_zeros as unwrap_phase
 from medis.utils import dprint
 from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
@@ -34,7 +33,7 @@ def deformable_mirror(wf, WFS_map, iter, previous_output=None, apodize=False, pl
     combine different DM actuator commands into single map to send to prop_dm
 
     prop_dm needs an input map of n_actuators x n_actuators in units of actuator command height. quick_ao will handle
-    the conversion to actuator command height, and the CDI probe must be scaled in cdip.probe_amp in params in
+    the conversion to actuator command height, and the CDI probe must be scaled in cp.probe_amp in params in
     units of m. Each subroutine is also responsible for creating a map of n_actuators x n_actuators spacing. prop_dm
     handles the resampling of this map onto the wavefront, including the influence function. Its some wizardry that
     happens in c, and presumably it is taken care of so you don't have to worry about it.
@@ -102,11 +101,11 @@ def deformable_mirror(wf, WFS_map, iter, previous_output=None, apodize=False, pl
     #######
     # CDI
     ######
-    if cdip.use_cdi and plane_name == cdip.which_DM:
+    if cp.use_cdi and plane_name == cp.which_DM:
+        from medis.CDI import cprobe
         # dprint(f"Applying CDI probe, lambda = {wfo.wsamples[iw]*1e9:.2f} nm")
-        probe = cdi.CDIprobe(iter, nact, wf.iw)
-        # Add Probe to DM map
-        dm_map = dm_map + probe
+        probe = cprobe(iter, nact, iw=wf.iw, ib=wf.ib)  # iw and ib only used for plotting, and only if sp.verbose=true
+        dm_map = dm_map + probe  # Add Probe to DM map
 
     #########################
     # Applying Piston Error
@@ -119,22 +118,16 @@ def deformable_mirror(wf, WFS_map, iter, previous_output=None, apodize=False, pl
     #########################
     # proper.prop_dm
     #########################
-    if debug and wf.ib == 0:
-        pre_ao_amp = proper.prop_get_amplitude(wf)
-        pre_ao_phase = proper.prop_get_phase(wf)
-        pre_ao_dist = unwrap_phase(proper.prop_get_phase(wf)) * wf.lamda / (2 * np.pi)
-        dprint(f"lambda = {wf.lamda}, d_beam = {d_beam}")
-
     dmap = proper.prop_dm(wf, dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
 
     if debug and wf.iw == 0 and wf.ib == 0:
         dprint(plane_name)
         check_sampling(wf, iter, plane_name+' DM pupil plane', getframeinfo(stack()[0][0]), units='mm')
+        quick2D(dm_map*1e9, title=f'{plane_name} dm_map (actuator coordinates)', zlabel='nm', show=True) # vlim=(-0.5e-7,0.5e-7))
 
         import matplotlib.pylab as plt
         post_ao = unwrap_phase(proper.prop_get_phase(wf)) * wf.lamda / (2 * np.pi)
         # quick2D(pre_ao_dist*1e9, title='unwrapped wavefront before DM', zlabel='nm', show=False)  # , vlim=(-0.5e-7,0.5e-7))
-        quick2D(dm_map*1e9, title=f'{plane_name} dm_map (actuator coordinates)', zlabel='nm', show=True)#, vlim=(-0.5e-7,0.5e-7))
         # quick2D(np.abs(pre_ao_amp)**2, title='Pre-AO Intensity', show=False)#, vlim=(-0.5e-7,0.5e-7))
         # quick2D(dmap, title='the phase map prop_dm is applying', zlabel='distance (m)', show=False)#, vlim=(-0.5e-7,0.5e-7))
         # plt.figure()
