@@ -12,7 +12,7 @@ import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import ImageGrid
 import warnings
 
-from medis.params import tp, sp, iop, ap, cp
+from medis.params import tp, sp, ap, cp
 from medis.utils import dprint
 import medis.optics as opx
 from medis.twilight_colormaps import sunlight
@@ -319,7 +319,7 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
         if logZ:
             if vlim[0] is not None and vlim[0] <= 0:
                 if cp.use_cdi and not np.isnan(phases[t]):
-                    ax.set_title(f"t={t * sp.sample_time}, CDI" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
+                    ax.set_title(f"t={t * sp.sample_time}, \nprobe " r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
                 else:
                     ax.set_title(f"t={t*sp.sample_time}")
                 im = ax.imshow(img_tseries[t], interpolation='none', origin='lower',
@@ -328,7 +328,7 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
                 clabel = "Log Normalized Intensity"
             else:
                 if cp.use_cdi and not np.isnan(phases[t]):
-                    ax.set_title(f"t={t * sp.sample_time}, CDI" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
+                    ax.set_title(f"t={t * sp.sample_time}, \nprobe" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
                 else:
                     ax.set_title(f"t={t * sp.sample_time}")
                 im = ax.imshow(img_tseries[t], interpolation='none', origin='lower',
@@ -337,7 +337,7 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
                 clabel = "Log Normalized Intensity"
         else:
             if cp.use_cdi and not np.isnan(phases[t]):
-                ax.set_title(f"t={t * sp.sample_time}, CDI" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
+                ax.set_title(f"t={t * sp.sample_time},\nprobe" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
             else:
                 ax.set_title(f"t={t * sp.sample_time}")
             im = ax.imshow(img_tseries[t], interpolation='none', origin='lower',
