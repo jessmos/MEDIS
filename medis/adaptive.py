@@ -102,10 +102,12 @@ def deformable_mirror(wf, WFS_map, iter, previous_output=None, apodize=False, pl
     # CDI
     ######
     if cp.use_cdi and plane_name == cp.which_DM:
-        from medis.CDI import cprobe
-        # dprint(f"Applying CDI probe, lambda = {wfo.wsamples[iw]*1e9:.2f} nm")
-        probe = cprobe(iter, nact, iw=wf.iw, ib=wf.ib)  # iw and ib only used for plotting, and only if sp.verbose=true
-        dm_map = dm_map + probe  # Add Probe to DM map
+        theta = cp.theta_series[iter]
+        if not np.isnan(theta):
+            from medis.CDI import cprobe
+            # dprint(f"Applying CDI probe, lambda = {wfo.wsamples[iw]*1e9:.2f} nm")
+            probe = cprobe(theta, nact, iw=wf.iw, ib=wf.ib)  # iw and ib only used for plotting, and only if sp.verbose=true
+            dm_map = dm_map + probe  # Add Probe to DM map
 
     #########################
     # Applying Piston Error

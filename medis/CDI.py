@@ -30,41 +30,38 @@ def probe_phasestream():
 
         if cp.use_cdi:
             # Repeating Probe Phases for Integration time
+            phase_list = np.arange(0, 2 * np.pi, cp.phs_intervals)  # FYI not inclusive of 2pi endpoint
+            n_probes = len(phase_list)  # number of phase probes
+
             if cp.phase_integration_time > sp.sample_time:
                 phase_hold = cp.phase_integration_time / sp.sample_time
-                phase_1cycle = np.repeat(cp.phase_list, phase_hold)
+                phase_1cycle = np.repeat(phase_list, phase_hold)
             elif cp.phase_integration_time == sp.sample_time:
-                phase_1cycle = cp.phase_list
+                phase_1cycle = phase_list
             else:
                 raise ValueError(f"Cannot have CDI phase probe integration time less than sp.sample_time")
 
             # Repeating Cycle of Phase Probes for Simulation Duration
             full_simulation_time = sp.numframes * sp.sample_time
             time_for_one_cycle = len(phase_1cycle) * cp.phase_integration_time + cp.null_time
-            n_phase_cycles = full_simulation_time / time_for_one_cycle
 
-            if n_phase_cycles < 0.5:
-                if cp.n_probes > sp.numframes:
-                    warnings.warn(f"\n"
-                                  f"Number of timesteps in sp.numframes is less than number of CDI phases \n"
-                                  f"not all phases will be used")
-                    phase_series = phase_1cycle[0:sp.numframes]
-                else:
-                    warnings.warn(f"\n"
-                                  f"Total length of CDI integration time for all phase probes exceeds full simulation time \n"
-                                  f"Not all phase probes will be used")
-                    phase_series = phase_1cycle[0:sp.numframes]
-            elif 0.5 < n_phase_cycles < 1:
-                phase_series[0:len(phase_1cycle)] = phase_1cycle
+            if time_for_one_cycle > full_simulation_time and cp.phase_integration_time > sp.sample_time:
+                warnings.warn(f"\nLength of one full CDI probe cycle (including nulling) exceeds the "
+                              f"full simulation time \n"
+                              f"not all phases will be used\n")
+                phase_series = phase_1cycle[0:sp.numframes]
+            elif time_for_one_cycle > full_simulation_time and n_probes < sp.numframes:
+                dprint(f"There will be {sp.numframes-n_probes} "
+                       f"nulling steps after timestep {n_probes-1}")
+                phase_series[0:n_probes] = phase_1cycle
             else:
-                n_full = np.floor(n_phase_cycles)
-                raise NotImplementedError(f"Whoa, not implemented yet. Hang in there")
-                # TODO implement
+                warnings.warn(f"Haven't run into  CDI phase situation like this yet")
+                raise NotImplementedError
 
         return phase_series
 
 
-def cprobe(iter, nact, iw=0, ib=0):
+def cprobe(theta, nact, iw=0, ib=0):
     """
     apply a probe shape to DM to achieve CDI
 
@@ -77,7 +74,7 @@ def cprobe(iter, nact, iw=0, ib=0):
     function during the call. All that is to say, we apply the CDI probe using the coordinates of the DM actuators,
     and supply the probe height as an additive height to the DM map, which is passed to the prop_dm function.
 
-    :param iter: iteration of the timeseries
+    :param theta: phase of the probe
     :param nact: number of actuators in the mirror, should change if 'woofer' or 'tweeter'
     :param iw: index of wavelength number in ap.wvl_range
     :return: height of phase probes to add to the DM map in adaptive.py
@@ -88,14 +85,12 @@ def cprobe(iter, nact, iw=0, ib=0):
     # y = np.linspace(-1/2-cp.probe_center[1], 1/2-cp.probe_center[1], nact)
     X,Y = np.meshgrid(x, y)
 
-    theta = cp.theta_series[iter]
-
     probe = cp.probe_amp * np.sinc(cp.probe_w * X) * np.sinc(cp.probe_h * Y) \
             * np.sin(2*np.pi*cp.probe_center[0]*X + theta) #\
             # * np.sin(2 * np.pi * cp.probe_center[1] * Y + theta)
 
     # Testing FF propagation
-    if sp.verbose and iw == 0 and ib == 0 and theta == cp.phase_list[0]:
+    if sp.verbose and iw == 0 and ib == 0 and theta == cp.theta_series[0]:
         from matplotlib import pyplot as plt
         probe_ft = (1/np.sqrt(2*np.pi)) * np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(probe)))
 
@@ -144,9 +139,7 @@ def cdi_postprocess(fp_tstream):
 
 if __name__ == '__main__':
     dprint(f"Testing CDI probe")
-    cp = CDI()
-    cp.show_probe = True
-    cp.generate()
+    cp.use_cdi = True; cp.show_probe = True
     cp.probe_amp = 2e-8
-    # cp.theta_series = gen_CDI_phase_stream()
-    cprobe(0, 50, 0)
+    cp.theta_series = [0]
+    cprobe(0, 50)

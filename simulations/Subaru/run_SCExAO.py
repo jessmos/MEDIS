@@ -57,6 +57,7 @@ cp.probe_center = (10,10)  # [actuator coordinates] center position of the probe
 cp.probe_amp = 2e-8  # [m] probe amplitude, scale should be in units of actuator height limits
 cp.which_DM = 'tweeter'
 cp.phs_intervals = np.pi/2
+cp.phase_integration_time = 0.01
 
 
 # Toggles for Aberrations and Control
@@ -73,7 +74,7 @@ sp.show_wframe = True  # plot white light image frame
 sp.show_spectra = True  # Plot spectral cube at single timestep
 sp.spectra_cols = 3  # number of subplots per row in view_spectra
 sp.show_tseries = True  # Plot full timeseries of white light frames
-sp.tseries_cols = 5  # number of subplots per row in view_timeseries
+sp.tseries_cols = 3  # number of subplots per row in view_timeseries
 sp.show_planes = True
 sp.maskd_size = 256
 sp.verbose = False

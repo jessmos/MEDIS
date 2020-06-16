@@ -355,8 +355,6 @@ class CDI_params():
 
         # Phase Sequence of Probes
         self.phs_intervals = np.pi/4  # [rad] phase interval over [0, 2pi]
-        self.phase_list = np.arange(0, 2 * np.pi, self.phs_intervals)  # FYI not inclusive of 2pi endpoint
-        self.n_probes = len(self.phase_list)  # number of phase probes
         self.phase_integration_time = 0.01  # [s]  How long in sec to apply each probe in the sequence
         self.null_time = 0.1  # [s]  time between repeating probe cycles (data to be nulled using probe info)
         self.theta_series = []  # array to hold the probes to be applied
