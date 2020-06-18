@@ -10,7 +10,8 @@ prescription or the default params themselves.
 """
 import numpy as np
 
-from medis.params import sp, tp, iop, ap, cp
+from medis.params import sp, tp, iop, ap
+from medis.CDI import cp, cdi_postprocess
 from medis.utils import dprint
 import medis.optics as opx
 from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
@@ -102,6 +103,12 @@ if __name__ == '__main__':
     # convert to intensity THEN sum over object, keeping the dimension of tstep even if it's one
     focal_plane = np.sum(opx.cpx_to_intensity(focal_plane), axis=2)
     fp_sampling = np.copy(sampling[cpx_sequence.shape[1]-1,:])  # numpy arrays have some weird effects that make copying the array necessary
+
+    # ======================================================================
+    # CDI
+    # ======================================================================
+    if cp.use_cdi:
+        cdi_postprocess(focal_plane, fp_sampling)
 
     # =======================================================================
     # Plotting

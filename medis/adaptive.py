@@ -19,7 +19,8 @@ from inspect import getframeinfo, stack
 import matplotlib.pylab as plt
 import proper
 
-from medis.params import sp, tp, cp
+from medis.params import sp, tp
+from medis.CDI import cp
 from medis.optics import check_sampling, apodize_pupil, unwrap_phase_zeros as unwrap_phase
 from medis.utils import dprint
 from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
@@ -102,7 +103,7 @@ def deformable_mirror(wf, WFS_map, iter, previous_output=None, apodize=False, pl
     # CDI
     ######
     if cp.use_cdi and plane_name == cp.which_DM:
-        theta = cp.theta_series[iter]
+        theta = cp.phase_series[iter]
         if not np.isnan(theta):
             from medis.CDI import cprobe
             # dprint(f"Applying CDI probe, lambda = {wfo.wsamples[iw]*1e9:.2f} nm")

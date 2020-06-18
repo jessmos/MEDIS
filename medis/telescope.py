@@ -21,7 +21,8 @@ import medis.CDI as cdi
 import medis.utils as mu
 import medis.optics as opx
 import medis.aberrations as aber
-from medis.params import sp, ap, tp, iop, cp
+from medis.params import sp, ap, tp, iop
+from medis.CDI import cp
 
 
 class Telescope():
@@ -171,7 +172,7 @@ class Telescope():
                      sp.closed_loop]
 
             # Initialize List of phases of CDI probes to apply
-            cp.theta_series = cdi.probe_phasestream()
+            cp.probe_phasestream()
 
             # Remove AO planes from save_list if use_ao is False
             if not tp.use_ao and 'woofer' in sp.save_list:

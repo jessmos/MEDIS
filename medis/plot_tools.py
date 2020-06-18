@@ -12,7 +12,8 @@ import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import ImageGrid
 import warnings
 
-from medis.params import tp, sp, ap, cp
+from medis.params import tp, sp, ap
+from medis.CDI import cp
 from medis.utils import dprint
 import medis.optics as opx
 from medis.twilight_colormaps import sunlight

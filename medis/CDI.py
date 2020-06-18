@@ -9,12 +9,32 @@ import numpy as np
 import warnings
 import proper
 
-from medis.params import tp, sp, cp
+from medis.params import tp, sp
 from medis.utils import dprint
-from medis.plot_tools import quick2D
+from matplotlib import pyplot as plt
 
 
-def probe_phasestream():
+class CDI_params():
+    def __init__(self):
+        # General
+        self.use_cdi = False
+        self.show_probe = False  # False , flag to plot phase probe or not
+        self.which_DM = ''  # plane_name parameter of the DM to apply CDI probe to (must be a valid name for
+        # the telescope sim you are running, eg 'tweeter'
+
+        # Probe Dimensions (extent in pupil plane coordinates)
+        self.probe_w = 10  # [actuator coordinates] width of the probe
+        self.probe_h = 30  # [actuator coordinates] height of the probe
+        self.probe_center = (15, 15)  # [actuator coordinates] center position of the probe (should move off-center to
+        # avoid coronagraph)
+        self.probe_amp = 2e-6  # [m] probe amplitude, scale should be in units of actuator height limits
+
+        # Phase Sequence of Probes
+        self.phs_intervals = np.pi / 4  # [rad] phase interval over [0, 2pi]
+        self.phase_integration_time = 0.01  # [s]  How long in sec to apply each probe in the sequence
+        self.null_time = 0.1  # [s]  time between repeating probe cycles (data to be nulled using probe info)
+
+    def probe_phasestream(self):
         """
         generate an array of phases per timestep for the CDI algorithm
 
@@ -26,18 +46,18 @@ def probe_phasestream():
 
         :return: phase_list  array of phases to use in CDI probes
         """
-        phase_series = np.zeros(sp.numframes) * np.nan
+        self.phase_series = np.zeros(sp.numframes) * np.nan
 
         if cp.use_cdi:
             # Repeating Probe Phases for Integration time
-            phase_list = np.arange(0, 2 * np.pi, cp.phs_intervals)  # FYI not inclusive of 2pi endpoint
-            n_probes = len(phase_list)  # number of phase probes
+            self.phase_cycle = np.arange(0, 2 * np.pi, cp.phs_intervals)  # FYI not inclusive of 2pi endpoint
+            self.n_probes = len(self.phase_cycle)  # number of phase probes
 
             if cp.phase_integration_time > sp.sample_time:
                 phase_hold = cp.phase_integration_time / sp.sample_time
-                phase_1cycle = np.repeat(phase_list, phase_hold)
+                phase_1cycle = np.repeat(self.phase_cycle, phase_hold)
             elif cp.phase_integration_time == sp.sample_time:
-                phase_1cycle = phase_list
+                phase_1cycle = self.phase_cycle
             else:
                 raise ValueError(f"Cannot have CDI phase probe integration time less than sp.sample_time")
 
@@ -49,16 +69,15 @@ def probe_phasestream():
                 warnings.warn(f"\nLength of one full CDI probe cycle (including nulling) exceeds the "
                               f"full simulation time \n"
                               f"not all phases will be used\n")
-                phase_series = phase_1cycle[0:sp.numframes]
-            elif time_for_one_cycle > full_simulation_time and n_probes < sp.numframes:
-                dprint(f"There will be {sp.numframes-n_probes} "
-                       f"nulling steps after timestep {n_probes-1}")
-                phase_series[0:n_probes] = phase_1cycle
+                self.phase_series = phase_1cycle[0:sp.numframes]
+            elif time_for_one_cycle > full_simulation_time and self.n_probes < sp.numframes:
+                print(f"There will be {sp.numframes - self.n_probes} "
+                      f"nulling steps after timestep {self.n_probes - 1}")
+                self.phase_series[0:self.n_probes] = phase_1cycle
             else:
                 warnings.warn(f"Haven't run into  CDI phase situation like this yet")
                 raise NotImplementedError
-
-        return phase_series
+cp = CDI_params()
 
 
 def cprobe(theta, nact, iw=0, ib=0):
@@ -91,15 +110,14 @@ def cprobe(theta, nact, iw=0, ib=0):
 
     # Testing FF propagation
     if sp.verbose and iw == 0 and ib == 0 and theta == cp.theta_series[0]:
-        from matplotlib import pyplot as plt
         probe_ft = (1/np.sqrt(2*np.pi)) * np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(probe)))
 
         fig, ax = plt.subplots(1, 3, figsize=(12, 5))
         fig.subplots_adjust(wspace=0.5)
         ax1, ax2, ax3 = ax.flatten()
 
-        fig.suptitle(f"Probe Amp = {cp.probe_amp}, Dimensions {cp.probe_w}x{cp.probe_h}, "
-                     f"center={cp.probe_center}, " + r'$\theta$' + f"={theta/np.pi}" + r'$\pi$')
+        fig.suptitle(f"center={cp.probe_center}, Dimensions {cp.probe_w}x{cp.probe_h} "
+                     f"\nProbe Amp = {cp.probe_amp}, " + r'$\theta$' + f"={theta/np.pi:.3f}" + r'$\pi$')
 
         im1 = ax1.imshow(probe, interpolation='none', origin='lower')
         ax1.set_title(f"Probe on DM \n(dm coordinates)")
@@ -111,6 +129,20 @@ def cprobe(theta, nact, iw=0, ib=0):
 
         ax3.imshow(np.arctan2(probe_ft.imag, probe_ft.real), interpolation='none', origin='lower', cmap='hsv')
         ax3.set_title("Focal Plane Phase")
+
+        plt.show()
+
+        # Fig 2
+        fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+        fig.subplots_adjust(wspace=0.5)
+        ax1, ax2 = ax.flatten()
+        fig.suptitle(f'Real & Imaginary Probe Response in Focal Plane, '+r'$\theta$'+f'={theta/np.pi:.3f}'+r'$\pi$')
+
+        im1 = ax1.imshow(probe_ft.real, interpolation='none', origin='lower')
+        ax1.set_title(f"Real FT of Probe")
+
+        im2 = ax2.imshow(probe_ft.imag, interpolation='none', origin='lower')
+        ax2.set_title(f"Imag FT of Probe")
 
         plt.show()
 
@@ -126,20 +158,43 @@ def cprobe(theta, nact, iw=0, ib=0):
     return probe
 
 
-def cdi_postprocess(fp_tstream):
+def cdi_postprocess(fp_seq, sampling):
     """
-    this is the functino that accepts the timeseries of intensity images from the simuation and returns the processed
+    this is the function that accepts the timeseries of intensity images from the simuation and returns the processed
     single image. This function calculates the speckle amplitude phase, and then corrects for it to create the dark
     hole over the specified region of the image.
 
-    :param fp_tstream:
+    :param fp_seq: timestream of 2D images (intensity only) from the focal plane complex field
+    :param sampling: focal plane sampling
     :return:
     """
+    a=cp.n_probes//2
+    dprint(f"cp.nprobes={cp.n_probes}, divided {cp.n_probes//2}")
+    delta = np.zeros((cp.n_probes//2, sp.grid_size, sp.grid_size))
+    for ix in range(cp.n_probes//2):
+        delta[ix, :, :] = fp_seq[-ix] - fp_seq[ix]
+
+    # Fig 2
+    fig, ax = plt.subplots(1,2)
+    fig.subplots_adjust(wspace=0.5)
+    ax1, ax2 = ax.flatten()
+    fig.suptitle('Deltas for CDI Probes')
+
+    im1 = ax1.imshow(delta[0], interpolation='none', origin='lower')
+    ax1.set_title(f"Deff Probe pair 1")
+
+    im2 = ax2.imshow(delta[1], interpolation='none', origin='lower')
+    ax2.set_title(f"Diff Probe pair 2")
 
 
 if __name__ == '__main__':
     dprint(f"Testing CDI probe")
     cp.use_cdi = True; cp.show_probe = True
-    cp.probe_amp = 2e-8
-    cp.theta_series = [0]
-    cprobe(0, 50)
+
+    cp.probe_w = 15  # [actuator coordinates] width of the probe
+    cp.probe_h = 30  # [actuator coordinates] height of the probe
+    cp.probe_center = (15, 15)  # [actuator coordinates] center position of the probe
+    cp.probe_amp = 2e-6  # [m] probe amplitude, scale should be in units of actuator height limits
+
+    cp.theta_series = [-1*np.pi/4]
+    cprobe(-1*np.pi/4, 50)
