@@ -1,24 +1,13 @@
 """
-model the Subaru optics system
+model the end-to-end Subaru-SCExAO optics system
 
-This is a code modified from Rupert's original optics_propagate.py. This code adds more optics to the system,
-as well as puts the AO, etc in order for Subaru.
-
-Here, we will add the basic functionality of the Subaru Telescope, including the primary, secondary, and AO188.
+Here, we will add the basic functionality of the Subaru+SCExAO Telescope, including the primary, secondary, and AO188.
 The SCExAO system sits behind the AO188 instrument of Subaru, which is a 188-element AO system located at the
-Nasmyth focus (IR) of the telescope. AO188 is a basic 4f-type optical system with a 188 element DM (not perfectly
-represented here. Proper will only simulate 2D square DM's, so we use a 14x14 square) inserted in the middle of the
-collimated beam. This routine simulates an idealized detector at the A0188 focus.
+Nasmyth focus (IR) of the telescope.
 
-If you want to scale the intensity of the companion, you can't then normalize the intensity
-(prop_define_entrance) since the normalization is per wavefront, so the companion will normalize to itself
-rather than to the star. Doing it this way may cause confusion, but better than re-writing things in proper
-
-AO188 uses laser guide-star technology. More info here:
-https://subarutelescope.org/Introduction/instrument/AO188.html
-
-A more detailed model of SCExAO will be modelled in a SCExAO_optics.py code. However, this routine is designed for
-simple simulations that need to optimize runtime but still have relevance to the Subaru Telescope.
+AO188 is a basic 4f-type optical system with a 188 element circular DM. Proper will only simulate 2D square DM's, so we
+use a 14x14 square inserted in the middle of the collimated beam. We also artifically oversize the number of AO188
+actuators to be a 16x16 array since we oversize the DM to the beam by one actuator on either side of the beam.
 
 This script is meant to override any Subaru/SCExAO-specific parameters specified in the user's params.py
 """
@@ -65,10 +54,6 @@ tp.d_secondary = 1.265  # m diameter secondary, used for central obscuration
 tp.entrance_d = tp.d_nsmyth
 tp.flen_primary = tp.flen_nsmyth
 
-# Effective Primary Aberrations
-primary_aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4)
-                     'b': [0.8, 0.2],  # correlation length (b/2pi defines knee)
-                     'c': [3.1, 0.5]}
 # ----------------------------
 # AO188 DM
 tp.act_woofer = 15  # approximately a 188 DM (14*14=169) but then we include +2 pixels because the dm map is oversized
@@ -81,9 +66,6 @@ tp.act_woofer = 15  # approximately a 188 DM (14*14=169) but then we include +2 
 tp.d_ao1 = 0.20  # m  diamater of AO1
 tp.fl_ao1 = 1.201  # m  focal length OAP1
 tp.dist_ao1_dm = 1.345  # m distance OAP1 to DM
-OAP1_aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4)
-                  'b': [0.8, 0.2],  # correlation length (b/2pi defines knee)
-                  'c': [3.1, 0.5]}
 
 # ----------------------------
 # AO188 OAP2
@@ -91,9 +73,6 @@ tp.dist_dm_ao2 = 2.511-tp.dist_ao1_dm  # m distance DM to OAP2
 tp.d_ao2 = 0.2  # m  diamater of AO2
 tp.fl_ao2 = 1.201  # m  focal length AO2
 tp.dist_oap2_focus = 1.261
-OAP2_aber_vals = {'a': [7.2e-17, 3e-17],  # power at low spatial frequencies (m4)
-                  'b': [0.8, 0.2],  # correlation length (b/2pi defines knee)
-                  'c': [3.1, 0.5]}
 
 # ------------------------------
 # Coronagraph
