@@ -172,7 +172,7 @@ class Telescope():
                      sp.closed_loop]
 
             # Initialize List of phases of CDI probes to apply
-            cp.probe_phaseseries()
+            cp.gen_phaseseries()
 
             # Remove AO planes from save_list if use_ao is False
             if not tp.use_ao and 'woofer' in sp.save_list:
