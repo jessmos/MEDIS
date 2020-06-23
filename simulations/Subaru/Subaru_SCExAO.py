@@ -75,37 +75,19 @@ tp.fl_ao2 = 1.201  # m  focal length AO2
 tp.dist_oap2_focus = 1.261
 
 # ------------------------------
-# Coronagraph
-tp.cg_type = 'Gaussian'
-# tp.cg_size = 3  # physical size or lambda/D size
-tp.cg_size = 2  # physical size or lambda/D size
-tp.cg_size_units = "l/D"  # "m" or "l/D"
-tp.fl_cg_lens = 0.1021  # m
-# tp.fl_cg_lens = 0.255  # m
-tp.lyot_size = 0.9  # units are in fraction of surface blocked
-
-# ------------------------------
 # SCExAO
 # These params aren't actually working, so just doing very basic, 4F optical systems until further notice
 
-# tp.d_tweeter = 0.02  # just 1/10 scale the same system as AO188 since I don't actually know these parameters
 tp.d_tweeter = 0.051  # diameter of optics in SCExAO train are 2 inches=0.051 m
-tp.act_tweeter = 45  # approx a 2000 actuator DM, (45x45=2025)
-# tp.fl_sl = 0.1021  # m  focal length of SCExAO lens
+tp.act_tweeter = 50  # SCExAO actuators are 50x50=2500 actuators
 tp.fl_SxOAPG = 0.255  # m focal length of Genera SCExAO lens (OAP1,3,4,5)
 tp.fl_SxOAP2 = 0.519  # m focal length of SCExAO OAP 2
 tp.d_SxOAPG = 0.051  # diameter of SCExAO OAP's
-tp.dist_cg_sl1 = tp.fl_SxOAPG + .000001  # m distance between AO188 focus and scexao lens1
+# tp.dist_cg_sl1 = tp.fl_SxOAPG + .000001  # m distance between AO188 focus and scexao lens1
+
 tp.dist_SxOAP1_scexao = 0.1345  # m
 tp.dist_scexao_sl2 = 0.2511 - tp.dist_SxOAP1_scexao  # m
 tp.dist_sl2_focus = 0.1261  # m
-
-#todo the code above and in the prescription are redudnat. Switch to just using tp.lens_params
-# e.g.
-#   primary = tp.lens_params[0]
-#   wfo.loop_collection(aber.add_aber, primary['diam'], primary['aber_vals'],
-#                              step=PASSVALUE['iter'], lens_name=primary['name'])
-#   wfo.loop_collection(opx.prop_pass_lens, primary['fl'], primary['dist'])
 
 tp.lens_params = [{'aber_vals': [7.2e-17, 0.8, 3.1],
                    'diam': tp.entrance_d,
@@ -137,6 +119,14 @@ tp.lens_params = [{'aber_vals': [7.2e-17, 0.8, 3.1],
                    'dist': tp.fl_SxOAP2,
                    'name': 'SxOAP2'}
                  ]
+# ------------------------------
+# Coronagraph
+tp.cg_type = 'Gaussian'
+tp.cg_size = 2  # physical size or lambda/D size
+tp.cg_size_units = "l/D"  # "m" or "l/D"
+# tp.fl_cg_lens = 0.1021  # m
+tp.fl_cg_lens = tp.fl_SxOAPG
+tp.lyot_size = 0.9  # units are in fraction of surface blocked
 
 #################################################################################################
 #################################################################################################
@@ -165,7 +155,6 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     wfo.loop_collection(atmos.add_atmos, PASSVALUE['iter'], plane_name='atmosphere')
 
     # Defines aperture (baffle-before primary)
-    # Obscurations (Secondary and Spiders)
     wfo.loop_collection(opx.add_obscurations, d_primary=tp.entrance_d, d_secondary=tp.d_secondary, legs_frac=0.05)
     wfo.loop_collection(proper.prop_circular_aperture,
                         **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
@@ -189,15 +178,14 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     #######################################
     # Effective Primary
     # CPA from Effective Primary
-    wfo.loop_collection(aber.add_aber, step=PASSVALUE['iter'], lens_name='effective-primary')
-    # Zernike Aberrations- Low Order
-    wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))
+    wfo.loop_collection(aber.add_aber, step=PASSVALUE['iter'], lens_name='effective-primary')  # high order
+    wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders))  # low order
     wfo.loop_collection(opx.prop_pass_lens, tp.flen_nsmyth, tp.dist_nsmyth_ao1)
     ########################################
     # AO188 Propagation
     ########################################
     # # AO188-OAP1
-    wfo.loop_collection(aber.add_aber,  step=PASSVALUE['iter'], lens_name='ao188-OAP1')
+    wfo.loop_collection(aber.add_aber,  step=PASSVALUE['iter'], lens_name='ao188-OAP1')  # high order
     wfo.loop_collection(opx.prop_pass_lens, tp.fl_ao1, tp.dist_ao1_dm)
 
     # AO System
@@ -209,15 +197,15 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     wfo.loop_collection(proper.prop_propagate, tp.dist_dm_ao2)
 
     # AO188-OAP2
-    wfo.loop_collection(aber.add_aber, step=PASSVALUE['iter'], lens_name='ao188-OAP2')
-    wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)
+    wfo.loop_collection(aber.add_aber, step=PASSVALUE['iter'], lens_name='ao188-OAP2')  # high order CPA
+    wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)  # low order CPA
     wfo.loop_collection(opx.prop_pass_lens, tp.fl_ao2, tp.dist_oap2_focus)
 
     ########################################
     # SCExAO
     # #######################################
     # SXExAO Reimaging 1
-    wfo.loop_collection(aber.add_aber, step=PASSVALUE['iter'], lens_name='SxOAPG')
+    wfo.loop_collection(aber.add_aber, step=PASSVALUE['iter'], lens_name='SxOAPG')  # high order CPA
     wfo.loop_collection(proper.prop_propagate, tp.fl_SxOAPG)  # from AO188 focus to S-OAP1
     wfo.loop_collection(opx.prop_pass_lens, tp.fl_SxOAPG, tp.fl_SxOAPG)  # from SxOAP1 to tweeter-DM
     #
@@ -230,8 +218,8 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     wfo.loop_collection(proper.prop_propagate, tp.fl_SxOAPG)  # from tweeter-DM to OAP2
 
     # SXExAO Reimaging 2
-    wfo.loop_collection(aber.add_aber, step=PASSVALUE['iter'], lens_name='SxOAP2')
-    wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)
+    wfo.loop_collection(aber.add_aber, step=PASSVALUE['iter'], lens_name='SxOAP2')  # high order NCPA
+    wfo.loop_collection(aber.add_zern_ab, tp.zernike_orders, aber.randomize_zern_values(tp.zernike_orders)/2)  # low order NCPA
     wfo.loop_collection(opx.prop_pass_lens, tp.fl_SxOAP2, tp.fl_SxOAP2, plane_name='post-DM-focus')  #tp.dist_sl2_focus
 
     # wfo.loop_collection(opx.check_sampling, PASSVALUE['iter'], "post-DM-focus",
