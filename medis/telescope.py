@@ -22,7 +22,7 @@ import medis.utils as mu
 import medis.optics as opx
 import medis.aberrations as aber
 from medis.params import sp, ap, tp, iop
-from medis.CDI import cp
+from medis.CDI import cdi\
 
 
 class Telescope():
@@ -172,7 +172,13 @@ class Telescope():
                      sp.closed_loop]
 
             # Initialize List of phases of CDI probes to apply
-            cp.gen_phaseseries()
+            cdi.gen_phaseseries()
+            if cdi.use_cdi:
+                if hasattr(tp, 'act_tweeter'):
+                    cdi.init_probes(tp.act_tweeter)
+                else:
+                    cdi.init_probes(tp.ao_act)
+
 
             # Remove AO planes from save_list if use_ao is False
             if not tp.use_ao and 'woofer' in sp.save_list:

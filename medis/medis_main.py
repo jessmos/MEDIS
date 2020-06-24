@@ -28,7 +28,7 @@ from pprint import pprint
 from medis.telescope import Telescope
 from medis.MKIDS import Camera
 from medis.params import sp, ap, tp, iop, atmp, mp
-from medis.CDI import cp
+from medis.CDI import cdi
 
 ################################################################################################################
 ################################################################################################################
@@ -69,7 +69,7 @@ class RunMedis():
 
         iop.update_testname(self.name)
         # for storing a checking between tests
-        self.params = {'ap': ap, 'tp': tp, 'atmp': atmp, 'cp': cp, 'iop': iop, 'sp': sp, 'mp': mp}
+        self.params = {'ap': ap, 'tp': tp, 'atmp': atmp, 'cp': cdi, 'iop': iop, 'sp': sp, 'mp': mp}
 
         # show all the parameters input into the simulation (before some are updated by Telescope and Camera)
         if sp.verbose:

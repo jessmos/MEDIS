@@ -13,7 +13,7 @@ from mpl_toolkits.axes_grid1 import ImageGrid
 import warnings
 
 from medis.params import tp, sp, ap
-from medis.CDI import cp
+from medis.CDI import cdi
 from medis.utils import dprint
 import medis.optics as opx
 from medis.twilight_colormaps import sunlight
@@ -90,7 +90,7 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None),
     cb = plt.colorbar(cax)
     cb.set_label(zlabel)
     if show:
-        plt.show(block=True)
+        plt.show(block=False)
 
 
 def grid(fields, title='body spectra', logZ=False, show=True, nstd=1, vlim=(None, None), cmap='inferno'):
@@ -270,8 +270,8 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
     plt.close('all')
 
     # Recreate CDI phase stream for plot titles
-    if cp.use_cdi:
-        phases = cp.theta_series
+    if cdi.use_cdi:
+        phases = cdi.phase_series
 
     # Create figure & adjust subplot number, layout, size, whitespace
     fig = plt.figure()
@@ -319,7 +319,7 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
 
         if logZ:
             if vlim[0] is not None and vlim[0] <= 0:
-                if cp.use_cdi and not np.isnan(phases[t]):
+                if cdi.use_cdi and not np.isnan(phases[t]):
                     ax.set_title(f"t={t * sp.sample_time}, \nprobe " r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
                 else:
                     ax.set_title(f"t={t*sp.sample_time}")
@@ -328,7 +328,7 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
                                norm=SymLogNorm(linthresh=1e-5), cmap="YlGnBu_r")
                 clabel = "Log Normalized Intensity"
             else:
-                if cp.use_cdi and not np.isnan(phases[t]):
+                if cdi.use_cdi and not np.isnan(phases[t]):
                     ax.set_title(f"t={t * sp.sample_time}, \nprobe" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
                 else:
                     ax.set_title(f"t={t * sp.sample_time}")
@@ -337,7 +337,7 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
                                norm=LogNorm(), cmap="YlGnBu_r")
                 clabel = "Log Normalized Intensity"
         else:
-            if cp.use_cdi and not np.isnan(phases[t]):
+            if cdi.use_cdi and not np.isnan(phases[t]):
                 ax.set_title(f"t={t * sp.sample_time},\nprobe" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
             else:
                 ax.set_title(f"t={t * sp.sample_time}")

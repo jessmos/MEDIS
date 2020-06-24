@@ -11,7 +11,7 @@ prescription or the default params themselves.
 import numpy as np
 
 from medis.params import sp, tp, iop, ap
-from medis.CDI import cp, cdi_postprocess
+from medis.CDI import cdi, cdi_postprocess
 from medis.utils import dprint
 import medis.optics as opx
 from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
@@ -31,7 +31,7 @@ tp.entrance_d = 7.9716
 tp.flen_primary = tp.entrance_d * 13.612
 
 # Simulation & Timing
-sp.numframes = 6
+sp.numframes = 1
 sp.closed_loop = False
 
 # Grid Parameters
@@ -51,14 +51,14 @@ ap.wvl_range = np.array([800, 1400]) / 1e9  # wavelength range in [m] (formerly 
 # eg. DARKNESS band is [800, 1500], J band =  [1100,1400])
 
 # CDI
-cp.use_cdi = True
-cp.probe_w = 10  # [actuator coordinates] width of the probe
-cp.probe_h = 30  # [actuator coordinates] height of the probe
-cp.probe_center = (10,10)  # [actuator coordinates] center position of the probe
-cp.probe_amp = 2e-8  # [m] probe amplitude, scale should be in units of actuator height limits
-cp.which_DM = 'tweeter'
-cp.phs_intervals = np.pi/2
-cp.phase_integration_time = 0.01
+cdi.use_cdi = False
+cdi.probe_w = 10  # [actuator coordinates] width of the probe
+cdi.probe_h = 30  # [actuator coordinates] height of the probe
+cdi.probe_center = (10,10)  # [actuator coordinates] center position of the probe
+cdi.probe_amp = 2e-8  # [m] probe amplitude, scale should be in units of actuator height limits
+cdi.which_DM = 'tweeter'
+cdi.phs_intervals = np.pi/2
+cdi.phase_integration_time = 0.01
 
 
 # Toggles for Aberrations and Control
@@ -74,11 +74,11 @@ sp.skip_functions = []  # skip_functions is based on function name, alternate wa
 sp.show_wframe = True  # plot white light image frame
 sp.show_spectra = True  # Plot spectral cube at single timestep
 sp.spectra_cols = 3  # number of subplots per row in view_spectra
-sp.show_tseries = True  # Plot full timeseries of white light frames
+sp.show_tseries = False  # Plot full timeseries of white light frames
 sp.tseries_cols = 3  # number of subplots per row in view_timeseries
-sp.show_planes = True
+sp.show_planes = False
 sp.maskd_size = 256
-sp.verbose = False
+sp.verbose = True
 
 # Saving
 sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
@@ -107,7 +107,7 @@ if __name__ == '__main__':
     # ======================================================================
     # CDI
     # ======================================================================
-    if cp.use_cdi:
+    if cdi.use_cdi:
         cdi_postprocess(focal_plane, fp_sampling)
 
     # =======================================================================
@@ -119,7 +119,7 @@ if __name__ == '__main__':
         img = np.sum(focal_plane[sp.numframes-1], axis=0)  # sum over wavelength
         quick2D(opx.extract_center(img), #focal_plane[sp.numframes-1]),
                 title=f"White light image at timestep {sp.numframes} \n"  # img
-                           f"AO={tp.use_ao}, CDI={cp.use_cdi} ",
+                           f"AO={tp.use_ao}, CDI={cdi.use_cdi} ",
                            # f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio} ",
                            # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
                 logZ=True,
@@ -131,7 +131,7 @@ if __name__ == '__main__':
         tstep = sp.numframes-1
         view_spectra(focal_plane[sp.numframes-1],
                       title=f"Intensity per Spectral Bin at Timestep {tstep} \n"
-                            f" AO={tp.use_ao}, CDI={cp.use_cdi}",
+                            f" AO={tp.use_ao}, CDI={cdi.use_cdi}",
                             # f"Beam Ratio = {sp.beam_ratio:.4f}",#  sampling = {sampling*1e6:.4f} [um/gridpt]",
                       logZ=True,
                       subplt_cols=sp.spectra_cols,
@@ -142,7 +142,7 @@ if __name__ == '__main__':
     if sp.show_tseries:
         img_tseries = np.sum(focal_plane, axis=1)  # sum over wavelength
         view_timeseries(img_tseries, title=f"White Light Timeseries\n"
-                                            f"AO={tp.use_ao}. CDI={cp.use_cdi}",
+                                            f"AO={tp.use_ao}. CDI={cdi.use_cdi}",
                         subplt_cols=sp.tseries_cols,
                         logZ=True,
                         vlim=(1e-10, 1e-4),

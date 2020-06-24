@@ -20,7 +20,7 @@ import matplotlib.pylab as plt
 import proper
 
 from medis.params import sp, tp
-from medis.CDI import cp
+from medis.CDI import cdi, config_probe
 from medis.optics import check_sampling, apodize_pupil, unwrap_phase_zeros as unwrap_phase
 from medis.utils import dprint
 # from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
@@ -34,7 +34,7 @@ def deformable_mirror(wf, WFS_map, iter, previous_output=None, apodize=False, pl
     combine different DM actuator commands into single map to send to prop_dm
 
     prop_dm needs an input map of n_actuators x n_actuators in units of actuator command height. quick_ao will handle
-    the conversion to actuator command height, and the CDI probe must be scaled in cp.probe_amp in params in
+    the conversion to actuator command height, and the CDI probe must be scaled in cdi.probe_amp in params in
     units of m. Each subroutine is also responsible for creating a map of n_actuators x n_actuators spacing. prop_dm
     handles the resampling of this map onto the wavefront, including the influence function. Its some wizardry that
     happens in c, and presumably it is taken care of so you don't have to worry about it.
@@ -102,12 +102,11 @@ def deformable_mirror(wf, WFS_map, iter, previous_output=None, apodize=False, pl
     #######
     # CDI
     ######
-    if cp.use_cdi and plane_name == cp.which_DM:
-        theta = cp.phase_series[iter]
+    if cdi.use_cdi and plane_name == cdi.which_DM:
+        theta = cdi.phase_series[iter]
         if not np.isnan(theta):
-            from medis.CDI import cprobe
             # dprint(f"Applying CDI probe, lambda = {wfo.wsamples[iw]*1e9:.2f} nm")
-            probe = cprobe(theta, nact, iw=wf.iw, ib=wf.ib)  # iw and ib only used for plotting, and only if sp.verbose=true
+            probe = config_probe(theta, nact, iw=wf.iw, ib=wf.ib)  # iw and ib only used for plotting, and only if sp.verbose=true
             dm_map = dm_map + probe  # Add Probe to DM map
 
     #########################
