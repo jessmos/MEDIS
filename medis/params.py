@@ -185,7 +185,7 @@ class Telescope_params:
         self.fnum_primary = 12  # f-number of primary
         self.flen_primary = 25  # [m] focal length of primary
 
-        self.use_atmos = True  # Create and apply atmospheric maps (units in phase delay)
+        self.use_atmos = False  # Create and apply atmospheric maps (units in phase delay)
         self.obscure = False  # Obscure the primary by the secondary mirror
         self.legs_frac = 0.03  # fractional width of the legs relative to the secondary mirror diameter
 
