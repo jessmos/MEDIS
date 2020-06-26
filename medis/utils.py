@@ -40,7 +40,7 @@ def phase_cal(wavelengths):
 def save_to_disk_sequence(obs_sequence, obs_seq_file='obs_seq.pkl'):
     """saves obs sequence as a .pkl file
 
-    :param obs_sequence- Observation sequence, 4D data structure
+    :param obs_sequence- Observation sequence, 6D data structure
     :param obs_seq_file- filename for saving, including directory tree
     """
     #dprint((obs_seq_file, obs_seq_file[-3:], obs_seq_file[-3:] == '.h5'))
@@ -49,10 +49,7 @@ def save_to_disk_sequence(obs_sequence, obs_seq_file='obs_seq.pkl'):
             pickle.dump(obs_sequence, handle, protocol=pickle.HIGHEST_PROTOCOL)
     elif obs_seq_file[-3:] == 'hdf' or obs_seq_file[-3:] == '.h5':
         f = pt.open_file(obs_seq_file, 'w')
-        # atom = pt.Atom.from_dtype(hypercube.dtype)
-        # ds = f.createCArray(f.root, 'data', atom, hypercube.shape)
         ds = f.create_array(f.root, 'data', obs_sequence)
-        # ds[:] = hypercube
         f.close()
     else:
         dprint('Extension not recognised')
