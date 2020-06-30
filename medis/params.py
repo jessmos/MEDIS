@@ -261,9 +261,7 @@ class MKID_params:
         self.total_int = 1 #second
         self.frame_int = 1./20
         self.t_frames = int(self.total_int/self.frame_int)
-        self.platescale = 10 *1e-3
-        # self.xnum= self.array_size[0]
-        # self.ynum= self.array_size[1]
+        self.platescale = 10 *1e-3  # [arcsec/pix]
 
         # for distributions
         self.res_elements = self.array_size[0]
