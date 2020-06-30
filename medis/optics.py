@@ -125,7 +125,7 @@ class Wavefronts():
                     if set_up_beam:
                         proper.prop_circular_aperture(wfc, radius=tp.entrance_d / 2)
                         proper.prop_define_entrance(wfc)  # normalizes the intensity
-                    wfc.wfarr = np.multiply(wfc.wfarr, np.sqrt(self.spectra[ix+1][iw]), out=wfc.wfarr, casting='unsafe')
+                    wfc.wfarr = np.multiply(wfc.wfarr, np.sqrt(self.spectra[ix][iw]), out=wfc.wfarr, casting='unsafe')
                     wfs.append(wfc)
                     names.append('companion_%i' % ix)
 
