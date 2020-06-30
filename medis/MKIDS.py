@@ -92,7 +92,7 @@ class Camera():
         self.responsivity_error_map = self.responvisity_scaling_map(plot=False)
 
         if mp.bad_pix:
-            self.QE_map = self.create_bad_pix(self.QE_map_all) if mp.pix_yield != 1 else self.QE_map_all
+            self.QE_map = self.create_bad_pix(self.QE_map_all, plot=False) if mp.pix_yield != 1 else self.QE_map_all
 
             if mp.dark_counts:
                 self.total_dark = sp.sample_time * mp.dark_bright * self.array_size[0] * self.array_size[
@@ -176,7 +176,9 @@ class Camera():
         else:
             max_steps = self.max_chunk(self.rebinned_cube)
             num_chunks = int(np.ceil(len(self.rebinned_cube) / max_steps))
-            dprint(len(self.rebinned_cube), max_steps, len(self.rebinned_cube) / max_steps, num_chunks)
+            # dprint(len(self.rebinned_cube), max_steps, len(self.rebinned_cube) / max_steps, num_chunks)
+            dprint(f"@Rup Please specify what you are trying to print here")
+            #TODO Rupert-put a helpful print statement here instead
             self.photons = np.empty((4, 0))
             if self.product == 'photons':
                 if num_chunks == 1:
@@ -702,7 +704,7 @@ class Camera():
 
         bad_ind = random.sample(list(range(self.array_size[0]*self.array_size[1])), amount)
 
-        print(f"Bad indices = {len(bad_ind)}, # MKID pix = { self.array_size[0]*self.array_size[1]}, "
+        dprint(f"Bad indices = {len(bad_ind)}, # MKID pix = { self.array_size[0]*self.array_size[1]}, "
                f"Pixel Yield = {mp.pix_yield}, amount? = {amount}")
 
         # bad_y = random.sample(y, amount)
@@ -713,14 +715,18 @@ class Camera():
         QE_map = np.array(QE_map)
 
         QE_map[bad_x, bad_y] = 0
+
         if plot:
-            plt.xlabel('responsivities')
-            plt.ylabel('?')
-            plt.title('Something Related to Bad Pixels')
+            plt.xlabel('x pix')
+            plt.ylabel('y pix')
+            plt.title('Bad Pixel Map')
             plt.imshow(QE_map)
+            cax = plt.colorbar()
+            cax.set_label('Responsivity')
             plt.show()
 
         return QE_map
+
 
     def create_bad_pix_center(self, responsivities):
         res_elements=self.array_size[0]
@@ -929,7 +935,7 @@ class Camera():
     def rescale_cube(self, rebinned_cube, conserve=True):
         if conserve:
             total = np.sum(rebinned_cube)
-        nyq_sampling = ap.wvl_range[0]*360*3600/(4*np.pi*tp.entrance_d)
+        nyq_sampling = ap.wvl_range[0]*360*3600/(2*np.pi*tp.entrance_d)
         self.sampling = nyq_sampling*sp.beam_ratio*2  # nyq sampling happens at sp.beam_ratio = 0.5
         x = np.arange(-sp.grid_size*self.sampling/2, sp.grid_size*self.sampling/2, self.sampling)
         xnew = np.arange(-self.array_size[0]*self.platescale/2, self.array_size[0]*self.platescale/2, self.platescale)
