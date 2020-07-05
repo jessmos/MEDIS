@@ -97,11 +97,15 @@ if __name__ == '__main__':
     focal_plane = np.sum(opx.cpx_to_intensity(focal_plane), axis=2)
     fp_sampling = np.copy(sampling[cpx_sequence.shape[1]-1,:])  # numpy arrays have some weird effects that make copying the array necessary
 
+    # Also img_tseries
+    img_tseries = np.sum(focal_plane, axis=1)  # sum over wavelength
+
     # ======================================================================
     # CDI
     # ======================================================================
     if cdi.use_cdi:
         cdi_postprocess(focal_plane, fp_sampling, plot=True)
+        cdi.save_tseries(img_tseries)
 
     # =======================================================================
     # Plotting
@@ -133,7 +137,6 @@ if __name__ == '__main__':
 
     # Plotting Timeseries in White Light
     if sp.show_tseries:
-        img_tseries = np.sum(focal_plane, axis=1)  # sum over wavelength
         view_timeseries(img_tseries, title=f"White Light Timeseries\n"
                                             f"AO={tp.use_ao}. CDI={cdi.use_cdi}",
                         subplt_cols=sp.tseries_cols,
