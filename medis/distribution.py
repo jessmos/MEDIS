@@ -24,14 +24,14 @@ class Distribution(object):
         self.interpolation  = interpolation
         self.transform      = transform
 
-        #a pdf can not be negative
+        # a pdf can not be negative
         assert(np.all(pdf>=0))
 
-        #sort the pdf by magnitude
+        # sort the pdf by magnitude
         if self.sort:
             self.sortindex = np.argsort(self.pdf, axis=None)
             self.pdf = self.pdf[self.sortindex]
-        #construct the cumulative distribution function
+        # construct the cumulative distribution function
         self.cdf = np.cumsum(self.pdf)
 
     @property
@@ -45,24 +45,25 @@ class Distribution(object):
 
     def __call__(self, N):
         """draw """
-        #pick numbers which are uniformly random over the cumulative distribution function
+        # pick numbers which are uniformly random over the cumulative distribution function
         # print N, self.ndim, self.sum
         choice = np.random.uniform(high = self.sum, size = N)
-        #find the indices corresponding to this point on the CDF
+        # find the indices corresponding to this point on the CDF
         index = np.searchsorted(self.cdf, choice)
-        #if necessary, map the indices back to their original ordering
+        # if necessary, map the indices back to their original ordering
         if self.sort:
             index = self.sortindex[index]
-        #map back to multi-dimensional indexing
+        # map back to multi-dimensional indexing
         index = np.unravel_index(index, self.shape)
         index = np.vstack(index)
-        #is this a discrete or piecewise continuous distribution?
+        # is this a discrete or piecewise continuous distribution?
         if self.interpolation:
             index = np.float_(index)
             # index[0] += np.random.uniform(size=index.shape[1])
             index[:int(self.interpolation)] += np.random.uniform(size=(int(self.interpolation), index.shape[1]))
 
         return self.transform(index)
+
 
 def planck(T, l):
     from scipy.constants import codata
@@ -83,14 +84,17 @@ def planck(T, l):
     result[calcMe] = (h*c*c)/(np.power(l[calcMe], 5.0) * (np.exp(p[calcMe])-1))
     return result
 
+
 def poisson(lamda, k):
     pdf = (lamda ** k * np.exp(-lamda)) / scipy.misc.factorial(k)
     return pdf
+
 
 def bessel(k):
     '''modified zero order besset=l'''
     pdf = scipy.special.i0(k)
     return pdf
+
 
 def MR(I,Ic,Is):
     '''modified rician distribution'''
@@ -101,19 +105,23 @@ def MR(I,Ic,Is):
     pdf = pdf/sum(pdf)
     return pdf
 
+
 def gaussian(mu, sig, x):
     pdf = np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
     return pdf
+
 
 def gaussian2(x, sig,mu):
     pdf = np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
     pdf = pdf/sum(pdf)
     return pdf
 
+
 def lognorm(x,mu, sigma):
     pdf = (np.exp(-(np.log10(x - mu))**2 / (2 * sigma**2))/ (x * sigma))
     pdf = pdf/sum(pdf)
     return pdf
+
 
 if __name__=='__main__':
     res_elements = 1000
