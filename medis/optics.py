@@ -245,13 +245,13 @@ class Wavefronts():
 
         return cpx_planes, sampling
 
-    def abs_zeros(self):
-        for iw in range(len(self.wsamples)):
-            for io in range(self.num_bodies):
-                proper.prop_circular_aperture(self.wf_collection[iw, io], 1, NORM=True)
-                bad_locs = np.logical_or(np.real(self.wf_collection[iw, io].wfarr) == -0,
-                                         np.imag(self.wf_collection[iw, io].wfarr) == -0)
-                self.wf_collection[iw, io].wfarr[bad_locs] = 0 + 0j
+    # def abs_zeros(self):
+    #     for iw in range(len(self.wsamples)):
+    #         for io in range(self.num_bodies):
+    #             proper.prop_circular_aperture(self.wf_collection[iw, io], 1, NORM=True)
+    #             bad_locs = np.logical_or(np.real(self.wf_collection[iw, io].wfarr) == -0,
+    #                                      np.imag(self.wf_collection[iw, io].wfarr) == -0)
+    #             self.wf_collection[iw, io].wfarr[bad_locs] = 0 + 0j
 
     def quicklook(self, wf=None, logZ=True, show=True, title=None):
         """
