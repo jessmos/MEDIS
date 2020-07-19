@@ -35,14 +35,15 @@ You will also have to install PROPER separately. First download from https://sou
 python setup.py install --prefix=/path/to/anaconda3/envs/medis/lib/python3.6/site-packages/
 ````
 
-### Edit VIP
-One thing left to do is to make an edit to the current version of vip_hci. Go to the package directory on your computer (on my computer that is */home/captainkay/programs/anaconda3/envs/medis/lib/python3.6/site-packages/vip-hci)*.
-in the vip_hci directory, go to *phot/snr.py*
-and change the import statement from `get_annulus` to `get_annulus_segments`.
-
 
 ### Setting the Save Directory
-The default location for the save data will be *$HOME/medis_data/*. If you want the data to be saved to a different location then change the `iop.datadir` variable in *user_params.py*. Any default global parameter can be changed there and it shouldn't affect the remote repo. If you find that git is tracking *user_params.py* then run `git update-index --skip-worktree medis/user_params.py` (run with --no-skip-worktree to make modifications)
+To change the location of the saved data for the simulation run, edit the iop params at the top of the run_telescope.py file you are starting. For example, from run_SCExAO.py, put the following somewhere in the configuration part of the file:
+
+testname = 'SCExAO-DM-test'
+iop.update_datadir(f"/home/captainkay/mazinlab/MKIDSim/CDIsim_data/")
+iop.update_testname(testname)
+iop.makedir()
+
 
 # Documentation
 The documentation for `MEDIS` can be found at https://medis.readthedocs.io
