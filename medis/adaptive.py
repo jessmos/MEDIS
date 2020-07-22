@@ -49,6 +49,16 @@ def make_speckle_kxy(kx, ky, amp, dm_phase):
     ret = amp*np.cos(xm + ym +  dm_phase)
     return ret
 
+def get_astrogrid_waffle(iter):
+    """ wrapper for make_speckle_kxy that also calculates for a given timestep and adds to absolute phase """
+    rel_phase = np.pi * np.cos(np.pi*iter*sp.sample_time/tp.satelite_speck['period']) if tp.satelite_speck['period'] else 0
+
+    waffle = make_speckle_kxy(tp.satelite_speck['xloc'], tp.satelite_speck['yloc'], tp.satelite_speck['amp'],
+                              tp.satelite_speck['phase']+rel_phase)
+    waffle += make_speckle_kxy(tp.satelite_speck['xloc'], -tp.satelite_speck['yloc'], tp.satelite_speck['amp'],
+                               tp.satelite_speck['phase']+rel_phase)
+    print(tp.satelite_speck['phase']+rel_phase)
+    return waffle
 
 ################################################################################
 # Deformable Mirror
@@ -118,8 +128,7 @@ def deformable_mirror(wf, WFS_map, iter, previous_output, apodize=True, plane_na
     #########
 
     if tp.satelite_speck['apply'] and plane_name is not 'woofer':
-        waffle = make_speckle_kxy(tp.satelite_speck['xloc'], tp.satelite_speck['yloc'], tp.satelite_speck['amp'], tp.satelite_speck['phase'])
-        waffle += make_speckle_kxy(tp.satelite_speck['xloc'], -tp.satelite_speck['yloc'], tp.satelite_speck['amp'], tp.satelite_speck['phase'])
+        waffle = get_astrogrid_waffle(iter)
         dm_map += waffle
 
     #######

@@ -160,7 +160,7 @@ class Camera():
 
         return {'photons': self.photons, 'rebinned_cube': self.rebinned_cube}
 
-    def quantize(self, fields, abs_step=0):
+    def quantize(self, fields, abs_step=0, finalise_photontable=True):
         self.rebinned_cube = np.abs(np.sum(fields[:, -1], axis=2)) ** 2  # select detector plane and sum over objects
         self.rebinned_cube = self.rescale_cube(self.rebinned_cube)  # interpolate onto pixel spacing
 
@@ -172,6 +172,7 @@ class Camera():
 
             self.rebinned_cube *= num_fake_events
             self.photons = None
+            self.save_instance()
 
         else:
             max_steps = self.max_chunk(self.rebinned_cube)
@@ -180,19 +181,19 @@ class Camera():
             self.photons = np.empty((4, 0))
             if self.product == 'photons':
                 if num_chunks == 1:
-                    self.photons = self.get_photons(self.rebinned_cube)
-                    if self.usesave: self.save_photontable(photonlist=self.photons, index=('ultralight', 6), populate_subsidiaries=True)
+                    self.photons = self.get_photons(self.rebinned_cube, chunk_step=abs_step)
+                    if self.usesave:
+                        self.populate_photontable(photons=self.photons, finalise=finalise_photontable)
                 else:
                     for ic in range(num_chunks):
                         cspan = (ic * max_steps, (ic + 1) * max_steps)
                         self.photons = self.get_photons(self.rebinned_cube[cspan[0]: cspan[1]], chunk_step=abs_step + cspan[0])
-                        if self.usesave: self.save_photontable(photonlist=self.photons, index=None, populate_subsidiaries=False)
+                        if self.usesave: self.populate_photontable(self.photons, finalise=False)
 
                     # only give the option to index and add Header after all MKID chunks are completed and even then it
                     # can be overwritten for the opportunity to have chunked fields
                     if self.usesave:
-                        self.save_photontable(photonlist=[], index=('ultralight', 6), populate_subsidiaries=True)
-                        self.photontable_exists = True
+                        self.populate_photontable(photons=[], finalise=finalise_photontable)
 
                 self.save_instance()
                 return {'photons': self.photons}
@@ -210,7 +211,7 @@ class Camera():
                 self.save_instance()
                 return {'rebinned_cube': self.rebinned_cube}
 
-    def __call__(self, fields=None, abs_step=0):
+    def __call__(self, fields=None, abs_step=0, finalise_photontable=True):
         """
         Generate observation data with Camera
 
@@ -224,9 +225,9 @@ class Camera():
             return self.load_photontable()
 
         else:
-            return self.quantize(fields, abs_step)
+            return self.quantize(fields, abs_step, finalise_photontable)
 
-    def max_chunk(self, datacube, round_chunk=True):
+    def max_chunk(self, datacube, round_chunk=False):
         """
         Determines the maximum duration each chunk can be to fit within the memory limit
 
@@ -235,13 +236,13 @@ class Camera():
 
         # max_counts = 50e6
         num_events = self.num_from_cube(datacube)
-        self.photons_size = num_events * 32  # in Bytes (verified using photons[:,0].nbytes)
+        self.photons_size = num_events * 64  # in Bytes (verified using photons[:,0].nbytes)
 
         max_chunk = sp.memory_limit*1e9 / self.photons_size
         # max_chunk = 1
         print(f'This observation will produce {num_events} photons, which is {self.photons_size/1e9} GB, meaning no '
               f'more than {max_chunk} of this observation can fit in the memory at one time')
-        max_chunk = min([len(datacube)*max_chunk, len(datacube)])
+        max_chunk = int(min([len(datacube)*max_chunk, len(datacube)]))
 
         if round_chunk:
             # get nice max cut
@@ -257,6 +258,45 @@ class Camera():
         print(f'Input cubes will be split up into time length {max_chunk}')
 
         return max_chunk
+
+    def save_instance(self):
+        """
+        Save the whole Camera instance
+
+        This is a defensive way to write pickle.write, allowing for very large files on all platforms
+        """
+        max_bytes = 2 ** 31 - 1
+        bytes_out = pickle.dumps(self)
+        n_bytes = sys.getsizeof(bytes_out)
+        with open(self.name, 'wb') as f_out:
+            for idx in range(0, n_bytes, max_bytes):
+                f_out.write(bytes_out[idx:idx + max_bytes])
+
+    def load_instance(self):
+        """
+        This is a defensive way to write pickle.load, allowing for very large files on all platforms
+        """
+        max_bytes = 2 ** 31 - 1
+        try:
+            input_size = os.path.getsize(self.name)
+            bytes_in = bytearray(0)
+            with open(self.name, 'rb') as f_in:
+                for _ in range(0, input_size, max_bytes):
+                    bytes_in += f_in.read(max_bytes)
+            obj = pickle.loads(bytes_in)
+        except:
+            return None
+        return obj
+
+    def populate_photontable(self, photons=[], finalise=False):
+        if finalise:
+            index = ('ultralight', 6)
+            populate_subsidiaries = True
+            self.photontable_exists = True
+        else:
+            index = None
+            populate_subsidiaries = False
+        self.save_photontable(photonlist=photons, index=index, populate_subsidiaries=populate_subsidiaries)
 
     def save_photontable(self, photonlist=[], index=('ultralight', 6), timesort=False, chunkshape=None, shuffle=True, bitshuffle=False,
                         ndx_shuffle=True, ndx_bitshuffle=False, populate_subsidiaries=True):
@@ -399,35 +439,6 @@ class Camera():
         print(f"Loaded photon list from table at{h5file}")
 
         return {'photons': self.photons}
-
-    def save_instance(self):
-        """
-        Save the whole Camera instance
-
-        This is a defensive way to write pickle.write, allowing for very large files on all platforms
-        """
-        max_bytes = 2 ** 31 - 1
-        bytes_out = pickle.dumps(self)
-        n_bytes = sys.getsizeof(bytes_out)
-        with open(self.name, 'wb') as f_out:
-            for idx in range(0, n_bytes, max_bytes):
-                f_out.write(bytes_out[idx:idx + max_bytes])
-
-    def load_instance(self):
-        """
-        This is a defensive way to write pickle.load, allowing for very large files on all platforms
-        """
-        max_bytes = 2 ** 31 - 1
-        try:
-            input_size = os.path.getsize(self.name)
-            bytes_in = bytearray(0)
-            with open(self.name, 'rb') as f_in:
-                for _ in range(0, input_size, max_bytes):
-                    bytes_in += f_in.read(max_bytes)
-            obj = pickle.loads(bytes_in)
-        except:
-            return None
-        return obj
 
     def num_from_cube(self, datacube):
         return int(ap.star_flux * sp.sample_time * np.sum(datacube))

@@ -116,7 +116,7 @@ def coronagraph(wf, occulter_mode=None):
     :param occulter_type string defining the occulter type. Accepted types are "Gaussian", "Solid", and "8th_Order"
     :return: noting is returned but wfo has been modified
     """
-    if occulter_mode is None:
+    if occulter_mode is None or (wf.name[:4] == 'comp' and sp.quick_companions):
         pass
     else:
         # Initialize Occulter based on Mode

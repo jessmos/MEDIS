@@ -194,7 +194,7 @@ class Telescope_params:
         self.ao_act = 60  # number of actuators on the DM on one axis (proper only models nxn square DMs)
         self.piston_error = False  # flag for allowing error on DM surface shape
         self.fit_dm = True  # flag to use DM surface fitting (see proper manual pg 52, the FIT switch)
-        self.satelite_speck = {'apply': False, 'phase': np.pi / 5., 'amp': 12e-9, 'xloc': 12, 'yloc': 12}
+        self.satelite_speck = {'apply': False, 'phase': np.pi / 5., 'amp': 12e-10, 'xloc': 12, 'yloc': 12, 'period': 0}
 
         # Ideal Detector Params (not bothering with MKIDs yet)
         self.detector = 'ideal'  # 'MKIDs'
@@ -203,6 +203,7 @@ class Telescope_params:
                                                 # used to make phase cubes. I assume this has something to do with the
                                                 # QE of MKIDs at different wavelengths?
         self.pix_shift = [0, 0]  # False?  Shifts the central star to off-axis (mimics conex mirror, tip/tilt error)
+        self.rot_rate = 0
         # self.platescale = 13.61  # mas # have to run get_sampling at the focus to find this
 
         # Aberrations
@@ -348,7 +349,7 @@ class Atmos_params():
         self.model = 'single'  # single|hcipy_standard|evolving
         self.cn_sq = 0.22 * 1e-12  # magnitude of perturbations within single atmos layer, at single wavelength
         self.L0 = 10  # outer scale of the model that sets distance of layers (not boundary). used in Kalmogorov model
-        self.vel = 5  # velocity of the layer in m/s
+        self.vel = 10  # velocity of the layer in m/s
         self.h = 100  # scale height in m
         self.fried = 0.2  # m
         self.tau = 0.01 #0.1  # correlation time in seconds of atmopshere
@@ -379,4 +380,4 @@ proper.use_cubic_conv = True
 # print(proper.__version__)
 # proper.prop_init_savestate()
 
-params = {'ap':ap, 'tp':tp, 'atmp':atmp, 'cdip':cdip, 'iop':iop, 'sp':sp, 'mp':mp}
+# params = {'ap':ap, 'tp':tp, 'atmp':atmp, 'cdip':cdip, 'iop':iop, 'sp':sp, 'mp':mp}

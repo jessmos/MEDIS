@@ -17,9 +17,9 @@ from medis.medis_main import RunMedis
 from medis.utils import dprint
 from medis.plot_tools import quick2D, grid
 from medis.twilight_colormaps import sunlight
-from medis.params import sp, ap, tp, iop, mp
+from medis.params import sp, ap, tp, iop, mp, atmp
 
-sp.numframes = 1000 #200 # 2000  # 1000
+sp.numframes = 100 #200 # 2000  # 1000
 ap.companion_xy = [[2,0], [-2,0]]
 ap.companion = True
 ap.spectra = [None, None, None]
@@ -37,6 +37,8 @@ tp.obscure = False
 tp.use_ao = True
 sp.save_to_disk = True
 sp.debug = False
+atmp.correlated_sampling = False
+atmp.model = 'single'
 tp.ao_act = 50
 # sp.debug = True
 # sp.skip_planes = ['coronagraph']
@@ -249,116 +251,6 @@ class Stats_Visualiser():
         x = x.reshape(shape)
         return x.sum(axis=axis + 1)
 
-def investigate_fields():
-
-    planet1_x = 189
-    planet1_xy = [256,planet1_x]
-
-    planet2_x = sp.grid_size - planet1_x
-    planet2_xy = [256, planet2_x]
-
-    steps = range(0,sp.numframes+1,10)
-    I_bins = np.logspace(-6, -10, 7)
-    t_bins = [1,2,5,10,20,50,100,200,500]#2**np.arange(0,10)
-    pupil_xys = [[sp.grid_size//2, sp.grid_size//2], [275, 275], [290, 260], [375, 375], [310,310], planet1_xy]
-
-    lightcurvefile = os.path.join(iop.testdir, 'lightcurves.pkl')
-    print(lightcurvefile)
-    lightcurves = []
-    if os.path.exists(lightcurvefile):
-        with open(lightcurvefile, 'rb') as handle:
-            for i in range(len(pupil_xys)):
-            # for i in range(2):
-                print(i)
-                lightcurves.append(pickle.load(handle))
-        
-        for lightcurve, t_bin in lightcurves:
-            lightcurve*=1e8
-            # mean = np.mean(lightcurve)
-            # std = np.std(lightcurve)
-            print(lightcurve)
-            plt.figure()
-            plt.plot(lightcurve)
-            # plt.show()
-            # plotLogLMap(lightcurve, np.linspace(0, max(lightcurve), 10), np.linspace(1, max(lightcurve) + 1, 10),
-            #             effExpTime=t_bin)
-            plotLogLMap(lightcurve, np.arange(0, 25, 5), np.arange(1, 26, 5), effExpTime=t_bin)
-            plt.show()
-
-        plt.show()
-    else:
-        sp.save_list = np.array(['atmosphere', 'detector'])
-        sim = RunMedis(name=f'{TESTDIR}/fieldscomp1000', product='fields')
-        observation = sim()
-
-        fields = observation['fields']
-
-        # spectral_train_grid = np.concatenate((fields[0, :, :, 0].imag, fields[0, :, :, 0].real), axis=1)
-        # nplanes = len(sp.save_list)
-        # fig, axes = plt.subplots(2, nplanes, figsize=(14, 7))
-        # print(axes.shape, spectral_train_grid.shape)
-        # for i in range(nplanes):
-        #     for j in range(2):
-        #         axes[j,i].imshow(spectral_train_grid[i,j])
-        #     axes[0, i].set_title(sp.save_list[i])
-        # plt.tight_layout()
-
-        monofields = fields[:, :, 0]  # keep all dimensions apart from wavelength
-
-        Stats_Visualiser(monofields, steps, I_bins, t_bins, pupil_xys, savefile=lightcurvefile)
-
-        plt.show(block=True)
-
-def investigate_stats():
-    sp.grid_size = 512
-    sim = RunMedis(name=f'{TESTDIR}/fields', product='fields')
-    observation = sim()
-
-    fields = np.abs(observation['fields'][:,-1])**2
-    timecube = np.sum(fields[:,0], axis=1)
-    grid([np.sum(timecube, axis=0)], show=False)
-
-    locs = [[210,210], [256,256], [256,206], [256,512-206]]
-    names = ['satelite', 'star', 'planet', 'speckle']
-
-    plot_stats(timecube, locs, names)
-
-def plot_stats(timecube, xys, names):
-
-    bins_list, I_list, timesamps, lc_list = pixel_stats(timecube, xys)
-
-    fig, axes = plt.subplots(2, len(bins_list))
-
-    for i, (bins, I, lightcurve, name) in enumerate(zip(bins_list, I_list, lc_list, names)):
-
-        axes[0, i].plot(timesamps, lightcurve)
-        axes[1, i].plot(bins[:-1], I)
-        axes[0, i].set_xlabel('time samples')
-        axes[0, i].set_ylabel('intensity')
-        axes[1, i].set_xlabel('intensity')
-        axes[1, i].set_ylabel('amount')
-        axes[0, i].set_title(name)
-    plt.show()
-
-def pixel_stats(timecube, xys):
-    assert timecube.ndim == 3
-    xys = np.array(xys)
-    print(xys.shape)
-    if xys.ndim == 1:
-        xys = [xys]
-
-    timesamps = np.arange(len(timecube))*sp.sample_time
-
-    lc_list, bins_list, I_list = [], [], []
-    for xy in xys:
-        lightcurve = timecube[:, xy[0], xy[1]]
-        I, bins = np.histogram(lightcurve, bins=75)
-        lc_list.append(lightcurve)
-        bins_list.append(bins)
-        I_list.append(I)
-
-    return bins_list, I_list, timesamps, lc_list
-
 def investigate_quantized():
 
     sp.quick_detect = True
@@ -400,6 +292,64 @@ def investigate_quantized():
     plt.show()
 
 if __name__ == '__main__':
-    investigate_fields()
-    # investigate_stats()
-    # investigate_quantized()
+    name = f'{TESTDIR}/frames={sp.numframes}_tau={atmp.tau}_comp_multiproc'
+
+    planet1_x = 189
+    planet1_xy = [256, planet1_x]
+
+    planet2_x = sp.grid_size - planet1_x
+    planet2_xy = [256, planet2_x]
+
+    steps = range(0, sp.numframes + 1, 10)
+    I_bins = np.logspace(-6, -10, 7)
+    t_bins = [1, 2, 5, 10, 20, 50, 100, 200, 500]  # 2**np.arange(0,10)
+    pupil_xys = [[sp.grid_size // 2, sp.grid_size // 2], [275, 275], [290, 260], [375, 375], [310, 310], planet1_xy]
+
+    iop.update_datadir('/mnt/data0/dodkins/MKIDSim/')
+    iop.update_testname(name)
+    lightcurvefile = os.path.join(iop.testdir, 'lightcurves.pkl')
+    print(lightcurvefile)
+    lightcurves = []
+    if os.path.exists(lightcurvefile):
+        with open(lightcurvefile, 'rb') as handle:
+            for i in range(len(pupil_xys)):
+                # for i in range(2):
+                print(i)
+                lightcurves.append(pickle.load(handle))
+
+        for lightcurve, t_bin in lightcurves:
+            lightcurve *= 1e8
+            # mean = np.mean(lightcurve)
+            # std = np.std(lightcurve)
+            print(lightcurve)
+            plt.figure()
+            plt.plot(lightcurve)
+            # plt.show()
+            # plotLogLMap(lightcurve, np.linspace(0, max(lightcurve), 10), np.linspace(1, max(lightcurve) + 1, 10),
+            #             effExpTime=t_bin)
+            plotLogLMap(lightcurve, np.arange(0, 25, 5), np.arange(1, 26, 5), effExpTime=t_bin)
+            plt.show()
+
+        plt.show()
+    else:
+        sp.save_list = np.array(['atmosphere', 'detector'])
+        sim = RunMedis(name=name, product='fields')
+        observation = sim()
+
+        fields = observation['fields']
+
+        # spectral_train_grid = np.concatenate((fields[0, :, :, 0].imag, fields[0, :, :, 0].real), axis=1)
+        # nplanes = len(sp.save_list)
+        # fig, axes = plt.subplots(2, nplanes, figsize=(14, 7))
+        # print(axes.shape, spectral_train_grid.shape)
+        # for i in range(nplanes):
+        #     for j in range(2):
+        #         axes[j,i].imshow(spectral_train_grid[i,j])
+        #     axes[0, i].set_title(sp.save_list[i])
+        # plt.tight_layout()
+
+        monofields = fields[:, :, 0]  # keep all dimensions apart from wavelength
+
+        Stats_Visualiser(monofields, steps, I_bins, t_bins, pupil_xys, savefile=lightcurvefile)
+
+        plt.show(block=True)

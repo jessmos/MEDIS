@@ -125,6 +125,8 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     ########################################
     # there are additional un-aberated optics in the coronagraph module
 
+    wfo.loop_collection(convo)
+
     wfo.loop_collection(coronagraph, occulter_mode=tp.cg_type, plane_name='coronagraph')
 
     ########################################

@@ -116,6 +116,10 @@ class RunMedis():
                         # Overwrite the .pkl files but keep aberration and atmosphere directories
                         os.remove(f"{iop.testdir}/params.pkl")
 
+        # this is needed for both Telescope and Camera
+        if not isinstance(ap.n_wvl_final, int):
+            ap.n_wvl_final = ap.n_wvl_init
+
     def make_testdir(self):
         if not os.path.isdir(iop.testdir):
             os.makedirs(iop.testdir, exist_ok=True)
@@ -153,7 +157,8 @@ class RunMedis():
         return match_params
 
     def __call__(self, *args, **kwargs):
-        """ Get fields from Telescope and optionally then get photons from Camera. This looks complicated because of
+        """ Get fields from Telescope and optionally then get photons from Camera. This funciton will generate and store
+         the photons but can't return them if they don't fit in memory. This looks complicated because of
          the possibility to chunk in both Telescope and Camera but simplifies a lot if both have num_chunk = 1"""
 
         if self.product == 'fields':
@@ -161,7 +166,7 @@ class RunMedis():
             self.tel = Telescope(usesave=sp.save_to_disk)  # checking of class's cache etc is left to the class
 
             #load or generate the fields
-            observation = self.tel()
+            observation = self.tel() #will just load first chunk if chunked, call tel() multiple times if you want more
 
         else:
             self.cam = Camera(usesave=sp.save_to_disk, product=self.product)  # get the camera configuratoin
@@ -169,20 +174,20 @@ class RunMedis():
                 observation = self.cam()
             else:
                 self.tel = Telescope(usesave=sp.save_to_disk)
-                self.tel()
 
                 if self.tel.num_chunks == 1:
-                    observation = self.cam(fields=self.tel.cpx_sequence)
+                    fields = self.tel()['fields']
+                    observation = self.cam(fields)
                 else:
-                    for ichunk in range(int(self.tel.num_chunks)):
-                        fields = self.tel.load_fields(span=(ichunk*self.tel.chunk_steps, (ichunk+1)*self.tel.chunk_steps))['fields']
-
-                        observation = self.cam(fields=fields, abs_step=ichunk*self.tel.chunk_steps,
+                    for ichunk in range(int(np.ceil(self.tel.num_chunks))):
+                        # fields = self.tel.load_fields(span=(ichunk*self.tel.chunk_steps, (ichunk+1)*self.tel.chunk_steps))['fields']
+                        fields = self.tel()['fields']  # first call will create fields and load first chunk, subsequent will load next chunk
+                        # fields = fields[:, :, :, 0][:, :, :, np.newaxis]
+                        observation = self.cam(fields=fields, abs_step=ichunk*self.tel.chunk_steps, 
                                                finalise_photontable=False)
 
                     if self.product == 'photons' and not self.cam.photontable_exists:
-                        self.cam.save_photontable(photonlist=[], index=('ultralight', 6), populate_subsidiaries=True)
-                        self.cam.photontable_exists = True
+                        self.cam.populate_photontable(photons=[], finalise=True)
                         self.cam.save_instance()
 
                     print('Returning the observation data for the final chunk only')
