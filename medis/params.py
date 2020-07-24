@@ -352,4 +352,3 @@ proper.use_cubic_conv = True
 # print(proper.__version__)
 # proper.prop_init_savestate()
 
-params = {'ap':ap, 'tp':tp, 'atmp':atmp, 'iop':iop, 'sp':sp, 'mp':mp}

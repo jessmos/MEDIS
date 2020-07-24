@@ -54,9 +54,7 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     if tp.use_atmos:
         wfo.loop_collection(atmos.add_atmos, PASSVALUE['iter'],
                             (iop.atmosdir, sp.sample_time, atmp.model),
-                            spatial_zoom=True, plane_name='atmosphere', zero_outside=True)
-
-    wfo.abs_zeros()
+                            spatial_zoom=True, plane_name='atmosphere')
 
     #TODO rotate atmos not yet implementid in 2.0
     # if tp.rotate_atmos:
@@ -77,11 +75,10 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     #######################################
     # Abberations before AO
 
-    wfo.loop_collection(aber.add_aber, iop.aberdir, PASSVALUE['iter'], lens_name='CPA', zero_outside=True)
+    wfo.loop_collection(aber.add_aber, iop.aberdir, PASSVALUE['iter'], lens_name='CPA')
 
     # wfo.loop_collection(proper.prop_circular_aperture, **{'radius': tp.entrance_d / 2})
     # wfo.wf_collection = aber.abs_zeros(wfo.wf_collection)
-    wfo.abs_zeros()
 
     #######################################
     # AO
@@ -111,7 +108,7 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
     # #######################################
     # Abberations after the AO Loop
 
-    wfo.loop_collection(aber.add_aber, iop.aberdir, PASSVALUE['iter'], lens_name='NCPA', zero_outside=True)
+    wfo.loop_collection(aber.add_aber, iop.aberdir, PASSVALUE['iter'], lens_name='NCPA')
     wfo.loop_collection(proper.prop_circular_aperture, **{'radius': tp.entrance_d / 2})
     # TODO does this need to be here?
     # wfo.loop_collection(opx.add_obscurations, tp.entrance_d/4, legs=False)
@@ -119,6 +116,7 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
 
     wfo.loop_collection(opx.prop_pass_lens, tp.lens_params[0]['focal_length'],
                         tp.lens_params[0]['focal_length'], plane_name='pre_coron')
+
 
     ########################################
     # Coronagraph
