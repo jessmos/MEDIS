@@ -162,7 +162,8 @@ class Wavefronts():
         else:
             plane_name = func.__name__
 
-        zero_outside = kwargs.pop('zero_outside') if 'zero_outside' in kwargs else False
+        if 'zero_outside' in kwargs:
+            raise DeprecationWarning('Zero outside issues fixed by pupil masking in adaptive.py')
 
         # manipulator_output is a way to store the values of a function passed into loop_collections.
         # EG you could use this as a way to save your WFS map if desired. The WFS map would be returned
@@ -184,13 +185,6 @@ class Wavefronts():
         # if there's at least one not np.nan element add this array to the Wavefronts obj
         if np.any(manipulator_output != None):
             setattr(self, plane_name, manipulator_output)
-
-        if zero_outside:
-            dprint('Rupert--debug this for gen_telescope. You shouldnt need this after correct masking of WFS map')
-            #TODO Rupert verifies if abs_zeros is still necessary. Gen telescope should use new version of adaptive
-            # that eliminates the need for abs_zeros (unless other things are wrong in optical train
-            if sp.verbose: print(f'Zeroing outside the beam after {plane_name}')
-            self.abs_zeros()
 
         # Saving complex field data after function is applied
         if plane_name in sp.save_list:
@@ -244,14 +238,6 @@ class Wavefronts():
         #     datacube = np.roll(np.roll(datacube, tp.pix_shift[0], 1), tp.pix_shift[1], 2)
 
         return cpx_planes, sampling
-
-    # def abs_zeros(self):
-    #     for iw in range(len(self.wsamples)):
-    #         for io in range(self.num_bodies):
-    #             proper.prop_circular_aperture(self.wf_collection[iw, io], 1, NORM=True)
-    #             bad_locs = np.logical_or(np.real(self.wf_collection[iw, io].wfarr) == -0,
-    #                                      np.imag(self.wf_collection[iw, io].wfarr) == -0)
-    #             self.wf_collection[iw, io].wfarr[bad_locs] = 0 + 0j
 
     def quicklook(self, wf=None, logZ=True, show=True, title=None):
         """
@@ -473,10 +459,6 @@ def prop_pass_lens(wf, fl_lens, dist):
     """
     proper.prop_lens(wf, fl_lens)
     proper.prop_propagate(wf, dist)
-
-
-def rotate_sky(wf, it):
-    raise NotImplementedError
 
 
 def offset_companion(wf):
