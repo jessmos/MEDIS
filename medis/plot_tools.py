@@ -17,7 +17,6 @@ from medis.CDI import cdi
 from medis.utils import dprint
 import medis.optics as opx
 from medis.twilight_colormaps import sunlight
-from proper import prop_get_beamradius
 
 # MEDIUM_SIZE = 17
 # plt.rc('font', size=MEDIUM_SIZE)  # controls default text sizes
@@ -364,7 +363,7 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
 
 
 def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=[None, None], subplt_cols=3,
-                 dx=None):
+                 dx=None, first=False):
     """
     view plot of intensity in each wavelength bin at a single (last) timestep
     will pull out the plane(s) of sp.save_list at last tstep of cpx_sequence, convert to intensity, and sum over
@@ -418,21 +417,30 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=[None, No
         plane = opx.extract_plane(cpx_seq, plot_plane)
         # Distinguish plotting z-axis in phase units or intensity units
         if plot_plane == "atmosphere" or plot_plane == "entrance_pupil":
-            plane = np.sum(np.angle(plane[-1]), axis=(0,1))
+            if first:
+                plane = np.sum(np.angle(plane[0]), axis=(0,1))  # first timestep
+            else:
+                plane = np.sum(np.angle(plane[-1]), axis=(0,1))  # last timestep
             plane = opx.extract_center(plane, new_size=np.int(sp.grid_size*sp.beam_ratio)+10)
             logZ[p] = False
             vlim[p] = [None, None]
             phs = " phase"
         elif plot_plane == "woofer" or plot_plane == "tweeter" or plot_plane == "DM":
             # only show the star phase map since phase at other bodies just offsets to shift focal plane position
-            plane = np.sum(np.angle(plane[-1]), axis=(0))
-            plane = plane[0]
-            plane = opx.extract_center(plane, new_size=np.int(sp.grid_size*sp.beam_ratio)+10)
+            if first:
+                plane = np.sum(np.angle(plane[0]), axis=(0))  # first timestep, only sum over object
+            else:
+                plane = np.sum(np.angle(plane[-1]), axis=(0))  # last timestep, only sum over object
+            plane = plane[0]  # plot the shortest wavelength
+            plane = opx.extract_center(plane, new_size=np.int(sp.grid_size*sp.beam_ratio)+10)  # zoom in on DM
             logZ[p] = False
-            vlim[p] = [-np.pi, np.pi]
+            vlim[p] = [-np.pi/100, np.pi/100]
             phs = " phase"
         else:
-            plane = np.sum(opx.cpx_to_intensity(plane[-1]), axis=(0,1))
+            if first:
+                plane = np.sum(opx.cpx_to_intensity(plane[0]), axis=(0, 1))
+            else:
+                plane = np.sum(opx.cpx_to_intensity(plane[-1]), axis=(0,1))
             phs = ""
         ### Retreiving Data- Custom selection of plane ###
         # plot_plane = sp.save_list[w]
