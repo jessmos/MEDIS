@@ -22,10 +22,10 @@ import medis.utils as mu
 import medis.optics as opx
 import medis.aberrations as aber
 from medis.params import sp, ap, tp, iop
-from medis.CDI import cdi\
+from medis.CDI import cdi
 
 
-class Telescope():
+class Telescope:
     """
     Creates a simulation for the telescope to create a series of complex electric fields
 
