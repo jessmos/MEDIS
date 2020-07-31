@@ -273,11 +273,11 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
         phases = cdi.phase_series
 
     # Create figure & adjust subplot number, layout, size, whitespace
-    fig = plt.figure()
     n_tsteps = len(img_tseries)
-    n_rows = int(np.ceil(n_tsteps / float(subplt_cols))+1)
-    plt.axis('off')
-    gs = gridspec.GridSpec(n_rows, subplt_cols, wspace=0.08, top=0.9, bottom=0.02)
+    n_rows = int(np.ceil(n_tsteps / float(subplt_cols)))
+
+    fig, subplot = plt.subplots(n_rows, subplt_cols, figsize=(10, 10))
+    fig.subplots_adjust(bottom=0.1, top=0.85, hspace=.4)  #  wspace=0.2, right=0.95, left=0.05,
 
     # Title
     if title is None:
@@ -286,79 +286,81 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
         pass
     fig.suptitle(title, fontweight='bold', fontsize=16)
 
-    for t in range(n_tsteps):
-        ax = fig.add_subplot(gs[t])
-
-        # X,Y lables
-        if dx is not None:
-            # Converting Sampling Units to Readable numbers
-            if dx < 1e-6:
-                dx *= 1e6  # [convert to um]
-                axlabel = 'um'
-            elif dx < 1e-3:
-                dx *= 1e3  # [convert to mm]
-                axlabel = 'mm'
-            elif 1e-2 > dx > 1e-3:
-                dx *= 1e2  # [convert to cm]
-                axlabel = 'cm'
-            else:
-                axlabel = 'm'
-
-            # Setting Tick Spacing
-            tic_spacing = np.linspace(0, img_tseries[t].shape[0], 5)  # 5 (# of ticks) is just set by hand, arbitrarily chosen
-            tic_lables = np.round(
-                np.linspace(-dx * sp.maskd_size / 2, dx * sp.maskd_size / 2, 5)).astype(
-                int)  # nsteps must be same as tic_spacing
-            tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
-            tic_spacing[-1] = tic_spacing[-1] - 1  # hack for edge effects
-            plt.xticks(tic_spacing, tic_lables, fontsize=6)
-            plt.yticks(tic_spacing, tic_lables, fontsize=6)
-            # plt.xlabel('[um]', fontsize=8)
-            plt.ylabel(axlabel, fontsize=8)
-
-        if logZ:
-            if vlim[0] is not None and vlim[0] <= 0:
-                if cdi.use_cdi and not np.isnan(phases[t]):
-                    ax.set_title(f"t={t * sp.sample_time}, \nprobe " r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
-                else:
-                    ax.set_title(f"t={t*sp.sample_time}")
-                im = ax.imshow(img_tseries[t], interpolation='none', origin='lower',
-                               vmin=vlim[0], vmax=vlim[1],
-                               norm=SymLogNorm(linthresh=1e-5), cmap="YlGnBu_r")
-                clabel = "Log Normalized Intensity"
-            else:
-                if cdi.use_cdi and not np.isnan(phases[t]):
-                    ax.set_title(f"t={t * sp.sample_time}, \nprobe" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
-                else:
-                    ax.set_title(f"t={t * sp.sample_time}")
-                im = ax.imshow(img_tseries[t], interpolation='none', origin='lower',
-                               vmin=vlim[0], vmax=vlim[1],
-                               norm=LogNorm(), cmap="YlGnBu_r")
-                clabel = "Log Normalized Intensity"
+    for ax, t in zip(subplot.flatten(), range(n_rows*subplt_cols)):  # range(n_tsteps)
+        if t > n_tsteps-1:
+            # ax.set_aspect('equal')
+            ax.axis('off')  # hides axis
+            pass
         else:
-            if cdi.use_cdi and not np.isnan(phases[t]):
-                ax.set_title(f"t={t * sp.sample_time},\nprobe" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
+            # X,Y lables
+            if dx is not None:
+                # Converting Sampling Units to Readable numbers
+                if dx < 1e-6:
+                    dx *= 1e6  # [convert to um]
+                    axlabel = 'um'
+                elif dx < 1e-3:
+                    dx *= 1e3  # [convert to mm]
+                    axlabel = 'mm'
+                elif 1e-2 > dx > 1e-3:
+                    dx *= 1e2  # [convert to cm]
+                    axlabel = 'cm'
+                else:
+                    axlabel = 'm'
+
+                # Setting Tick Spacing
+                tic_spacing = np.linspace(0, img_tseries[t].shape[0], 5)  # 5 (# of ticks) is just set by hand, arbitrarily chosen
+                tic_lables = np.round(
+                    np.linspace(-dx * sp.maskd_size / 2, dx * sp.maskd_size / 2, 5)).astype(
+                    int)  # nsteps must be same as tic_spacing
+                tic_spacing[0] = tic_spacing[0] + 1  # hack for edge effects
+                tic_spacing[-1] = tic_spacing[-1] - 1  # hack for edge effects
+                plt.xticks(tic_spacing, tic_lables, fontsize=6)
+                plt.yticks(tic_spacing, tic_lables, fontsize=6)
+                # plt.xlabel('[um]', fontsize=8)
+                plt.ylabel(axlabel, fontsize=8)
+
+            if logZ:
+                if vlim[0] is not None and vlim[0] <= 0:
+                    if cdi.use_cdi and not np.isnan(phases[t]):
+                        ax.set_title(f"probe " r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
+                    else:
+                        ax.set_title(f"t={t*sp.sample_time}")
+                    im = ax.imshow(img_tseries[t], interpolation='none', origin='lower',
+                                   vmin=vlim[0], vmax=vlim[1],
+                                   norm=SymLogNorm(linthresh=1e-5), cmap="YlGnBu_r")
+                    clabel = "Log Normalized Intensity"
+                else:
+                    if cdi.use_cdi and not np.isnan(phases[t]):
+                        ax.set_title(f"probe" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
+                    else:
+                        ax.set_title(f"t={t * sp.sample_time}")
+                    im = ax.imshow(img_tseries[t], interpolation='none', origin='lower',
+                                   vmin=vlim[0], vmax=vlim[1],
+                                   norm=LogNorm(), cmap="YlGnBu_r")
+                    clabel = "Log Normalized Intensity"
             else:
-                ax.set_title(f"t={t * sp.sample_time}")
-            im = ax.imshow(img_tseries[t], interpolation='none', origin='lower',
-                           vmin=vlim[0], vmax=vlim[1],
-                           cmap="YlGnBu_r")
-            clabel = "Normalized Intensity"
+                if cdi.use_cdi and not np.isnan(phases[t]):
+                    ax.set_title(f"t={t * sp.sample_time},\nprobe" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
+                else:
+                    ax.set_title(f"t={t * sp.sample_time}\n")
+                im = ax.imshow(img_tseries[t], interpolation='none', origin='lower',
+                               vmin=vlim[0], vmax=vlim[1],
+                               cmap="YlGnBu_r")
+                clabel = "Normalized Intensity"
 
-        if use_axis == 'anno':
-            ax.annotate_axis(im, ax, img_tseries.shape[1])
-        if use_axis is None:
-            plt.axis('off')
+            if use_axis == 'anno':
+                ax.annotate_axis(im, ax, img_tseries.shape[1])
+            if use_axis is None:
+                plt.axis('off')
 
-    if use_axis:
-        warnings.simplefilter("ignore", category=UserWarning)
-        gs.tight_layout(fig, pad=1.08, rect=(0, 0.02, 1, 0.85))  # rect = (left, bottom, right, top)
-        # fig.tight_layout(pad=50)
-        cbar_ax = fig.add_axes([0.55, 0.1, 0.2, 0.05])  # Add axes for colorbar @ position [left,bottom,width,height]
-        cb = fig.colorbar(im, cax=cbar_ax, orientation='horizontal')  #
-        cb.set_label(clabel)
+        if use_axis:
+            warnings.simplefilter("ignore", category=UserWarning)
+            cbar_ax = fig.add_axes([0.85, 0.1, 0.05, 0.8])  # Add axes for colorbar @ position [left,bottom,width,height]
+            cb = fig.colorbar(im, cax=cbar_ax, orientation='vertical')  #
+            cb.set_label(clabel, fontsize=12)
 
     if show is True:
+        plt.tight_layout(rect=[0, 0, 0.85, 0.9])  # rect = (left, bottom, right, top)
         plt.show(block=True)
 
 
