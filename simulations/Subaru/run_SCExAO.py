@@ -20,7 +20,7 @@ import medis.medis_main as mm
 #################################################################################################
 #################################################################################################
 #################################################################################################
-testname = 'SCExAO-CDI1'
+testname = 'SCExAO-test1'
 iop.update_datadir(f"/home/captainkay/mazinlab/MKIDSim/CDIsim_data/")
 iop.update_testname(testname)
 iop.makedir()
@@ -42,8 +42,8 @@ sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifac
 
 # Companion
 ap.companion = True
-ap.contrast = [5e-2]
-ap.companion_xy = [[5, -5]]  # units of this are lambda/tp.entrance_d
+ap.contrast = [5e-2, 9e-3]
+ap.companion_xy = [[5, -5], [8, 9.5]]  # units of this are lambda/tp.entrance_d
 ap.n_wvl_init = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
 ap.n_wvl_final = None  # final number of wavelength bins in spectral cube after interpolation (None sets equal to n_wvl_init)
 ap.interp_wvl = False  # Set to interpolate wavelengths from ap.n_wvl_init to ap.n_wvl_final
@@ -63,7 +63,7 @@ cdi.phase_integration_time = 0.01
 
 # Toggles for Aberrations and Control
 tp.obscure = False
-tp.use_atmos = False
+tp.use_atmos = True
 tp.use_aber = False
 tp.add_zern = False  # Just a note: zernike aberrations generate randomly each time the telescope is run, so introduces
                      # potentially inconsistent results
@@ -76,13 +76,13 @@ sp.show_spectra = True  # Plot spectral cube at single timestep
 sp.spectra_cols = 3  # number of subplots per row in view_spectra
 sp.show_tseries = False  # Plot full timeseries of white light frames
 sp.tseries_cols = 3  # number of subplots per row in view_timeseries
-sp.show_planes = False
+sp.show_planes = True
 sp.maskd_size = 256
-sp.verbose = True
+sp.verbose = False
 
 # Saving
 sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
-sp.save_list = [ 'woofer', 'tweeter',   'detector']  # list of locations in optics train to save 'entrance_pupil',
+sp.save_list = [ 'entrance_pupil','woofer', 'tweeter',   'detector']  # list of locations in optics train to save 'entrance_pupil',
                 # 'entrance_pupil','post-DM-focus', 'coronagraph',
 
 if __name__ == '__main__':
@@ -107,8 +107,10 @@ if __name__ == '__main__':
     # ======================================================================
     # CDI
     # ======================================================================
-    if cdi.use_cdi:
-        cdi_postprocess(focal_plane, fp_sampling)
+    # if cdi.use_cdi:
+        # cdi_postprocess(cpx_sequence, fp_sampling, plot=True)
+        #     cdi.save_tseries(img_tseries)
+        #     cdi.save_cout_to_disk()
 
     # =======================================================================
     # Plotting
