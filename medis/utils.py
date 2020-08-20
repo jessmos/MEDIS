@@ -92,7 +92,7 @@ def open_obs_sequence_hdf5(obs_seq_file='fields.h5'):
     obs_sequence = read_hdf5_file.root.data[:]
     # hdf5_clusters = read_hdf5_file.root.clusters[:]
     read_hdf5_file.close()
-x    return obs_sequence
+    return obs_sequence
 
 
 ####################################################################################################
