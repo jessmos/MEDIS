@@ -309,7 +309,7 @@ class Telescope:
             print(f"Shape of cpx_sequence = " \
                 f"{delim.join([samp + ':' + str(length) for samp, length in zip(samps, np.shape(self.cpx_sequence))])}")
         else:
-            print(f'Warning cpx_sequence is not 6D as intented by this function. Shape of tensor ='
+            print(f'Warning cpx_sequence is not 6D as intended by this function. Shape of tensor ='
                   f' {self.cpx_sequence.shape}')
 
     def save_fields(self, fields):
