@@ -40,6 +40,10 @@ class Wavefronts():
     """
     An object containing all of the complex E fields for each sampled wavelength and astronomical object at this tstep
 
+    wf_collection is an array of arrays; the wf_collection is (number_wavelengths x number_astro_bodies)
+    each 2D field in the wf_collection is the 2D array of complex E-field values at that wavelength, per object
+    the E-field size is given by (sp.grid_size x sp.grid_size)
+
     :params
 
     :returns
@@ -49,16 +53,14 @@ class Wavefronts():
         thus, self.wf_collection[iw,ib] is itself a 2D array of complex data. Its size is [sp.grid_size, sp.grid_size]
         we will call each instance of the collection a single wavefront wf
     self.save_E_fields: a matrix of E fields (proper.WaveFront.wfarr) at specified locations in the chain
+    self.wsamples = array of the wavelengths run in this simulation
+    self.num_bodies = number of astronomical objects in this simulation (including the main on-axis star)
     """
     def __init__(self, debug=False):
-
         # Using Proper to propagate wavefront from primary through optical system, loop over wavelength
         self.debug = debug
         self.wsamples = np.linspace(ap.wvl_range[0], ap.wvl_range[1], ap.n_wvl_init)  # units set in params (should be m)
         self.num_bodies = 1 + len(ap.contrast) if ap.companion else 1
-        # wf_collection is an array of arrays; the wf_collection is (number_wavelengths x number_astro_bodies)
-        # each 2D field in the wf_collection is the 2D array of complex E-field values at that wavelength, per object
-        # the E-field size is given by (sp.grid_size x sp.grid_size)
 
         ############################
         # Create Wavefront Array
