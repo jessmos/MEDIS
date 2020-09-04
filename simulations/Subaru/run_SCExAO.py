@@ -36,14 +36,14 @@ sp.closed_loop = False
 
 # Grid Parameters
 sp.focused_sys = True
-sp.beam_ratio = 0.08  # parameter dealing with the sampling of the beam in the pupil/focal plane
+sp.beam_ratio = 0.09  # parameter dealing with the sampling of the beam in the pupil/focal plane
 sp.grid_size = 512  # creates a nxn array of samples of the wavefront
 sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
 
 # Companion
 ap.companion = True
-ap.contrast = [5e-2, 9e-3]
-ap.companion_xy = [[5, -5], [8, 9.5]]  # units of this are lambda/tp.entrance_d
+ap.contrast = [5e-1]
+ap.companion_xy = [[5, -6]]  # units of this are lambda/tp.entrance_d
 ap.n_wvl_init = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
 ap.n_wvl_final = None  # final number of wavelength bins in spectral cube after interpolation (None sets equal to n_wvl_init)
 ap.interp_wvl = False  # Set to interpolate wavelengths from ap.n_wvl_init to ap.n_wvl_final
@@ -57,14 +57,14 @@ cdi.probe_h = 30  # [actuator coordinates] height of the probe
 cdi.probe_center = (10,10)  # [actuator coordinates] center position of the probe
 cdi.probe_amp = 2e-8  # [m] probe amplitude, scale should be in units of actuator height limits
 cdi.which_DM = 'tweeter'
-cdi.phs_intervals = np.pi/2
+cdi.phs_intervals = np.pi/3
 cdi.phase_integration_time = 0.01
 
 
 # Toggles for Aberrations and Control
 tp.obscure = False
 tp.use_atmos = True
-tp.use_aber = False
+tp.use_aber = True
 tp.add_zern = False  # Just a note: zernike aberrations generate randomly each time the telescope is run, so introduces
                      # potentially inconsistent results
 tp.use_ao = True
@@ -74,16 +74,17 @@ sp.skip_functions = []  # skip_functions is based on function name, alternate wa
 sp.show_wframe = True  # plot white light image frame
 sp.show_spectra = True  # Plot spectral cube at single timestep
 sp.spectra_cols = 3  # number of subplots per row in view_spectra
-sp.show_tseries = False  # Plot full timeseries of white light frames
+sp.show_tseries = True  # Plot full timeseries of white light frames
 sp.tseries_cols = 3  # number of subplots per row in view_timeseries
 sp.show_planes = True
 sp.maskd_size = 256
 sp.verbose = False
+sp.debug = False
 
 # Saving
 sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
-sp.save_list = [ 'entrance_pupil','woofer', 'tweeter',   'detector']  # list of locations in optics train to save 'entrance_pupil',
-                # 'entrance_pupil','post-DM-focus', 'coronagraph',
+sp.save_list = ['WFS_map', 'woofer', 'tweeter',   'detector']  # list of locations in optics train to save 'entrance_pupil',
+                # 'entrance_pupil','post-DM-focus', 'coronagraph', 'WFS_map'
 
 if __name__ == '__main__':
     # =======================================================================
@@ -105,12 +106,12 @@ if __name__ == '__main__':
     fp_sampling = np.copy(sampling[cpx_sequence.shape[1]-1,:])  # numpy arrays have some weird effects that make copying the array necessary
 
     # ======================================================================
-    # CDI
+    # CDI Post-Processing
     # ======================================================================
     # if cdi.use_cdi:
-        # cdi_postprocess(cpx_sequence, fp_sampling, plot=True)
-        #     cdi.save_tseries(img_tseries)
-        #     cdi.save_cout_to_disk()
+    #     cdi_postprocess(cpx_sequence, fp_sampling, plot=True)
+    #     # cdi.save_tseries(img_tseries)
+    #     # cdi.save_cout_to_disk()
 
     # =======================================================================
     # Plotting
@@ -147,14 +148,14 @@ if __name__ == '__main__':
                                             f"AO={tp.use_ao}. CDI={cdi.use_cdi}",
                         subplt_cols=sp.tseries_cols,
                         logZ=True,
-                        vlim=(1e-10, 1e-4),
+                        vlim=(1e-7, 1e-4),
                         dx=fp_sampling[0])
 
     # Plotting Selected Plane
     if sp.show_planes:
         vlim = [(None, None), (None, None), (None, None), (1e-7,1e-3), (1e-7,1e-3), (1e-7,1e-3)]
         # vlim = [(None,None), (None,None), (None,None), (None,None)]  # (1e-2,1e-1) (7e-4, 6e-4)
-        logZ = [True, False, False, True, True, True]
+        logZ = [True, True, True, True, True, True]
         if sp.save_list:
             plot_planes(cpx_sequence,
                         title=f"White Light through Optical System",

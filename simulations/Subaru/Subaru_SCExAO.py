@@ -211,7 +211,7 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     #
     # AO System
     if tp.use_ao:
-        WFS_map = ao.open_loop_wfs(wfo)
+        # WFS_map = ao.open_loop_wfs(wfo)
         wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], apodize=False,
                             plane_name='tweeter', debug=sp.verbose)
     # ------------------------------------------------
