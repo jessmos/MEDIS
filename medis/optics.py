@@ -368,6 +368,7 @@ def extract_center(wf, new_size=sp.maskd_size):
     :param wf: [sp.grid_size, sp.grid_size] array
     :returns: array with size [new_size, new_size]
     """
+    new_size = np.int(new_size)
     smaller_wf = np.zeros((new_size, new_size))
     EXTRACT = new_size
     nx,ny = wf.shape
@@ -553,9 +554,13 @@ def check_sampling(wf, tstep, location, line_info, units=None):
             print(f"sampling at wavelength={wf.lamda * 1e9:.0f}nm is {check_sampling} m")
 
 
+"""
+Depricated by use of hardmask pupil. Removing it as it is confusing with reference in new routine in adaptive.py 
+
 def unwrap_phase_zeros(phasemap):
-    """ combination of abs_zeros and masking allows phase unwrap to work without discontiuities sometimes occur """
+    '' combination of abs_zeros and masking allows phase unwrap to work without discontiuities sometimes occur ''
     masked_phase = np.ma.masked_equal(phasemap, 0)
     unwrap = unwrap_phase(masked_phase, wrap_around=[False, False])
     unwrap[phasemap == 0] = 0
     return unwrap
+"""
