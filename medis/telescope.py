@@ -307,7 +307,7 @@ class Telescope:
             samps = ['timesteps', 'save planes', 'wavelengths', 'astronomical bodies', 'x', 'y']
             delim = ', '
             print(f"Shape of cpx_sequence = " \
-                f"{delim.join([samp + ':' + str(length) for samp, length in zip(samps, np.shape(self.cpx_sequence))])}")
+                f"{delim.join([samp + ':' + str(length) for samp, length in zip(samps, np.shape(self.cpx_sequence))])}\n\n")
         else:
             print(f'Warning cpx_sequence is not 6D as intended by this function. Shape of tensor ='
                   f' {self.cpx_sequence.shape}')
