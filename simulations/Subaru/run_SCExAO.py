@@ -45,6 +45,7 @@ sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifac
 ap.companion = True
 ap.contrast = [5e-1]
 ap.companion_xy = [[5, -6]]  # units of this are lambda/tp.entrance_d
+ap.star_flux = int(1e6)  # A 5 apparent mag star 1e6 cts/cm^2/s
 ap.n_wvl_init = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
 ap.n_wvl_final = None  # final number of wavelength bins in spectral cube after interpolation (None sets equal to n_wvl_init)
 ap.interp_wvl = False  # Set to interpolate wavelengths from ap.n_wvl_init to ap.n_wvl_final
@@ -163,7 +164,9 @@ if __name__ == '__main__':
                     logZ=False,
                     # dx=fp_sampling[0],
                     zlabel='photon counts',
-                    vlim=(0, 800))  # (1e-3, 1e-1) (None,None)
+                    vlim=(0, 400),
+                    show=False)  # (1e-3, 1e-1) (None,None)
+    plt.show()
 
     # Plotting Spectra at last tstep
     if sp.show_spectra:
@@ -191,7 +194,7 @@ if __name__ == '__main__':
 
     # Plotting Selected Plane
     if sp.show_planes:
-        vlim = [(None, None), (None, None), (None, None), (1e-7,1e-3), (1e-7,1e-3), (1e-7,1e-3)]
+        vlim = [(None, None), (None, None),(1e-7,1e-3), (None, None),  (1e-7,1e-3), (1e-7,1e-3)]
         # vlim = [(None,None), (None,None), (None,None), (None,None)]  # (1e-2,1e-1) (7e-4, 6e-4)
         logZ = [True, True, True, True, True, True]
         if sp.save_list:

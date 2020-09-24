@@ -191,7 +191,7 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     # AO System
     if tp.use_ao:
         WFS_map = ao.open_loop_wfs(wfo)
-        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], apodize=False,
+        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], apodize=True,
                             plane_name='woofer', debug=sp.verbose)  # don't use PASSVALUE['WFS_map'] here because open loop
     # ------------------------------------------------
     wfo.loop_collection(proper.prop_propagate, tp.dist_dm_ao2)
@@ -212,7 +212,7 @@ def Subaru_SCExAO(empty_lamda, grid_size, PASSVALUE):
     # AO System
     if tp.use_ao:
         # WFS_map = ao.open_loop_wfs(wfo)
-        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], apodize=False,
+        wfo.loop_collection(ao.deformable_mirror, WFS_map, PASSVALUE['iter'], apodize=True,
                             plane_name='tweeter', debug=sp.verbose)
     # ------------------------------------------------
     wfo.loop_collection(proper.prop_propagate, tp.fl_SxOAPG)  # from tweeter-DM to OAP2

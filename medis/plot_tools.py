@@ -41,6 +41,8 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None),
     :param logZ: flag to set logscale plotting on z-axis
     :param vlim: tuple of limits on the colorbar axis, otherwise default matplotlib (pass in logscale limits if logZ=True)
     :param colormap: specify colormap as string
+    :param zlabel: string label of the colorbar axis
+    :param show: if true, shows the image now and blocks the sim, else false waits until the next plt.show() call
     :return:
     """
     # Create figure & adjust subplot number, layout, size, whitespace
@@ -81,6 +83,8 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None),
     else:
         norm = SymLogNorm()
     # norm = None if not logZ else LogNorm() if vlim[0] > 0 else SymLogNorm(1e-7))
+
+    # Plot the damn thing
     cax = ax.imshow(image, interpolation='none', origin='lower', vmin=vlim[0], vmax=vlim[1],
                     norm=norm, cmap=colormap)
 
@@ -88,6 +92,7 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None),
     plt.title(title, fontweight='bold', fontsize=16)
     cb = plt.colorbar(cax)
     cb.set_label(zlabel)
+    dprint('\ndid I stutter??\n')
     if show:
         plt.show(block=False)
 
@@ -404,7 +409,12 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=[None, No
     if len(logZ) == 1:
         logZ = np.repeat(logZ,len(sp.save_list))
     if len(vlim) == 2:
-        vlim = (vlim,)*len(sp.save_list)
+        vlim = [vlim,]*len(sp.save_list)
+
+    if not first:
+        f = -1
+    else:
+        f = 0 # select first or last timestep
 
     for p in range(n_planes):
         ax = fig.add_subplot(gs[p])
@@ -419,31 +429,23 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=[None, No
         plane = opx.extract_plane(cpx_seq, plot_plane)
         # Distinguish plotting z-axis in phase units or intensity units
         if plot_plane == "atmosphere" or plot_plane == "entrance_pupil":
-            if first:
-                plane = np.sum(np.angle(plane[0]), axis=(0,1))  # first timestep
-            else:
-                plane = np.sum(np.angle(plane[-1]), axis=(0,1))  # last timestep
-            plane = opx.extract_center(plane, new_size=np.int(sp.grid_size*sp.beam_ratio)+10)
+            plane = np.sum(np.angle(plane[f]), axis=(0,1))
+            plane = opx.extract_center(plane, new_size=sp.grid_size*sp.beam_ratio+10)
             logZ[p] = False
             vlim[p] = [None, None]
             phs = " phase"
         elif plot_plane == "woofer" or plot_plane == "tweeter" or plot_plane == "DM":
             # only show the star phase map since phase at other bodies just offsets to shift focal plane position
-            if first:
-                plane = np.sum(np.angle(plane[0]), axis=(0))  # first timestep, only sum over object
-            else:
-                plane = np.sum(np.angle(plane[-1]), axis=(0))  # last timestep, only sum over object
+            plane = np.sum(np.angle(plane[f]), axis=(0))  # only sum over object
             plane = plane[0]  # plot the shortest wavelength
-            plane = opx.extract_center(plane, new_size=np.int(sp.grid_size*sp.beam_ratio)+10)  # zoom in on DM
+            plane = opx.extract_center(plane, new_size=sp.grid_size*sp.beam_ratio+10)  # zoom in on DM
             logZ[p] = False
-            vlim[p] = [-np.pi/100, np.pi/100]
+            # vlim[p] = [-np.pi/100, np.pi/100]
             phs = " phase"
         else:
-            if first:
-                plane = np.sum(opx.cpx_to_intensity(plane[0]), axis=(0, 1))
-            else:
-                plane = np.sum(opx.cpx_to_intensity(plane[-1]), axis=(0,1))
+            plane = np.sum(opx.cpx_to_intensity(plane[f]), axis=(0, 1))
             phs = ""
+
         ### Retreiving Data- Custom selection of plane ###
         # plot_plane = sp.save_list[w]
         # plane = opx.extract_plane(cpx_seq, plot_plane)
@@ -465,7 +467,7 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=[None, No
 
         # X,Y lables
         if dx is not None:
-            # dprint(f"sampling = {sampl[w]}")
+            dprint(f"plane.shape[0] = {plane.shape}, beam size ={sp.grid_size*sp.beam_ratio}")
             tic_spacing = np.linspace(0, plane.shape[0], 5)  # 5 (# of ticks) is just set by hand, arbitrarily chosen
             tic_lables = np.round(
                 np.linspace(-dx[p,0] * plane.shape[0] / 2, dx[p,0] * plane.shape[0] / 2, 5)).astype(int)  # nsteps must be same as tic_spacing
@@ -480,23 +482,22 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=[None, No
             cmap = sunlight
         else:
             cmap = "YlGnBu_r"
+        ax.set_title(f"{sp.save_list[p]}" + phs)
+
         if logZ[p]:
             if vlim[p][0] is not None and vlim[p][0] <= 0:
-                ax.set_title(f"{sp.save_list[p]}"+phs)
                 im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[p][0], vmax=vlim[p][1],
                                norm=SymLogNorm(linthresh=1e-5),
                                cmap=cmap)
                 cb = fig.colorbar(im)
                 # clabel = "Log Normalized Intensity"
             else:
-                ax.set_title(f"{sp.save_list[p]}"+phs)
                 im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[p][0], vmax=vlim[p][1],
                                norm=LogNorm(), cmap=cmap)  #(1e-6,1e-3)
                 cb = fig.colorbar(im)
                 # clabel = "Log Normalized Intensity"
                 # cb.set_label(clabel)
         else:
-            ax.set_title(f"{sp.save_list[p]}"+phs)
             im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[p][0], vmax=vlim[p][1],
                            cmap=cmap)  #  "twilight"
             cb = fig.colorbar(im)  #
@@ -508,4 +509,4 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=[None, No
         gs.tight_layout(fig, pad=1.08, rect=(0, 0.02, 1, 0.9))  # rect = (left, bottom, right, top)
         # fig.tight_layout(pad=50)
 
-    plt.show(block=True)
+    # plt.show(block=True)

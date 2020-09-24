@@ -286,8 +286,6 @@ def open_loop_wfs(wfo, plane_name='wfs'):
     :param plane_name: name of the plane to enable or disable saving the WFS map
     :return: array containing only the unwrapped phase delay of the wavefront; shape=[n_wavelengths], units=radians
     """
-    from skimage.restoration import unwrap_phase
-
     star_wf = wfo.wf_collection[:, 0]
     WFS_map = np.zeros((len(star_wf), sp.grid_size, sp.grid_size))
 
@@ -303,8 +301,8 @@ def open_loop_wfs(wfo, plane_name='wfs'):
         #             vlim=[-3*np.pi, 3*np.pi])
         #     plt.show()
 
-    if 'open_loop_wfs' in sp.save_list or sp.closed_loop or 'WFS_map' in sp.save_list:
-        wfo.save_plane(location='WFS_map')
+    if 'WFS' in sp.save_list or sp.closed_loop:
+        wfo.save_plane(location='WFS')
 
     return WFS_map
 

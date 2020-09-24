@@ -935,8 +935,8 @@ class Camera():
     def rescale_cube(self, rebinned_cube, conserve=True):
         if conserve:
             total = np.sum(rebinned_cube)
-        nyq_sampling = ap.wvl_range[0]*360*3600/(2*np.pi*tp.entrance_d)
-        self.sampling = nyq_sampling*sp.beam_ratio*2  # nyq sampling happens at sp.beam_ratio = 0.5
+        nyq_sampling = ap.wvl_range[0]*360*3600/(4*np.pi*tp.entrance_d) # 1/2 lambda/pi converted to rad
+        self.sampling = 2*nyq_sampling*sp.beam_ratio  # sample at 2x nyquist, scaled by beam_ratio
         x = np.arange(-sp.grid_size*self.sampling/2, sp.grid_size*self.sampling/2, self.sampling)
         xnew = np.arange(-self.array_size[0]*self.platescale/2, self.array_size[0]*self.platescale/2, self.platescale)
         ynew = np.arange(-self.array_size[1]*self.platescale/2, self.array_size[1]*self.platescale/2, self.platescale)

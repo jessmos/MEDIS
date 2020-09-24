@@ -368,9 +368,9 @@ def extract_center(wf, new_size=sp.maskd_size):
     :param wf: [sp.grid_size, sp.grid_size] array
     :returns: array with size [new_size, new_size]
     """
-    new_size = np.int(new_size)
-    smaller_wf = np.zeros((new_size, new_size))
-    EXTRACT = new_size
+    EXTRACT = np.int(np.ceil(new_size))
+    # dprint(f'newsize={new_size}, dtype={new_size.dtype}')
+    smaller_wf = np.zeros((EXTRACT, EXTRACT))
     nx,ny = wf.shape
     smaller_wf = wf[int(ny/2-EXTRACT/2):int(ny/2+EXTRACT/2),
                     int(nx/2-EXTRACT/2):int(nx/2+EXTRACT/2)]
