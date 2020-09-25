@@ -40,6 +40,10 @@ class Wavefronts():
     """
     An object containing all of the complex E fields for each sampled wavelength and astronomical object at this tstep
 
+    wf_collection is an array of arrays; the wf_collection is (number_wavelengths x number_astro_bodies)
+    each 2D field in the wf_collection is the 2D array of complex E-field values at that wavelength, per object
+    the E-field size is given by (sp.grid_size x sp.grid_size)
+
     :params
 
     :returns
@@ -49,16 +53,14 @@ class Wavefronts():
         thus, self.wf_collection[iw,ib] is itself a 2D array of complex data. Its size is [sp.grid_size, sp.grid_size]
         we will call each instance of the collection a single wavefront wf
     self.save_E_fields: a matrix of E fields (proper.WaveFront.wfarr) at specified locations in the chain
+    self.wsamples = array of the wavelengths run in this simulation
+    self.num_bodies = number of astronomical objects in this simulation (including the main on-axis star)
     """
     def __init__(self, debug=False):
-
         # Using Proper to propagate wavefront from primary through optical system, loop over wavelength
         self.debug = debug
         self.wsamples = np.linspace(ap.wvl_range[0], ap.wvl_range[1], ap.n_wvl_init)  # units set in params (should be m)
         self.num_bodies = 1 + len(ap.contrast) if ap.companion else 1
-        # wf_collection is an array of arrays; the wf_collection is (number_wavelengths x number_astro_bodies)
-        # each 2D field in the wf_collection is the 2D array of complex E-field values at that wavelength, per object
-        # the E-field size is given by (sp.grid_size x sp.grid_size)
 
         ############################
         # Create Wavefront Array
@@ -162,7 +164,8 @@ class Wavefronts():
         else:
             plane_name = func.__name__
 
-        zero_outside = kwargs.pop('zero_outside') if 'zero_outside' in kwargs else False
+        if 'zero_outside' in kwargs:
+            raise DeprecationWarning('Zero outside issues fixed by pupil masking in adaptive.py')
 
         # manipulator_output is a way to store the values of a function passed into loop_collections.
         # EG you could use this as a way to save your WFS map if desired. The WFS map would be returned
@@ -184,13 +187,6 @@ class Wavefronts():
         # if there's at least one not np.nan element add this array to the Wavefronts obj
         if np.any(manipulator_output != None):
             setattr(self, plane_name, manipulator_output)
-
-        if zero_outside:
-            dprint('Rupert--debug this for gen_telescope. You shouldnt need this after correct masking of WFS map')
-            #TODO Rupert verifies if abs_zeros is still necessary. Gen telescope should use new version of adaptive
-            # that eliminates the need for abs_zeros (unless other things are wrong in optical train
-            if sp.verbose: print(f'Zeroing outside the beam after {plane_name}')
-            self.abs_zeros()
 
         # Saving complex field data after function is applied
         if plane_name in sp.save_list:
@@ -244,14 +240,6 @@ class Wavefronts():
         #     datacube = np.roll(np.roll(datacube, tp.pix_shift[0], 1), tp.pix_shift[1], 2)
 
         return cpx_planes, sampling
-
-    def abs_zeros(self):
-        for iw in range(len(self.wsamples)):
-            for io in range(self.num_bodies):
-                proper.prop_circular_aperture(self.wf_collection[iw, io], 1, NORM=True)
-                bad_locs = np.logical_or(np.real(self.wf_collection[iw, io].wfarr) == -0,
-                                         np.imag(self.wf_collection[iw, io].wfarr) == -0)
-                self.wf_collection[iw, io].wfarr[bad_locs] = 0 + 0j
 
     def quicklook(self, wf=None, logZ=True, show=True, title=None):
         """
@@ -380,8 +368,9 @@ def extract_center(wf, new_size=sp.maskd_size):
     :param wf: [sp.grid_size, sp.grid_size] array
     :returns: array with size [new_size, new_size]
     """
-    smaller_wf = np.zeros((new_size, new_size))
-    EXTRACT = new_size
+    EXTRACT = np.int(np.ceil(new_size))
+    # dprint(f'newsize={new_size}, dtype={new_size.dtype}')
+    smaller_wf = np.zeros((EXTRACT, EXTRACT))
     nx,ny = wf.shape
     smaller_wf = wf[int(ny/2-EXTRACT/2):int(ny/2+EXTRACT/2),
                     int(nx/2-EXTRACT/2):int(nx/2+EXTRACT/2)]
@@ -475,10 +464,6 @@ def prop_pass_lens(wf, fl_lens, dist):
     proper.prop_propagate(wf, dist)
 
 
-def rotate_sky(wf, it):
-    raise NotImplementedError
-
-
 def offset_companion(wf):
     """
     offsets the companion wavefront using the 2nd and 3rd order Zernike Polynomials (X,Y tilt)
@@ -569,9 +554,13 @@ def check_sampling(wf, tstep, location, line_info, units=None):
             print(f"sampling at wavelength={wf.lamda * 1e9:.0f}nm is {check_sampling} m")
 
 
+"""
+Depricated by use of hardmask pupil. Removing it as it is confusing with reference in new routine in adaptive.py 
+
 def unwrap_phase_zeros(phasemap):
-    """ combination of abs_zeros and masking allows phase unwrap to work without discontiuities sometimes occur """
+    '' combination of abs_zeros and masking allows phase unwrap to work without discontiuities sometimes occur ''
     masked_phase = np.ma.masked_equal(phasemap, 0)
     unwrap = unwrap_phase(masked_phase, wrap_around=[False, False])
     unwrap[phasemap == 0] = 0
     return unwrap
+"""

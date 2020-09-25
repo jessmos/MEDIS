@@ -100,18 +100,18 @@ class CDI_params():
         return self.phase_series
 
     def init_cout(self, nact):
-        """intitialize output struct for CDI post-processing"""
-        cout = CDIOut()
-        cout.grid_size = sp.grid_size
-        cout.beam_ratio = sp.beam_ratio
-        cout.nact = nact
-        cout.probe_series = np.zeros((self.n_probes, nact, nact))
-        cout.deltas = np.zeros((self.n_probes//2, sp.grid_size, sp.grid_size), dtype=complex)
-        cout.tseries = np.zeros((self.n_probes,sp.grid_size, sp.grid_size),dtype=complex)
+        self.cout = CDIOut()
+        self.cout.nact = nact
+        self.cout.grid_size = sp.grid_size
+        self.cout.beam_ratio = sp.beam_ratio
+        self.cout.DM_probe_series = np.zeros((self.n_probes, nact, nact))
 
-    def save_tseries(self, cout, ts):
+    def save_probe(self, ix, probe):
+        self.cout.DM_probe_series[ix] = probe
+
+    def save_tseries(self, ts):
         """saves output of medis fields as 2D intensity images for CDI postprocessing"""
-        cout.tseries = ts
+        self.cout.tseries = ts
 
     def save_cout_to_disk(self, plot=False):
 
@@ -134,9 +134,9 @@ class CDI_params():
 
             for ax, ix in zip(subplot.flatten(), range(self.n_probes)):
                 # im = ax.imshow(self.DM_probe_series[ix], interpolation='none', origin='lower')
-                im = ax.imshow(cout.probe_series[ix], interpolation='none', origin='lower')
+                im = ax.imshow(self.cout.probe_series[ix], interpolation='none', origin='lower')
 
-                ax.set_title(f"Probe " + r'$\theta$=' + f'{self.phase_series[ix]/np.pi:.2f}' + r'$\pi$')
+                ax.set_title(f"Probe " + r'$\theta$=' + f'{self.DM_phase_series[ix]/np.pi:.2f}' + r'$\pi$')
 
             cb = fig.colorbar(im)  #
             cb.set_label('um')
@@ -144,7 +144,6 @@ class CDI_params():
             plt.show()
 
 # Sneakily Instantiating Class Objects here
-cout = CDIOut()
 cdi = CDI_params()
 
 
@@ -219,8 +218,8 @@ def config_probe(theta, nact, iw=0, ib=0):
     # Saving Probe in the series
     if iw == 0 and ib == 0:
         ip = np.argwhere(cdi.phase_series == theta)
-        cout.probe_series[ip[0,0]] = probe
-        cout.nact = nact
+        cdi.save_probe(ip[0,0], probe)
+        cdi.nact = nact
 
     return probe
 
@@ -237,50 +236,43 @@ def cdi_postprocess(fp_seq, sampling, plot=False):
     """
     n_pairs = cdi.n_probes//2  # number of deltas (probe differentials)
     n_nulls = sp.numframes - cdi.n_probes
-    delta = np.zeros((n_pairs, sp.grid_size, sp.grid_size), dtype=complex)
+    delta = np.zeros((n_pairs, sp.grid_size, sp.grid_size), dtype=float)
     absDeltaP = np.zeros((n_pairs, sp.grid_size, sp.grid_size), dtype=float)
     phsDeltaP = np.zeros((n_pairs, sp.grid_size, sp.grid_size), dtype=float)
     Epupil = np.zeros((n_nulls, sp.grid_size, sp.grid_size), dtype=float)
 
-
-
     fp_seq = np.sum(fp_seq, axis=1)  # sum over wavelength
-
 
     for ix in range(n_pairs):
         # Compute deltas
-        delta[ix] = np.copy(fp_seq[ix] - fp_seq[ix+nd])
+        delta[ix] = np.copy(fp_seq[ix] - fp_seq[ix+n_pairs])
 
         for xn in range(n_nulls):
             dprint(f'for computing reDeltaP: xn={xn}')
             # Real Part of deltaP
-            absDeltaP[xn] = np.sqrt((fp_seq[ix] + fp_seq[ix+n_pairs])/2 - fp_seq[xn])
-            probe_ft = (1/np.sqrt(2*np.pi)) * np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(cout.probe_series[ix])))
-            phsDeltaP[xn] = np.atan2(probe_ft.imag / probe_ft.real)
+            # absDeltaP[xn] = np.sqrt((fp_seq[ix] + fp_seq[ix+n_pairs])/2 - fp_seq[xn])
+            # probe_ft = (1/np.sqrt(2*np.pi)) * np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(cdi.cout.DM_probe_series[ix])))
+            # phsDeltaP[xn] = np.arctan2(probe_ft.imag, probe_ft.real)
 
             # Least Squares Solution
-            Epupil[ip] = np.linalg.solve((-ImDeltaP[ip] + ReDeltaP[ip], delta[ip]))
-
-
+            # Epupil[xn] = np.linalg.solve((-ImDeltaP[xn] + ReDeltaP[xn], delta[ix]))
             # duVecNby1 = -dmfac * np.linalg.solve((10 ** log10reg * np.diag(cvar.EyeGstarGdiag) + cvar.GstarG_wsum),
             #                                      cvar.RealGstarEab_wsum)
             # duVec = duVecNby1.reshape((-1,))
 
-
-
             # Fig 2
     if plot:
-        fig, subplot = plt.subplots(1, nd, figsize=(14,5))
+        fig, subplot = plt.subplots(1, n_pairs, figsize=(14,5))
         fig.subplots_adjust(wspace=0.5, right=0.85)
 
         fig.suptitle('Deltas for CDI Probes')
 
-        for ax, ix in zip(subplot.flatten(), range(nd)):
+        for ax, ix in zip(subplot.flatten(), range(n_pairs)):
             im = ax.imshow(delta[ix]*1e6, interpolation='none', origin='lower',
                            norm=SymLogNorm(linthresh=1e-2),
                            vmin=-1, vmax=1) #, norm=SymLogNorm(linthresh=1e-5))
             ax.set_title(f"Diff Probe\n" + r'$\theta$' + f'={cdi.phase_series[ix]/np.pi:.3f}' +
-                         r'$\pi$ -$\theta$' + f'={cdi.phase_series[ix+nd]/np.pi:.3f}' + r'$\pi$')
+                         r'$\pi$ -$\theta$' + f'={cdi.phase_series[ix+n_pairs]/np.pi:.3f}' + r'$\pi$')
 
         cax = fig.add_axes([0.9, 0.2, 0.03, 0.6])  # Add axes for colorbar @ position [left,bottom,width,height]
         cb = fig.colorbar(im, orientation='vertical', cax=cax)  #

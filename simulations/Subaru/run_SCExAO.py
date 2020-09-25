@@ -9,8 +9,9 @@ prescription or the default params themselves.
 
 """
 import numpy as np
+from matplotlib import pyplot as plt
 
-from medis.params import sp, tp, iop, ap
+from medis.params import sp, tp, iop, ap, mp
 from medis.CDI import cdi, cdi_postprocess
 from medis.utils import dprint
 import medis.optics as opx
@@ -20,7 +21,7 @@ import medis.medis_main as mm
 #################################################################################################
 #################################################################################################
 #################################################################################################
-testname = 'SCExAO-CDI1'
+testname = 'SCExAO-test1'
 iop.update_datadir(f"/home/captainkay/mazinlab/MKIDSim/CDIsim_data/")
 iop.update_testname(testname)
 iop.makedir()
@@ -42,12 +43,13 @@ sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifac
 
 # Companion
 ap.companion = True
-ap.contrast = [5e-2]
-ap.companion_xy = [[5, -5]]  # units of this are lambda/tp.entrance_d
+ap.contrast = [5e-1]
+ap.companion_xy = [[5, -6]]  # units of this are lambda/tp.entrance_d
+ap.star_flux = int(1e6)  # A 5 apparent mag star 1e6 cts/cm^2/s
 ap.n_wvl_init = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
 ap.n_wvl_final = None  # final number of wavelength bins in spectral cube after interpolation (None sets equal to n_wvl_init)
 ap.interp_wvl = False  # Set to interpolate wavelengths from ap.n_wvl_init to ap.n_wvl_final
-ap.wvl_range = np.array([800, 1400]) / 1e9  # wavelength range in [m] (formerly ap.band)
+ap.wvl_range = np.array([950, 1300]) / 1e9  # wavelength range in [m] (formerly ap.band)
 # eg. DARKNESS band is [800, 1500], J band =  [1100,1400])
 
 # CDI
@@ -57,32 +59,44 @@ cdi.probe_h = 30  # [actuator coordinates] height of the probe
 cdi.probe_center = (10,10)  # [actuator coordinates] center position of the probe
 cdi.probe_amp = 2e-8  # [m] probe amplitude, scale should be in units of actuator height limits
 cdi.which_DM = 'tweeter'
-cdi.phs_intervals = np.pi/2
+cdi.phs_intervals = np.pi/3
 cdi.phase_integration_time = 0.01
 
 
 # Toggles for Aberrations and Control
 tp.obscure = False
-tp.use_atmos = False
-tp.use_aber = False
+tp.use_atmos = True
+tp.use_aber = True
 tp.add_zern = False  # Just a note: zernike aberrations generate randomly each time the telescope is run, so introduces
                      # potentially inconsistent results
 tp.use_ao = True
 sp.skip_functions = []  # skip_functions is based on function name, alternate way of on/off than the toggling
                     # 'coronagraph' 'deformable_mirror' 'add_aber'
+
+# MKIDs
+mp.convert_photons = True
+mp.bad_pix = True
+mp.pix_yield = 0.62
+mp.array_size = np.array([139,146])
+mp.wavecal_coeffs = [1.e9 / 6, -250]
+mp.hot_counts = False
+mp.dark_counts = False
+mp.platescale = 10 * 1e-3  # [mas]
+
 # Plotting
 sp.show_wframe = True  # plot white light image frame
-sp.show_spectra = True  # Plot spectral cube at single timestep
+sp.show_spectra = False  # Plot spectral cube at single timestep
 sp.spectra_cols = 3  # number of subplots per row in view_spectra
 sp.show_tseries = False  # Plot full timeseries of white light frames
 sp.tseries_cols = 3  # number of subplots per row in view_timeseries
-sp.show_planes = False
+sp.show_planes = True
 sp.maskd_size = 256
-sp.verbose = True
+sp.verbose = False
+sp.debug = False
 
 # Saving
-sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
-sp.save_list = [ 'woofer', 'tweeter',   'detector']  # list of locations in optics train to save 'entrance_pupil',
+sp.save_to_disk = True  # save obs_sequence (timestep, wavelength, x, y)
+sp.save_list = [ 'entrance_pupil', 'woofer', 'tweeter',   'detector']  # list of locations in optics train to save 'entrance_pupil',
                 # 'entrance_pupil','post-DM-focus', 'coronagraph',
 
 if __name__ == '__main__':
@@ -105,26 +119,54 @@ if __name__ == '__main__':
     fp_sampling = np.copy(sampling[cpx_sequence.shape[1]-1,:])  # numpy arrays have some weird effects that make copying the array necessary
 
     # ======================================================================
-    # CDI
+    # CDI Post-Processing
     # ======================================================================
-    if cdi.use_cdi:
-        cdi_postprocess(focal_plane, fp_sampling)
+    # if cdi.use_cdi:
+    #     cdi_postprocess(cpx_sequence, fp_sampling, plot=True)
+    #     # cdi.save_tseries(img_tseries)
+    #     # cdi.save_cout_to_disk()
+
+    # =======================================================================
+    # MKID Conversion
+    # # =======================================================================
+    if mp.convert_photons:
+        # photons have shape [n_timesteps, n_wavelengths, x_pix, y_pix] where pix is now camera pixels.
+        # The units of the z-axis are counts
+        MEC = mm.Camera(product='rebinned_cube')  # product can be photons (photonlist) or 'rebinned_cube' (rebin back into the dimensions of fields but without the save_planes dimension)
+        photons = MEC(fields=cpx_sequence)['rebinned_cube']
+
+        # grid(photons, title='Spectra with MKIDs', vlim=[0,800], cmap='YlGnBu_r')
 
     # =======================================================================
     # Plotting
     # =======================================================================
     # White Light, Last Timestep
     if sp.show_wframe:
-        # vlim = (np.min(spectralcube) * 10, np.max(spectralcube))  # setting z-axis limits
-        img = np.sum(focal_plane[sp.numframes-1], axis=0)  # sum over wavelength
-        quick2D(opx.extract_center(img), #focal_plane[sp.numframes-1]),
-                title=f"White light image at timestep {sp.numframes} \n"  # img
-                           f"AO={tp.use_ao}, CDI={cdi.use_cdi} ",
-                           # f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio} ",
-                           # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
-                logZ=True,
-                dx=fp_sampling[0],
-                vlim=(None,None))  # (1e-3, 1e-1)
+        if not mp.convert_photons:
+            # vlim = (np.min(spectralcube) * 10, np.max(spectralcube))  # setting z-axis limits
+            img = np.sum(focal_plane[sp.numframes-1], axis=0)  # sum over wavelength
+            quick2D(opx.extract_center(img), #focal_plane[sp.numframes-1]),
+                    title=f"White light image at timestep {sp.numframes} \n"  # img
+                               f"AO={tp.use_ao}, CDI={cdi.use_cdi} ",
+                               # f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio} ",
+                               # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
+                    logZ=True,
+                    dx=fp_sampling[0],
+                    vlim=(None,None),
+                    show=False)  # (1e-3, 1e-1)
+        else:
+            img = np.sum(photons[sp.numframes - 1], axis=0)
+            quick2D(img,  # focal_plane[sp.numframes-1]),
+                    title=f"MEC White Light Image \n",  # img
+                    # f"AO={tp.use_ao}, CDI={cdi.use_cdi} ",
+                    # f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio} ",
+                    # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
+                    logZ=False,
+                    # dx=fp_sampling[0],
+                    zlabel='photon counts',
+                    vlim=(0, 400),
+                    show=False)  # (1e-3, 1e-1) (None,None)
+    plt.show()
 
     # Plotting Spectra at last tstep
     if sp.show_spectra:
@@ -136,7 +178,8 @@ if __name__ == '__main__':
                       logZ=True,
                       subplt_cols=sp.spectra_cols,
                       vlim=(1e-7, 1e-3),
-                      dx=fp_sampling)
+                      dx=fp_sampling,
+                      show=False)
 
     # Plotting Timeseries in White Light
     if sp.show_tseries:
@@ -145,14 +188,15 @@ if __name__ == '__main__':
                                             f"AO={tp.use_ao}. CDI={cdi.use_cdi}",
                         subplt_cols=sp.tseries_cols,
                         logZ=True,
-                        vlim=(1e-10, 1e-4),
-                        dx=fp_sampling[0])
+                        vlim=(1e-7, 1e-4),
+                        dx=fp_sampling[0],
+                        show=False)
 
     # Plotting Selected Plane
     if sp.show_planes:
         vlim = [(None, None), (None, None), (None, None), (1e-7,1e-3), (1e-7,1e-3), (1e-7,1e-3)]
         # vlim = [(None,None), (None,None), (None,None), (None,None)]  # (1e-2,1e-1) (7e-4, 6e-4)
-        logZ = [True, False, False, True, True, True]
+        logZ = [True, True, True, True, True, True]
         if sp.save_list:
             plot_planes(cpx_sequence,
                         title=f"White Light through Optical System",
@@ -161,4 +205,4 @@ if __name__ == '__main__':
                         logZ=logZ,
                         dx=sampling)
 
-    test = 1
+    plt.show()

@@ -64,7 +64,7 @@ class Occulter():
 
     def apply_occulter(self, wf):
         """
-        applies the occulter by type spcified when class object was initiated
+        applies the occulter (focal plane mask) by type specified when class object was initiated
 
         :param wf: 2D wavefront
         :return:
@@ -145,7 +145,13 @@ def apodization(wf):
     raise NotImplementedError
 
 
-class Vortex():
+class Vortex:
+    """
+    a copy-pasted votex coronagraph.
+
+    This copy-pasta of a vortex creates its own proper simulation at the pupil plane of the coronagraph system. It
+
+    """
     # https://github.com/vortex-exoplanet/HEEPS/tree/master/heeps
     def __int__(self):
         warnings.warn("Using vector vortex code quickly adapted from METIS. Still largely unverified")
@@ -159,9 +165,9 @@ class Vortex():
 
         # f_lens = tp.f_lens #conf['F_LENS']
         # diam = tp.diam#conf['DIAM']
-        charge = 2#conf['CHARGE']
-        pixelsize = 5#conf['PIXEL_SCALE']
-        Debug_print = False#conf['DEBUG_PRINT']
+        charge = 2  #conf['CHARGE']
+        pixelsize = 5  #conf['PIXEL_SCALE']
+        Debug_print = False  #conf['DEBUG_PRINT']
 
         coron_temp = os.path.join(iop.testdir, 'coron_maps/')
         if not os.path.exists(coron_temp):
@@ -191,7 +197,7 @@ class Vortex():
 
             else:  # CAL==1: # create the vortex for a perfectly circular pupil
                 if (Debug_print == True):
-                    print ("Charge ", charge)
+                    dprint(f"Vortex Charge= {charge}")
 
                 f_lens = 200.0 * tp.entrance_d
                 wf1 = proper.prop_begin(tp.entrance_d, wavelength, gridsize, beam_ratio)

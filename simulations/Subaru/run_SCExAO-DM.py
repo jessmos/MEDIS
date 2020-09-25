@@ -30,7 +30,7 @@ tp.prescription = 'SCExAO_DM'
 tp.entrance_d = 0.051  # diameter of optics in SCExAO train are 2 inches=0.051 m
 
 # Simulation & Timing
-sp.numframes = 8
+sp.numframes = 7
 sp.closed_loop = False
 
 # Grid Parameters
@@ -65,9 +65,9 @@ sp.skip_functions = []  # skip_functions is based on function name, alternate wa
                     # 'coronagraph' 'deformable_mirror' 'add_aber'
 # Plotting
 sp.show_wframe = True  # plot white light image frame
-sp.show_spectra = True  # Plot spectral cube at single timestep
+sp.show_spectra = False  # Plot spectral cube at single timestep
 sp.spectra_cols = 3  # number of subplots per row in view_spectra
-sp.show_tseries = True  # Plot full timeseries of white light frames
+sp.show_tseries = True# Plot full timeseries of white light frames
 sp.tseries_cols = 3  # number of subplots per row in view_timeseries
 sp.show_planes = True
 sp.maskd_size = 256
@@ -97,11 +97,16 @@ if __name__ == '__main__':
     focal_plane = np.sum(opx.cpx_to_intensity(focal_plane), axis=2)
     fp_sampling = np.copy(sampling[cpx_sequence.shape[1]-1,:])  # numpy arrays have some weird effects that make copying the array necessary
 
+    # Also img_tseries
+    img_tseries = np.sum(focal_plane, axis=1)  # sum over wavelength
+
     # ======================================================================
     # CDI
     # ======================================================================
-    if cdi.use_cdi:
-        cdi_postprocess(focal_plane, fp_sampling, plot=True)
+    # if cdi.use_cdi:
+    #     cdi_postprocess(cpx_sequence, fp_sampling, plot=True)
+    #     cdi.save_tseries(img_tseries)
+    #     cdi.save_cout_to_disk()
 
     # =======================================================================
     # Plotting
@@ -133,18 +138,17 @@ if __name__ == '__main__':
 
     # Plotting Timeseries in White Light
     if sp.show_tseries:
-        img_tseries = np.sum(focal_plane, axis=1)  # sum over wavelength
         view_timeseries(img_tseries, title=f"White Light Timeseries\n"
                                             f"AO={tp.use_ao}. CDI={cdi.use_cdi}",
                         subplt_cols=sp.tseries_cols,
                         logZ=True,
-                        vlim=(1e-10, 1e-4),
+                        vlim=(1e-7, 1e-4),
                         dx=fp_sampling[0])
 
     # Plotting Selected Plane
     if sp.show_planes:
         # vlim = [(None, None), (None, None), (None, None), (1e-7,1e-3), (1e-7,1e-3), (1e-7,1e-3)]
-        vlim = [(None,None), (None,None), (1e-8,1e-4), (None,None)]  # (1e-2,1e-1) (7e-4, 6e-4)
+        vlim = [(None,None), (1e-7,1e-4), (1e-8,1e-4), (None,None)]  # (1e-2,1e-1) (7e-4, 6e-4)
         logZ = [False, False, True, True, True, True]
         if sp.save_list:
             plot_planes(cpx_sequence,
@@ -152,6 +156,7 @@ if __name__ == '__main__':
                         subplt_cols=2,
                         vlim=vlim,
                         logZ=logZ,
+                        first=True,
                         dx=sampling)
 
     test = 1

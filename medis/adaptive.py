@@ -16,14 +16,15 @@ TODO
 import numpy as np
 from scipy import interpolate, ndimage
 from inspect import getframeinfo, stack
+from skimage.restoration import unwrap_phase
 import matplotlib.pylab as plt
 import proper
 
-from medis.params import sp, tp
+from medis.params import sp, tp, ap
 from medis.CDI import cdi, config_probe
-from medis.optics import check_sampling, apodize_pupil, unwrap_phase_zeros as unwrap_phase
+from medis.optics import check_sampling
 from medis.utils import dprint
-# from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
+from medis.plot_tools import quick2D
 
 
 ################################################################################
@@ -106,7 +107,7 @@ def deformable_mirror(wf, WFS_map, iter, previous_output=None, apodize=False, pl
         theta = cdi.phase_series[iter]
         if not np.isnan(theta):
             # dprint(f"Applying CDI probe, lambda = {wfo.wsamples[iw]*1e9:.2f} nm")
-            probe = config_probe(theta, nact, iw=wf.iw, ib=wf.ib)  # iw and ib only used for plotting, and only if sp.verbose=true
+            probe = config_probe(theta, nact, iw=wf.iw, ib=wf.ib, tstep=iter)  # iw and ib only used for plotting, and only if sp.verbose=true
             dm_map = dm_map + probe  # Add Probe to DM map
 
     #########################
@@ -122,17 +123,21 @@ def deformable_mirror(wf, WFS_map, iter, previous_output=None, apodize=False, pl
     #########################
     dmap = proper.prop_dm(wf, dm_map, dm_xc, dm_yc, act_spacing, FIT=tp.fit_dm)  #
 
-    if debug and wf.iw == 0 and wf.ib == 0:
+    if debug and wf.iw == 0 and wf.ib == 0 and iter==0:
         dprint(plane_name)
         check_sampling(wf, iter, plane_name+' DM pupil plane', getframeinfo(stack()[0][0]), units='mm')
 
-        # plt.ion()
+        quick2D(WFS_map[wf.iw], title=f"WFS map after masking",
+                zlabel='unwrapped phase (rad)',
+                vlim=[-3 * np.pi, 3 * np.pi])
+
         fig, ax = plt.subplots(1,1)
         cax = ax.imshow(dm_map*1e9, interpolation='none', origin='lower')
         plt.title(f'{plane_name} dm_map (actuator coordinates)')
         cb = plt.colorbar(cax)
         cb.set_label('nm')
-        plt.show(block=True)
+
+        plt.show()
 
         post_ao = unwrap_phase(proper.prop_get_phase(wf)) * wf.lamda / (2 * np.pi)
         # quick2D(pre_ao_dist*1e9, title='unwrapped wavefront before DM', zlabel='nm', show=False)  # , vlim=(-0.5e-7,0.5e-7))
@@ -145,7 +150,7 @@ def deformable_mirror(wf, WFS_map, iter, previous_output=None, apodize=False, pl
         # plt.legend()
         # plt.xlim(sp.grid_size//2*np.array([1-sp.beam_ratio*1.1, 1+sp.beam_ratio*1.1]))
         # quick2D(pre_ao + (2*dmap), title='diff', zlabel='m', show=False, vlim=(-0.5e-7,0.5e-7))
-        # quick2D(post_ao, title='unwrapped wavefront after DM', zlabel='m', show=False, vlim=(-0.5e-7,0.5e-7))
+        # quick2D(post_ao, title='unwrapped wavefront after DM', zlabel='m', show=True, vlim=(-0.5e-7,0.5e-7))
         # quick2D(np.abs(proper.prop_get_amplitude(wf))**2, title='wavefront after DM intensity', show=False)
         # quick2D(proper.prop_get_phase(wf), title='wavefront after DM in phase units', zlabel='Phase',
         #          show=True)  # colormap='sunlight',
@@ -205,11 +210,8 @@ def quick_ao(wf, nact, WFS_map):
     ###################################
     # cropping here by beam_ratio rather than d_beam is valid since the beam size was initialized
     #  using the scaled beam_ratios when the wfo was created
+    # crop should be -1,+1 on either side of the center because for an even sp.grid_size
     ao_map = WFS_map[
-             # sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2)+1:
-             # sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+2,
-             # sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2)+1:
-             # sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+2]
              sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2)-1:
              sp.grid_size//2 + np.int_(wf.beam_ratio*sp.grid_size//2)+2,
              sp.grid_size//2 - np.int_(wf.beam_ratio*sp.grid_size//2)-1:
@@ -222,7 +224,7 @@ def quick_ao(wf, nact, WFS_map):
     # (tp.nact,tp.nact)
     ########################################################
     # Lowpass Filter- prevents aliasing; uses Gaussian filter
-    nyquist_dm = tp.ao_act/2 * act_spacing  # [m]
+    nyquist_dm = nact/2 * act_spacing  # [m]
     sigma = [nyquist_dm/2.355, nyquist_dm/2.355]  # assume we want sigma to be twice the HWHM
     ao_map = ndimage.gaussian_filter(ao_map, sigma=sigma, mode='nearest')
 
@@ -284,19 +286,23 @@ def open_loop_wfs(wfo, plane_name='wfs'):
     :param plane_name: name of the plane to enable or disable saving the WFS map
     :return: array containing only the unwrapped phase delay of the wavefront; shape=[n_wavelengths], units=radians
     """
-    from skimage.restoration import unwrap_phase
-
     star_wf = wfo.wf_collection[:, 0]
     WFS_map = np.zeros((len(star_wf), sp.grid_size, sp.grid_size))
 
-    for iw in range(len(star_wf)):
+    for iw in range(len(star_wf)):  # for each wavelength
         hardmask_pupil(star_wf[iw])
         phasemap = proper.prop_get_phase(star_wf[iw])
         WFS_map[iw] = unwrap_phase(phasemap, wrap_around=[False, False])
-        WFS_map[iw][phasemap==0] = 0
+        WFS_map[iw][phasemap==0] = 0 #TODO is this still necessary?
 
-    if 'open_loop_wfs' in sp.save_list or sp.closed_loop:
-        wfo.save_plane(location='WFS_map')
+        # if sp.verbose:
+        #     quick2D(WFS_map[iw], title=f"WFS map after masking, lambda={wfo.wsamples[iw]*1e9:.2f}",
+        #             zlabel='unwrapped phase (rad)',
+        #             vlim=[-3*np.pi, 3*np.pi])
+        #     plt.show()
+
+    if 'WFS' in sp.save_list or sp.closed_loop:
+        wfo.save_plane(location='WFS')
 
     return WFS_map
 
@@ -338,10 +344,10 @@ def hardmask_pupil(wf):
     masked = phase_map * mask
     wf.wfarr = proper.prop_shift_center(amp_map * np.cos(masked) + 1j * amp_map * np.sin(masked))
 
-    if sp.debug and wf.ib == 0:
-        dprint(f"Radius of hard-edge pupil mask is {radius} pixels")
-        from medis.plot_tools import quick2D
-        quick2D(masked, title=f"Masked phase map in hardmask_pupil, lambda={wf.lamda*1e9} nm", zlabel='phase?')
+    # if sp.verbose:
+    #     dprint(f"Radius of hard-edge pupil mask is {radius} pixels")
+    #     quick2D(masked, title=f"Masked phase map in hardmask_pupil, lambda={wf.lamda*1e9} nm", zlabel='phase (rad)')
+    #     plt.show()
 
 
 def make_speckle_kxy(kx, ky, amp, dm_phase):

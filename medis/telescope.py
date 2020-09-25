@@ -22,10 +22,10 @@ import medis.utils as mu
 import medis.optics as opx
 import medis.aberrations as aber
 from medis.params import sp, ap, tp, iop
-from medis.CDI import cdi\
+from medis.CDI import cdi
 
 
-class Telescope():
+class Telescope:
     """
     Creates a simulation for the telescope to create a series of complex electric fields
 
@@ -307,9 +307,9 @@ class Telescope():
             samps = ['timesteps', 'save planes', 'wavelengths', 'astronomical bodies', 'x', 'y']
             delim = ', '
             print(f"Shape of cpx_sequence = " \
-                f"{delim.join([samp + ':' + str(length) for samp, length in zip(samps, np.shape(self.cpx_sequence))])}")
+                f"{delim.join([samp + ':' + str(length) for samp, length in zip(samps, np.shape(self.cpx_sequence))])}\n\n")
         else:
-            print(f'Warning cpx_sequence is not 6D as intented by this function. Shape of tensor ='
+            print(f'Warning cpx_sequence is not 6D as intended by this function. Shape of tensor ='
                   f' {self.cpx_sequence.shape}')
 
     def save_fields(self, fields):

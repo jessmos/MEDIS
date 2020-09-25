@@ -175,7 +175,6 @@ def add_atmos(wf, it, param_tup=None, spatial_zoom=False):
             # TODO check for new file name convention in addition to directory name
             print('atmospheres should be created at the beginng, not on the fly')
             raise NotImplementedError
-            gen_atmos(params, plot=True)
 
         atm_map = fits.open(atmos_map)[1].data
         atm_map = unwrap_phase(atm_map)
