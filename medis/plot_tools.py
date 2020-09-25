@@ -92,7 +92,6 @@ def quick2D(image, dx=None, title=None, logZ=False, vlim=(None,None),
     plt.title(title, fontweight='bold', fontsize=16)
     cb = plt.colorbar(cax)
     cb.set_label(zlabel)
-    dprint('\ndid I stutter??\n')
     if show:
         plt.show(block=False)
 
@@ -440,7 +439,7 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=[None, No
             plane = plane[0]  # plot the shortest wavelength
             plane = opx.extract_center(plane, new_size=sp.grid_size*sp.beam_ratio+10)  # zoom in on DM
             logZ[p] = False
-            # vlim[p] = [-np.pi/100, np.pi/100]
+            vlim[p] = [-np.pi, np.pi]
             phs = " phase"
         else:
             plane = np.sum(opx.cpx_to_intensity(plane[f]), axis=(0, 1))
@@ -467,7 +466,6 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=[None, No
 
         # X,Y lables
         if dx is not None:
-            dprint(f"plane.shape[0] = {plane.shape}, beam size ={sp.grid_size*sp.beam_ratio}")
             tic_spacing = np.linspace(0, plane.shape[0], 5)  # 5 (# of ticks) is just set by hand, arbitrarily chosen
             tic_lables = np.round(
                 np.linspace(-dx[p,0] * plane.shape[0] / 2, dx[p,0] * plane.shape[0] / 2, 5)).astype(int)  # nsteps must be same as tic_spacing

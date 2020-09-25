@@ -37,7 +37,7 @@ sp.closed_loop = False
 
 # Grid Parameters
 sp.focused_sys = True
-sp.beam_ratio = 0.09  # parameter dealing with the sampling of the beam in the pupil/focal plane
+sp.beam_ratio = 0.08  # parameter dealing with the sampling of the beam in the pupil/focal plane
 sp.grid_size = 512  # creates a nxn array of samples of the wavefront
 sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
 
@@ -49,7 +49,7 @@ ap.star_flux = int(1e6)  # A 5 apparent mag star 1e6 cts/cm^2/s
 ap.n_wvl_init = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
 ap.n_wvl_final = None  # final number of wavelength bins in spectral cube after interpolation (None sets equal to n_wvl_init)
 ap.interp_wvl = False  # Set to interpolate wavelengths from ap.n_wvl_init to ap.n_wvl_final
-ap.wvl_range = np.array([800, 1400]) / 1e9  # wavelength range in [m] (formerly ap.band)
+ap.wvl_range = np.array([950, 1300]) / 1e9  # wavelength range in [m] (formerly ap.band)
 # eg. DARKNESS band is [800, 1500], J band =  [1100,1400])
 
 # CDI
@@ -95,8 +95,8 @@ sp.verbose = False
 sp.debug = False
 
 # Saving
-sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
-sp.save_list = [ 'woofer', 'tweeter',   'detector']  # list of locations in optics train to save 'entrance_pupil',
+sp.save_to_disk = True  # save obs_sequence (timestep, wavelength, x, y)
+sp.save_list = [ 'entrance_pupil', 'woofer', 'tweeter',   'detector']  # list of locations in optics train to save 'entrance_pupil',
                 # 'entrance_pupil','post-DM-focus', 'coronagraph',
 
 if __name__ == '__main__':
@@ -194,7 +194,7 @@ if __name__ == '__main__':
 
     # Plotting Selected Plane
     if sp.show_planes:
-        vlim = [(None, None), (None, None),(1e-7,1e-3), (None, None),  (1e-7,1e-3), (1e-7,1e-3)]
+        vlim = [(None, None), (None, None), (None, None), (1e-7,1e-3), (1e-7,1e-3), (1e-7,1e-3)]
         # vlim = [(None,None), (None,None), (None,None), (None,None)]  # (1e-2,1e-1) (7e-4, 6e-4)
         logZ = [True, True, True, True, True, True]
         if sp.save_list:
