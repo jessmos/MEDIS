@@ -10,6 +10,7 @@ from scipy import interpolate
 import pickle
 import random
 import time
+import tables
 
 from medis.distribution import *
 from medis.params import mp, ap, iop, sp, tp
@@ -203,12 +204,13 @@ class Camera():
                 if num_chunks == 1:
                     self.photons = self.get_photons(self.rebinned_cube)
                     self.rebinned_cube = self.rebin_list(self.photons)
+                    if self.usesave: self.save_rebinned_cube()
                 else:
                     for ic in range(num_chunks):
                         cspan = (ic * max_steps, (ic + 1) * max_steps)
                         self.photons = self.get_photons(self.rebinned_cube[cspan[0]: cspan[1]], chunk_step=abs_step + cspan[0])
                         self.rebinned_cube[cspan[0]: cspan[1]] = self.rebin_list(self.photons, time_inds=[cspan[0], cspan[1]])
-
+                        if self.usesave: self.save_rebinned_cube()
                 self.save_instance()
                 return {'rebinned_cube': self.rebinned_cube}
 
@@ -259,6 +261,29 @@ class Camera():
         print(f'Input cubes will be split up into time length {max_chunk}')
 
         return max_chunk
+
+    def save_rebinned_cube(self, rebinned_cube):
+        """
+        Option to save rebinned_cube separately from the class pickle
+
+        :param rebinned_cube:
+            dtype ndarray of complex or float
+            fields can be any shape but the h5 dataset can only extended along axis 0
+        :return:
+
+        todo convert to pytables for pipeline conda integration
+        """
+
+        fields = np.array(rebinned_cube)
+        print(f'Saving rebinned_cube dims with dimensions {rebinned_cube.shape} and type {rebinned_cube.dtype}')
+        h5file = tables.open_file(iop.rebinned_cube, mode="a", title="MEDIS Electric Fields File")
+        if "/data" not in h5file:
+            ds = h5file.create_earray(h5file.root, 'data', obj=fields)
+        else:
+            ds = h5file.root.data
+            ds.append(fields)
+
+        h5file.close()
 
     def save_photontable(self, photonlist=[], index=('ultralight', 6), timesort=False, chunkshape=None, shuffle=True, bitshuffle=False,
                         ndx_shuffle=True, ndx_bitshuffle=False, populate_subsidiaries=True):

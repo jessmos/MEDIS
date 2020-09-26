@@ -41,6 +41,7 @@ class IO_params:
 
         self.fields = os.path.join(self.testdir, 'fields.h5')  # a x/y/t/w cube of data
         self.photonlist = os.path.join(self.testdir, 'photonlist.h5')  # a photon table with 4 columns
+        self.rebinned_cube = os.path.join(self.testdir, 'rebinned_cube.h5')  # a x/y/t/w cube of data after applying mkid affects
         self.camera = os.path.join(self.testdir, 'camera.pkl')  # MKIDS.Camera instance save state
         self.telescope = os.path.join(self.testdir, 'telescope.pkl')  # a telecope.Telescope instance save state
 
