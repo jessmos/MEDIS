@@ -204,13 +204,15 @@ class Camera():
                 if num_chunks == 1:
                     self.photons = self.get_photons(self.rebinned_cube)
                     self.rebinned_cube = self.rebin_list(self.photons)
-                    if self.usesave: self.save_rebinned_cube()
                 else:
                     for ic in range(num_chunks):
                         cspan = (ic * max_steps, (ic + 1) * max_steps)
                         self.photons = self.get_photons(self.rebinned_cube[cspan[0]: cspan[1]], chunk_step=abs_step + cspan[0])
                         self.rebinned_cube[cspan[0]: cspan[1]] = self.rebin_list(self.photons, time_inds=[cspan[0], cspan[1]])
-                        if self.usesave: self.save_rebinned_cube()
+
+                if self.usesave:
+                    self.save_rebinned_cube(self.rebinned_cube)
+
                 self.save_instance()
                 return {'rebinned_cube': self.rebinned_cube}
 
