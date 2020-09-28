@@ -73,7 +73,7 @@ sp.tseries_cols = 5  # number of subplots per row in view_timeseries
 sp.show_planes = True
 sp.verbose = True
 sp.debug = False
-sp.ao_delay = 2
+# sp.ao_delay = 2
 
 # Saving
 sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
