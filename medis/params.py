@@ -189,6 +189,7 @@ class Telescope_params:
         self.use_atmos = False  # Create and apply atmospheric maps (units in phase delay)
         self.obscure = False  # Obscure the primary by the secondary mirror
         self.legs_frac = 0.03  # fractional width of the legs relative to the secondary mirror diameter
+        self.add_zern = False
 
         # AO System Settings
         self.use_ao = True  # if False, and DM returns an idealized 'flat'

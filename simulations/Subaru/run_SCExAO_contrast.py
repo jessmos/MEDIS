@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from vip_hci import phot, metrics, pca
 import vip_hci.metrics.contrcurve as contrcurve
 
-from medis.params import sp, tp, iop, ap, cdip, mp
+from medis.params import sp, tp, iop, ap, mp
 from medis.utils import dprint
 import medis.optics as opx
 from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
@@ -41,7 +41,7 @@ sp.closed_loop = False
 
 # Grid Parameters
 sp.focused_sys = True
-sp.beam_ratio = 0.18  # parameter dealing with the sampling of the beam in the pupil/focal plane
+sp.beam_ratio = 0.08  # parameter dealing with the sampling of the beam in the pupil/focal plane
 sp.grid_size = 512  # creates a nxn array of samples of the wavefront
 sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
 
@@ -77,7 +77,7 @@ sp.debug = False
 sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
 sp.save_list = ['entrance_pupil','woofer', 'tweeter', 'post-DM-focus', 'coronagraph', 'detector']  # list of locations in optics train to save
 
-def get_unoccult_psf(self, name):
+def get_unoccult_psf(name):
     # sp_orig = copy.deepcopy(sp)
     # ap_orig = copy.deepcopy(ap)
     # tp_orig = copy.deepcopy(tp)
