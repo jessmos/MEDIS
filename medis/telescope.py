@@ -159,7 +159,7 @@ class Telescope:
                 sp.chunking = True
 
             self.markov = sp.chunking or self.parrallel  # independent timesteps
-            nonmarkov = sp.ao_delay or sp.closed_loop  # dependent timesteps
+            nonmarkov = sp.ao_delay != 0 or sp.closed_loop  # dependent timesteps
             # if both true
             assert self.markov + nonmarkov != 2, "Confliciting modes. Request requires the timesteps be both dependent and independent"
 
