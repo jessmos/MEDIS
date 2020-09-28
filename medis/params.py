@@ -191,6 +191,7 @@ class Telescope_params:
         self.legs_frac = 0.03  # fractional width of the legs relative to the secondary mirror diameter
         self.add_zern = False
         self.use_aber = True
+        self.rot_rate = 0
 
         # AO System Settings
         self.use_ao = True  # if False, and DM returns an idealized 'flat'
