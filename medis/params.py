@@ -190,6 +190,7 @@ class Telescope_params:
         self.obscure = False  # Obscure the primary by the secondary mirror
         self.legs_frac = 0.03  # fractional width of the legs relative to the secondary mirror diameter
         self.add_zern = False
+        self.use_aber = True
 
         # AO System Settings
         self.use_ao = True  # if False, and DM returns an idealized 'flat'

@@ -27,6 +27,7 @@ tp.prescription = 'general_telescope'
 ap.companion = True
 ap.contrast = [1e-5]
 ap.companion_xy = [[15, -15]]  # units of this are in lambda/tp.entrance_d
+ap.n_wvl_final = ap.n_wvl_init
 
 sp.numframes = 2
 sp.focused_sys = False
@@ -64,7 +65,7 @@ if __name__ == '__main__':
     fp_sampling = sim.camera.platescale
     rebinned_photons = sim.camera.rebinned_cube
 
-    dprint(f"Sampling in focal plane is {fp_sampling})
+    dprint(f"Sampling in focal plane is {fp_sampling}")
     for o in range(len(ap.contrast)+1):
         print(rebinned_photons.shape)
         datacube = rebinned_photons[o]
