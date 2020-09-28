@@ -62,8 +62,8 @@ if __name__ == '__main__':
 
     sim = mm.RunMedis(name='general_example', product='photons')
     observation = sim()
-    fp_sampling = sim.camera.platescale
-    rebinned_photons = sim.camera.rebinned_cube
+    fp_sampling = sim.cam.platescale
+    rebinned_photons = sim.cam.rebinned_cube
 
     dprint(f"Sampling in focal plane is {fp_sampling}")
     for o in range(len(ap.contrast)+1):
