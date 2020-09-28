@@ -122,8 +122,8 @@ def get_contrast(cpx_sequence):
     algo_dict = {'scale_list': scale_list}
 
     median_fwhm = mp.lod
-    median_wave = (wsamples[-1] + wsamples[0]) / 2
-    fwhm = median_fwhm * wsamples / median_wave
+    # median_wave = (wsamples[-1] + wsamples[0]) / 2
+    # fwhm = median_fwhm * wsamples / median_wave
 
     fourcube = np.abs(np.sum(cpx_sequence[:, -1], axis=2)) ** 2  # select detector plane and sum over objects
     fourcube = np.transpose(fourcube, axes=(1,0,2,3))
@@ -134,7 +134,7 @@ def get_contrast(cpx_sequence):
                               angle_list=np.zeros((fourcube.shape[1])),  # angle of each time frame is 0 (no rotation)
                               psf_template=psf_template[:, 1:, 1:],  # unocculted
                               interp_order=2,  # interpolation of the throughput curve
-                              fwhm=fwhm,  # determines distances between fake companions and sampling of x axis
+                              fwhm=median_fwhm,  # determines distances between fake companions and sampling of x axis
                               pxscale=mp.platescale / 1000,  # units of x axis
                               starphot=1.1,  # scaling the y axis. use psf_template to get brightness
                               adimsdi='double',  # ADI and SDI
