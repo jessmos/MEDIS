@@ -126,11 +126,12 @@ def get_contrast(cpx_sequence):
     fwhm = median_fwhm * wsamples / median_wave
 
     fourcube = np.abs(np.sum(cpx_sequence[:, -1], axis=2)) ** 2  # select detector plane and sum over objects
+    fourcube = np.transpose(fourcube, axes=(1,0,2,3))
     fulloutput = contrcurve.contrast_curve(cube=fourcube,  # 4D cube
                               algo=pca.pca,  # does SDI (and ADI but no rotation so just median collapse)
                               nbranch=3,  # number of simultaneous fake companions used for the throughput calculation
                               fc_snr=10,   # brightness of the fake companions
-                              angle_list=np.zeros((cpx_sequence.shape[1])),  # angle of each time frame is 0 (no rotation)
+                              angle_list=np.zeros((fourcube.shape[1])),  # angle of each time frame is 0 (no rotation)
                               psf_template=psf_template[:, 1:, 1:],  # unocculted
                               interp_order=2,  # interpolation of the throughput curve
                               fwhm=fwhm,  # determines distances between fake companions and sampling of x axis
