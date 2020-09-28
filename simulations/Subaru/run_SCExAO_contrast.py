@@ -21,6 +21,7 @@ from medis.utils import dprint
 import medis.optics as opx
 from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
 import medis.medis_main as mm
+from medis.MKIDS import Camera
 
 #################################################################################################
 #################################################################################################
@@ -72,6 +73,7 @@ sp.tseries_cols = 5  # number of subplots per row in view_timeseries
 sp.show_planes = True
 sp.verbose = True
 sp.debug = False
+sp.ao_delay = 2
 
 # Saving
 sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
@@ -126,6 +128,9 @@ def get_contrast(cpx_sequence):
     # fwhm = median_fwhm * wsamples / median_wave
 
     fourcube = np.abs(np.sum(cpx_sequence[:, -1], axis=2)) ** 2  # select detector plane and sum over objects
+    cam = Camera()
+    fourcube = cam.rescale_cube(fourcube)
+
     fourcube = np.transpose(fourcube, axes=(1,0,2,3))
     fulloutput = contrcurve.contrast_curve(cube=fourcube,  # 4D cube
                               algo=pca.pca,  # does SDI (and ADI but no rotation so just median collapse)
