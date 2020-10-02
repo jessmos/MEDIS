@@ -464,7 +464,7 @@ def prop_pass_lens(wf, fl_lens, dist):
     proper.prop_propagate(wf, dist)
 
 
-def offset_companion(wf, step):
+def offset_companion(wf, step=0):
     """
     offsets the companion wavefront using the 2nd and 3rd order Zernike Polynomials (X,Y tilt)
     companion(s) contrast and location(s) set in params
@@ -504,7 +504,7 @@ def offset_companion(wf, step):
             xloc = ap.companion_xy[wf.ib-1][0]*1e-6
             yloc = ap.companion_xy[wf.ib-1][1]*1e-6
 
-        if tp.rot_rate != 0:
+        if tp.rot_rate != 0 and step != 0:
             angle = np.deg2rad(tp.rot_rate * step * sp.sample_time)
             rot_matrix = [[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]]
             xloc, yloc = np.dot(rot_matrix, np.array([xloc,yloc]))
