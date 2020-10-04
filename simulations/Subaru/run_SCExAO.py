@@ -95,7 +95,7 @@ sp.verbose = False
 sp.debug = False
 
 # Saving
-sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
+sp.save_to_disk = True  # save obs_sequence (timestep, wavelength, x, y)
 sp.save_list = [ 'entrance_pupil', 'woofer', 'tweeter',   'detector']  # list of locations in optics train to save 'entrance_pupil',
                 # 'entrance_pupil','post-DM-focus', 'coronagraph',
 
@@ -130,10 +130,13 @@ if __name__ == '__main__':
     # MKID Conversion
     # # =======================================================================
     if mp.convert_photons:
+        MEC = mm.Camera(product='rebinned_cube', usesave=sp.save_to_disk)
+        # product can be photons (photonlist) or 'rebinned_cube' (rebin back into the dimensions of fields but
+        # without the save_planes dimension)
+
+        photons = MEC(fields=cpx_sequence)['rebinned_cube']
         # photons have shape [n_timesteps, n_wavelengths, x_pix, y_pix] where pix is now camera pixels.
         # The units of the z-axis are counts
-        MEC = mm.Camera(product='rebinned_cube')  # product can be photons (photonlist) or 'rebinned_cube' (rebin back into the dimensions of fields but without the save_planes dimension)
-        photons = MEC(fields=cpx_sequence)['rebinned_cube']
 
         # grid(photons, title='Spectra with MKIDs', vlim=[0,800], cmap='YlGnBu_r')
 
