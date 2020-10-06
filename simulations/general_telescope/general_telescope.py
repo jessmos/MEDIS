@@ -62,7 +62,7 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
 
     # Both offsets and scales the companion wavefront
     if wfo.wf_collection.shape[1] > 1:
-        wfo.loop_collection(opx.offset_companion)
+        wfo.loop_collection(opx.offset_companion, step=PASSVALUE['iter'])
         wfo.loop_collection(proper.prop_circular_aperture,
                             **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
 
@@ -88,15 +88,15 @@ def general_telescope(empty_lamda, grid_size, PASSVALUE):
         if sp.closed_loop:
             previous_output = ao.retro_wfs(PASSVALUE['AO_field'], wfo, plane_name='wfs')  # unwrap a previous steps phase map
             wfo.loop_collection(ao.deformable_mirror, WFS_map=None, iter=PASSVALUE['iter'],
-                                previous_output=previous_output, plane_name='deformable mirror', zero_outside=True)
+                                previous_output=previous_output, plane_name='deformable mirror')
         elif sp.ao_delay > 0:
             WFS_map = ao.retro_wfs(PASSVALUE['WFS_field'], wfo, plane_name='wfs')  # unwrap a previous steps phase map
             wfo.loop_collection(ao.deformable_mirror, WFS_map, iter=PASSVALUE['iter'], previous_output=None,
-                                plane_name='deformable mirror', zero_outside=True)
+                                plane_name='deformable mirror')
         else:
             WFS_map = ao.open_loop_wfs(wfo, plane_name='wfs')  # just uwraps this steps measured phase_map
             wfo.loop_collection(ao.deformable_mirror, WFS_map, iter=PASSVALUE['iter'], previous_output=None,
-                                plane_name='deformable mirror', zero_outside=True)
+                                plane_name='deformable mirror')
 
     # Obscure Baffle
     if tp.obscure:

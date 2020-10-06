@@ -41,6 +41,7 @@ class IO_params:
 
         self.fields = os.path.join(self.testdir, 'fields.h5')  # a x/y/t/w cube of data
         self.photonlist = os.path.join(self.testdir, 'photonlist.h5')  # a photon table with 4 columns
+        self.rebinned_cube = os.path.join(self.testdir, 'rebinned_cube.h5')  # a x/y/t/w cube of data after applying mkid affects
         self.camera = os.path.join(self.testdir, 'camera.pkl')  # MKIDS.Camera instance save state
         self.telescope = os.path.join(self.testdir, 'telescope.pkl')  # a telecope.Telescope instance save state
 
@@ -188,6 +189,9 @@ class Telescope_params:
         self.use_atmos = False  # Create and apply atmospheric maps (units in phase delay)
         self.obscure = False  # Obscure the primary by the secondary mirror
         self.legs_frac = 0.03  # fractional width of the legs relative to the secondary mirror diameter
+        self.add_zern = False
+        self.use_aber = True
+        self.rot_rate = 0
 
         # AO System Settings
         self.use_ao = True  # if False, and DM returns an idealized 'flat'

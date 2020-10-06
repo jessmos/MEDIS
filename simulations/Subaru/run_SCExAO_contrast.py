@@ -16,11 +16,12 @@ import matplotlib.pyplot as plt
 from vip_hci import phot, metrics, pca
 import vip_hci.metrics.contrcurve as contrcurve
 
-from medis.params import sp, tp, iop, ap, cdip, mp
+from medis.params import sp, tp, iop, ap, mp
 from medis.utils import dprint
 import medis.optics as opx
 from medis.plot_tools import view_spectra, view_timeseries, quick2D, plot_planes
 import medis.medis_main as mm
+from medis.MKIDS import Camera
 
 #################################################################################################
 #################################################################################################
@@ -41,7 +42,7 @@ sp.closed_loop = False
 
 # Grid Parameters
 sp.focused_sys = True
-sp.beam_ratio = 0.18  # parameter dealing with the sampling of the beam in the pupil/focal plane
+sp.beam_ratio = 0.08  # parameter dealing with the sampling of the beam in the pupil/focal plane
 sp.grid_size = 512  # creates a nxn array of samples of the wavefront
 sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
 
@@ -72,12 +73,13 @@ sp.tseries_cols = 5  # number of subplots per row in view_timeseries
 sp.show_planes = True
 sp.verbose = True
 sp.debug = False
+# sp.ao_delay = 2
 
 # Saving
 sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
 sp.save_list = ['entrance_pupil','woofer', 'tweeter', 'post-DM-focus', 'coronagraph', 'detector']  # list of locations in optics train to save
 
-def get_unoccult_psf(self, name):
+def get_unoccult_psf(name):
     # sp_orig = copy.deepcopy(sp)
     # ap_orig = copy.deepcopy(ap)
     # tp_orig = copy.deepcopy(tp)
@@ -122,18 +124,22 @@ def get_contrast(cpx_sequence):
     algo_dict = {'scale_list': scale_list}
 
     median_fwhm = mp.lod
-    median_wave = (wsamples[-1] + wsamples[0]) / 2
-    fwhm = median_fwhm * wsamples / median_wave
+    # median_wave = (wsamples[-1] + wsamples[0]) / 2
+    # fwhm = median_fwhm * wsamples / median_wave
 
     fourcube = np.abs(np.sum(cpx_sequence[:, -1], axis=2)) ** 2  # select detector plane and sum over objects
+    cam = Camera()
+    fourcube = cam.rescale_cube(fourcube)
+
+    fourcube = np.transpose(fourcube, axes=(1,0,2,3))
     fulloutput = contrcurve.contrast_curve(cube=fourcube,  # 4D cube
                               algo=pca.pca,  # does SDI (and ADI but no rotation so just median collapse)
                               nbranch=3,  # number of simultaneous fake companions used for the throughput calculation
                               fc_snr=10,   # brightness of the fake companions
-                              angle_list=np.zeros((cpx_sequence.shape[1])),  # angle of each time frame is 0 (no rotation)
+                              angle_list=np.zeros((fourcube.shape[1])),  # angle of each time frame is 0 (no rotation)
                               psf_template=psf_template[:, 1:, 1:],  # unocculted
                               interp_order=2,  # interpolation of the throughput curve
-                              fwhm=fwhm,  # determines distances between fake companions and sampling of x axis
+                              fwhm=median_fwhm,  # determines distances between fake companions and sampling of x axis
                               pxscale=mp.platescale / 1000,  # units of x axis
                               starphot=1.1,  # scaling the y axis. use psf_template to get brightness
                               adimsdi='double',  # ADI and SDI

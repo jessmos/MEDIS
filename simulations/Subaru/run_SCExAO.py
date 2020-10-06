@@ -37,7 +37,7 @@ sp.closed_loop = False
 
 # Grid Parameters
 sp.focused_sys = True
-sp.beam_ratio = 0.08  # parameter dealing with the sampling of the beam in the pupil/focal plane
+sp.beam_ratio = 0.12  # parameter dealing with the sampling of the beam in the pupil/focal plane
 sp.grid_size = 512  # creates a nxn array of samples of the wavefront
 sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
 
@@ -45,7 +45,7 @@ sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifac
 ap.companion = True
 ap.contrast = [5e-1]
 ap.companion_xy = [[5, -6]]  # units of this are lambda/tp.entrance_d
-ap.star_flux = int(1e6)  # A 5 apparent mag star 1e6 cts/cm^2/s
+ap.star_flux = int(1e9)  # A 5 apparent mag star 1e6 cts/cm^2/s
 ap.n_wvl_init = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
 ap.n_wvl_final = None  # final number of wavelength bins in spectral cube after interpolation (None sets equal to n_wvl_init)
 ap.interp_wvl = False  # Set to interpolate wavelengths from ap.n_wvl_init to ap.n_wvl_final
@@ -130,10 +130,13 @@ if __name__ == '__main__':
     # MKID Conversion
     # # =======================================================================
     if mp.convert_photons:
+        MEC = mm.Camera(product='rebinned_cube', usesave=sp.save_to_disk)
+        # product can be photons (photonlist) or 'rebinned_cube' (rebin back into the dimensions of fields but
+        # without the save_planes dimension)
+
+        photons = MEC(fields=cpx_sequence)['rebinned_cube']
         # photons have shape [n_timesteps, n_wavelengths, x_pix, y_pix] where pix is now camera pixels.
         # The units of the z-axis are counts
-        MEC = mm.Camera(product='rebinned_cube')  # product can be photons (photonlist) or 'rebinned_cube' (rebin back into the dimensions of fields but without the save_planes dimension)
-        photons = MEC(fields=cpx_sequence)['rebinned_cube']
 
         # grid(photons, title='Spectra with MKIDs', vlim=[0,800], cmap='YlGnBu_r')
 
@@ -164,7 +167,7 @@ if __name__ == '__main__':
                     logZ=False,
                     # dx=fp_sampling[0],
                     zlabel='photon counts',
-                    vlim=(0, 400),
+                    vlim=(0, 800),
                     show=False)  # (1e-3, 1e-1) (None,None)
     plt.show()
 
