@@ -329,6 +329,7 @@ class Telescope:
         h5file = tables.open_file(iop.fields, mode="a", title="MEDIS Electric Fields File")
         if "/data" not in h5file:
             ds = h5file.create_earray(h5file.root, 'data', obj=fields)
+            ss = h5file.create_earray(h5file.root, 'sampling', obj=self.sampling)
         else:
             ds = h5file.root.data
             ds.append(fields)
@@ -348,7 +349,7 @@ class Telescope:
             self.cpx_sequence = h5file.root.data[span[0]:span[1]]
         h5file.close()
         self.pretty_sequence_shape()
-        self.sampling = None
+        self.sampling = h5file.root.sampling[0]
 
         return {'fields': self.cpx_sequence, 'sampling': self.sampling}
 
