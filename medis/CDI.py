@@ -7,12 +7,13 @@ This module is used to set the CDI parameters for mini-medis.
 """
 import numpy as np
 import warnings
+import scipy.linalg as linalg
 from matplotlib import pyplot as plt
 from matplotlib.colors import LogNorm, SymLogNorm
-import copy
 
 from medis.params import tp, sp
 from medis.utils import dprint
+from medis.optics import extract_plane
 
 class CDIOut():
     '''Stole this idea from falco. Just passes an object you can slap stuff onto'''
@@ -147,7 +148,7 @@ class CDI_params():
 cdi = CDI_params()
 
 
-def config_probe(theta, nact, iw=0, ib=0):
+def config_probe(theta, nact, iw=0, ib=0,tstep=0):
     """
     create a probe shape to apply to the DM for CDI processing
 
@@ -224,47 +225,79 @@ def config_probe(theta, nact, iw=0, ib=0):
     return probe
 
 
-def cdi_postprocess(fp_seq, sampling, plot=False):
+def cdi_postprocess(cpx_seq, sampling, plot=False):
     """
-    this is the function that accepts the timeseries of intensity images from the simuation and returns the processed
+    this is the function that accepts the timeseries of intensity images from the simulation and returns the processed
     single image. This function calculates the speckle amplitude phase, and then corrects for it to create the dark
     hole over the specified region of the image.
 
-    :param fp_seq: timestream of 2D images (intensity only) from the focal plane complex field
+    :param cpx_seq: #timestream of 2D images (intensity only) from the focal plane complex field
     :param sampling: focal plane sampling
     :return:
     """
+    import time
+    tic = time.time()
+    focal_plane = extract_plane(cpx_seq, 'detector')  # eliminates astro_body axis [tsteps,wvl,obj,x,y]
+    fp_seq = np.sum(focal_plane, axis=(1,2))  # sum over wavelength,object
+
+
     n_pairs = cdi.n_probes//2  # number of deltas (probe differentials)
     n_nulls = sp.numframes - cdi.n_probes
     delta = np.zeros((n_pairs, sp.grid_size, sp.grid_size), dtype=float)
-    absDeltaP = np.zeros((n_pairs, sp.grid_size, sp.grid_size), dtype=float)
-    phsDeltaP = np.zeros((n_pairs, sp.grid_size, sp.grid_size), dtype=float)
-    Epupil = np.zeros((n_nulls, sp.grid_size, sp.grid_size), dtype=float)
+    abs_delta = np.zeros((n_nulls, sp.grid_size, sp.grid_size))
+    phs_delta = np.zeros((n_pairs, sp.grid_size, sp.grid_size), dtype=float)
+    Epupil = np.zeros((n_nulls, sp.grid_size, sp.grid_size), dtype=complex)
+    H = np.zeros((n_pairs, 2), dtype=float)
+    b = np.zeros((n_pairs, 1))
 
-    fp_seq = np.sum(fp_seq, axis=1)  # sum over wavelength
 
-    for ix in range(n_pairs):
+    for ip in range(n_pairs):
         # Compute deltas
-        delta[ix] = np.copy(fp_seq[ix] - fp_seq[ix+n_pairs])
+        delta[ip] = np.abs(fp_seq[ip]) ** 2 - np.abs(fp_seq[ip + n_pairs]) ** 2
 
-        for xn in range(n_nulls):
-            dprint(f'for computing reDeltaP: xn={xn}')
-            # Real Part of deltaP
-            # absDeltaP[xn] = np.sqrt((fp_seq[ix] + fp_seq[ix+n_pairs])/2 - fp_seq[xn])
-            # probe_ft = (1/np.sqrt(2*np.pi)) * np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(cdi.cout.DM_probe_series[ix])))
-            # phsDeltaP[xn] = np.arctan2(probe_ft.imag, probe_ft.real)
+        # Amplitude Delta
+        Ip = np.abs(fp_seq[ip, :, :]) ** 2
+        Im = np.abs(fp_seq[ip + n_pairs, :, :]) ** 2
+        for xn in range(n_nulls - 1):
+            Io = np.abs(fp_seq[cdi.n_probes + xn, :, :]) ** 2
+            abs = (Ip + Im) / 2 - Io
+            abs[abs < 0] = 0
+            abs_delta[xn,:,:] = np.sqrt(abs)
 
-            # Least Squares Solution
-            # Epupil[xn] = np.linalg.solve((-ImDeltaP[xn] + ReDeltaP[xn], delta[ix]))
-            # duVecNby1 = -dmfac * np.linalg.solve((10 ** log10reg * np.diag(cvar.EyeGstarGdiag) + cvar.GstarG_wsum),
-            #                                      cvar.RealGstarEab_wsum)
-            # duVec = duVecNby1.reshape((-1,))
+        # Phase Delta
+        # FFT and Interpolate DM Map onto MEC coordinates
+        fftA = (1 / np.sqrt(2 * np.pi) * \
+                np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(fp_seq[ip]))))
+        fftB = (1 / np.sqrt(2 * np.pi) * \
+                np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(fp_seq[ip + n_pairs]))))
+        phs_delta[ip, :, :] = np.arctan2(fftA.imag - fftB.imag, fftA.real - fftB.real)
 
-            # Fig 2
+    for i in range(sp.grid_size):
+        for j in range(sp.grid_size):
+            for xn in range(n_nulls):
+                for ip in range(n_pairs):
+                    # print(f'iteration i,j,xn,ip={i},{j},{xn},{ip}')
+                    absDeltaP = abs_delta[xn, i, j]
+                    phsDeltaP = phs_delta[ip, i, j]
+                    # phsDeltaP = np.arctan2(fp_seq[i,j,ip].imag - fp_seq[i,j, meta.ts.n_probes+xn].imag,
+                    #                        fp_seq[i,j,ip].real - fp_seq[i,j, meta.ts.n_probes+xn].real)
+                    cpxDeltaP = absDeltaP * np.exp(1j * phsDeltaP)
+
+                    H[ip, :] = [-cpxDeltaP.imag, cpxDeltaP.real]
+                    b[ip] = delta[ip, i, j]
+
+                a = 2 * H
+                # print(f'[a]\n{a};, \n[b]\n{b}')
+                Exy, res, rnk, s = linalg.lstsq(a, b)  # returns tuple, not array
+                print(f'xn={xn},i={i},j={j},ip={ip}\nExy={Exy}')
+                Epupil[xn, i, j] = Exy[0] + (1j * Exy[1])
+
     if plot:
+        # ==================
+        # Deltas
+        # ==================
         fig, subplot = plt.subplots(1, n_pairs, figsize=(14,5))
         fig.subplots_adjust(wspace=0.5, right=0.85)
-
         fig.suptitle('Deltas for CDI Probes')
 
         for ax, ix in zip(subplot.flatten(), range(n_pairs)):
@@ -278,8 +311,42 @@ def cdi_postprocess(fp_seq, sampling, plot=False):
         cb = fig.colorbar(im, orientation='vertical', cax=cax)  #
         cb.set_label('Intensity')
 
-        plt.show()
+        # ==================
+        # E-filed Estimates
+        # ==================
+        fig, subplot = plt.subplots(1, n_nulls, figsize=(14, 5))
+        fig.subplots_adjust(wspace=0.5, right=0.85)
+        fig.suptitle('Estimated E-field')
 
+        for ax, ix in zip(subplot.flatten(), range(n_nulls)):
+            im = ax.imshow(np.abs(Epupil[ix])**2, interpolation='none', origin='lower',
+                           norm=LogNorm())
+                           # vmin=-1, vmax=1)  # , norm=SymLogNorm(linthresh=1e-5))
+            ax.set_title(f'Null Step {ix}')
+
+        cax = fig.add_axes([0.9, 0.2, 0.03, 0.6])  # Add axes for colorbar @ position [left,bottom,width,height]
+        cb = fig.colorbar(im, orientation='vertical', cax=cax)  #
+        cb.set_label('Intensity')
+
+        # ==================
+        # Subtracted E-field
+        # ==================
+        fig, subplot = plt.subplots(1, n_nulls, figsize=(14, 5))
+        fig.subplots_adjust(wspace=0.5, right=0.85)
+        fig.suptitle('Subtracted E-field')
+
+        for ax, ix in zip(subplot.flatten(), range(n_nulls)):
+            im = ax.imshow(np.abs(fp_seq[n_pairs+ix] - Epupil[ix]) ** 2,
+                           interpolation='none', origin='lower', norm=LogNorm())
+            ax.set_title(f'Null Step {ix}')
+
+        cax = fig.add_axes([0.9, 0.2, 0.03, 0.6])  # Add axes for colorbar @ position [left,bottom,width,height]
+        cb = fig.colorbar(im, orientation='vertical', cax=cax)  #
+        cb.set_label('Intensity')
+
+        plt.show()
+    toc = time.time()
+    dprint(f'CDI post-processing took {(toc-tic)/60:.2} minutes')
 
 if __name__ == '__main__':
     dprint(f"Testing CDI probe")
