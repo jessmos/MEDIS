@@ -1,3 +1,4 @@
+##
 """
 run_SCExAO
 KD
@@ -21,7 +22,7 @@ import medis.medis_main as mm
 #################################################################################################
 #################################################################################################
 #################################################################################################
-testname = 'SCExAO-test1'
+testname = 'SCExAO-CDI5'
 iop.update_datadir(f"/home/captainkay/mazinlab/MKIDSim/CDIsim_data/")
 iop.update_testname(testname)
 iop.makedir()
@@ -32,7 +33,7 @@ tp.entrance_d = 7.9716
 tp.flen_primary = tp.entrance_d * 13.612
 
 # Simulation & Timing
-sp.numframes = 1
+sp.numframes = 8
 sp.closed_loop = False
 
 # Grid Parameters
@@ -42,19 +43,19 @@ sp.grid_size = 512  # creates a nxn array of samples of the wavefront
 sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
 
 # Companion
-ap.companion = True
+ap.companion = False
 ap.contrast = [5e-1]
 ap.companion_xy = [[5, -6]]  # units of this are lambda/tp.entrance_d
 ap.star_flux = int(1e9)  # A 5 apparent mag star 1e6 cts/cm^2/s
 ap.n_wvl_init = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
 ap.n_wvl_final = None  # final number of wavelength bins in spectral cube after interpolation (None sets equal to n_wvl_init)
 ap.interp_wvl = False  # Set to interpolate wavelengths from ap.n_wvl_init to ap.n_wvl_final
-ap.wvl_range = np.array([950, 1300]) / 1e9  # wavelength range in [m] (formerly ap.band)
+ap.wvl_range = np.array([950, 1300]) / 1e9  # wavelength range in [m]
 # eg. DARKNESS band is [800, 1500], J band =  [1100,1400])
 
 # CDI
-cdi.use_cdi = False
-cdi.probe_w = 10  # [actuator coordinates] width of the probe
+cdi.use_cdi = True
+cdi.probe_w = 15  # [actuator coordinates] width of the probe
 cdi.probe_h = 30  # [actuator coordinates] height of the probe
 cdi.probe_center = (10,10)  # [actuator coordinates] center position of the probe
 cdi.probe_amp = 2e-8  # [m] probe amplitude, scale should be in units of actuator height limits
@@ -76,7 +77,7 @@ sp.skip_functions = []  # skip_functions is based on function name, alternate wa
 # MKIDs
 mp.convert_photons = True
 mp.bad_pix = True
-mp.pix_yield = 0.62
+mp.pix_yield = 0.92
 mp.array_size = np.array([139,146])
 mp.wavecal_coeffs = [1.e9 / 6, -250]
 mp.hot_counts = False
@@ -91,18 +92,20 @@ sp.show_tseries = False  # Plot full timeseries of white light frames
 sp.tseries_cols = 3  # number of subplots per row in view_timeseries
 sp.show_planes = True
 sp.maskd_size = 256
+
 sp.verbose = False
 sp.debug = False
 
 # Saving
-sp.save_to_disk = True  # save obs_sequence (timestep, wavelength, x, y)
-sp.save_list = [ 'entrance_pupil', 'woofer', 'tweeter',   'detector']  # list of locations in optics train to save 'entrance_pupil',
-                # 'entrance_pupil','post-DM-focus', 'coronagraph',
-
+sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
+sp.save_list = ['entrance_pupil', 'detector']  # list of locations in optics train to save 'entrance_pupil',
+                # 'entrance_pupil','post-DM-focus', 'coronagraph', 'woofer', 'tweeter',
+##
 if __name__ == '__main__':
     # =======================================================================
     # Run it!!!!!!!!!!!!!!!!!
     # =======================================================================
+    ##
     sim = mm.RunMedis(name=testname, product='fields')
     observation = sim()
     cpx_sequence = observation['fields']
@@ -116,16 +119,16 @@ if __name__ == '__main__':
     focal_plane = opx.extract_plane(cpx_sequence, 'detector')  # eliminates astro_body axis
     # convert to intensity THEN sum over object, keeping the dimension of tstep even if it's one
     focal_plane = np.sum(opx.cpx_to_intensity(focal_plane), axis=2)
-    fp_sampling = np.copy(sampling[cpx_sequence.shape[1]-1,:])  # numpy arrays have some weird effects that make copying the array necessary
-
+    # fp_sampling = np.copy(sampling[cpx_sequence.shape[1]-1,:])  # numpy arrays have some weird effects that make copying the array necessary
+##
     # ======================================================================
     # CDI Post-Processing
     # ======================================================================
-    # if cdi.use_cdi:
-    #     cdi_postprocess(cpx_sequence, fp_sampling, plot=True)
-    #     # cdi.save_tseries(img_tseries)
+    if cdi.use_cdi:
+        cdi_postprocess(cpx_sequence, sampling, plot=True)
+        # cdi.save_tseries(img_tseries)
     #     # cdi.save_cout_to_disk()
-
+##
     # =======================================================================
     # MKID Conversion
     # # =======================================================================
@@ -209,3 +212,6 @@ if __name__ == '__main__':
                         dx=sampling)
 
     plt.show()
+
+##
+

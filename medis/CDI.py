@@ -255,20 +255,11 @@ def cdi_postprocess(cpx_seq, sampling, plot=False):
         # Compute deltas
         delta[ip] = np.abs(fp_seq[ip]) ** 2 - np.abs(fp_seq[ip + n_pairs]) ** 2
 
-        # Amplitude Delta
-        Ip = np.abs(fp_seq[ip, :, :]) ** 2
-        Im = np.abs(fp_seq[ip + n_pairs, :, :]) ** 2
-        for xn in range(n_nulls - 1):
-            Io = np.abs(fp_seq[cdi.n_probes + xn, :, :]) ** 2
-            abs = (Ip + Im) / 2 - Io
-            abs[abs < 0] = 0
-            abs_delta[xn,:,:] = np.sqrt(abs)
-
         # Phase Delta
         # FFT and Interpolate DM Map onto MEC coordinates
-        fftA = (1 / np.sqrt(2 * np.pi) * \
+        fftA = (1 / np.sqrt(2 * np.pi) *
                 np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(fp_seq[ip]))))
-        fftB = (1 / np.sqrt(2 * np.pi) * \
+        fftB = (1 / np.sqrt(2 * np.pi) *
                 np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(fp_seq[ip + n_pairs]))))
         phs_delta[ip, :, :] = np.arctan2(fftA.imag - fftB.imag, fftA.real - fftB.real)
 
@@ -276,20 +267,30 @@ def cdi_postprocess(cpx_seq, sampling, plot=False):
         for j in range(sp.grid_size):
             for xn in range(n_nulls):
                 for ip in range(n_pairs):
+                    # Amplitude Delta
+                    Ip = np.abs(fp_seq[ip, i, j]) ** 2
+                    Im = np.abs(fp_seq[ip + n_pairs, i, j]) ** 2
+                    Io = np.abs(fp_seq[cdi.n_probes + xn, i, j]) ** 2
+                    abs = (Ip + Im) / 2 - Io
+                    if abs < 0:
+                        abs = 0
+                    absDeltaP = np.sqrt(abs)
+                    # abs_delta[xn, :, :] = np.sqrt(abs)
+
                     # print(f'iteration i,j,xn,ip={i},{j},{xn},{ip}')
-                    absDeltaP = abs_delta[xn, i, j]
+                    # absDeltaP = abs_delta[xn, i, j]
                     phsDeltaP = phs_delta[ip, i, j]
                     # phsDeltaP = np.arctan2(fp_seq[i,j,ip].imag - fp_seq[i,j, meta.ts.n_probes+xn].imag,
                     #                        fp_seq[i,j,ip].real - fp_seq[i,j, meta.ts.n_probes+xn].real)
                     cpxDeltaP = absDeltaP * np.exp(1j * phsDeltaP)
 
-                    H[ip, :] = [-cpxDeltaP.imag, cpxDeltaP.real]
-                    b[ip] = delta[ip, i, j]
+                    H[ip, :] = [-cpxDeltaP.imag, cpxDeltaP.real]  # [n_pairs, 2]
+                    b[ip] = delta[ip, i, j]  # [n_pairs, 1]
 
                 a = 2 * H
                 # print(f'[a]\n{a};, \n[b]\n{b}')
                 Exy, res, rnk, s = linalg.lstsq(a, b)  # returns tuple, not array
-                print(f'xn={xn},i={i},j={j},ip={ip}\nExy={Exy}')
+                # print(f'xn={xn},i={i},j={j},ip={ip}\nExy={Exy}')
                 Epupil[xn, i, j] = Exy[0] + (1j * Exy[1])
 
     if plot:
@@ -336,7 +337,7 @@ def cdi_postprocess(cpx_seq, sampling, plot=False):
         fig.suptitle('Subtracted E-field')
 
         for ax, ix in zip(subplot.flatten(), range(n_nulls)):
-            im = ax.imshow(np.abs(fp_seq[n_pairs+ix] - Epupil[ix]) ** 2,
+            im = ax.imshow(np.abs(fp_seq[n_pairs+ix] - np.conjugate(Epupil[ix])) ** 2,
                            interpolation='none', origin='lower', norm=LogNorm())
             ax.set_title(f'Null Step {ix}')
 
