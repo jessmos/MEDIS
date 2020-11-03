@@ -5,16 +5,19 @@ Kristina Davis
 
 This module is used to set the CDI parameters for mini-medis.
 """
+##
 import numpy as np
 import warnings
-import scipy.linalg as linalg
+from scipy import linalg, interpolate
 from matplotlib import pyplot as plt
 from matplotlib.colors import LogNorm, SymLogNorm
+from mpl_toolkits import axes_grid1
 
 from medis.params import tp, sp
 from medis.utils import dprint
 from medis.optics import extract_plane
 
+##
 class CDIOut():
     '''Stole this idea from falco. Just passes an object you can slap stuff onto'''
     pass
@@ -148,7 +151,8 @@ class CDI_params():
 cdi = CDI_params()
 
 
-def config_probe(theta, nact, iw=0, ib=0,tstep=0):
+##
+def config_probe(theta, nact, iw=0, ib=0, tstep=0):
     """
     create a probe shape to apply to the DM for CDI processing
 
@@ -177,42 +181,45 @@ def config_probe(theta, nact, iw=0, ib=0,tstep=0):
     if sp.verbose and iw == 0 and ib == 0:  # and theta == cdi.phase_series[0]
         probe_ft = (1/np.sqrt(2*np.pi)) * np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(probe)))
 
+        fig, ax = plt.subplots(1, 3, figsize=(12, 5))
+        fig.subplots_adjust(wspace=0.5)
+        ax1, ax2, ax3 = ax.flatten()
+
+        fig.suptitle(f"spacing={cdi.probe_spacing}, Dimensions {cdi.probe_w}x{cdi.probe_h} "
+                     f"\nProbe Amp = {cdi.probe_amp}, " + r'$\theta$' + f"={theta/np.pi:.3f}" + r'$\pi$' + '\n')
+
+        im1 = ax1.imshow(probe, interpolation='none')
+        ax1.set_title(f"Probe on DM \n(dm coordinates)")
+        # cb = fig.colorbar(im1, ax=ax1)
+        add_colorbar(im1)
+
+        im2 = ax2.imshow(np.sqrt(probe_ft.imag ** 2 + probe_ft.real ** 2), interpolation='none')
+        ax2.set_title("Focal Plane Amplitude")
+        add_colorbar(im2)
+
+        im3 = ax3.imshow(np.arctan2(probe_ft.imag, probe_ft.real), interpolation='none', cmap='hsv')
+        ax3.set_title("Focal Plane Phase")
+        add_colorbar(im3)
+
+        # plt.show()
+
+        # =========================
+        # Fig 2  Real & Imag
         # fig, ax = plt.subplots(1, 3, figsize=(12, 5))
         # fig.subplots_adjust(wspace=0.5)
         # ax1, ax2, ax3 = ax.flatten()
-        #
-        # fig.suptitle(f"spacing={cdi.probe_spacing}, Dimensions {cdi.probe_w}x{cdi.probe_h} "
-        #              f"\nProbe Amp = {cdi.probe_amp}, " + r'$\theta$' + f"={theta/np.pi:.3f}" + r'$\pi$' + '\n')
+        # fig.suptitle(f'Real & Imaginary Probe Response in Focal Plane\n'
+        #              f' '+r'$\theta$'+f'={theta/np.pi:.3f}'+r'$\pi$'+f', n_actuators = {nact}\n')
         #
         # im1 = ax1.imshow(probe, interpolation='none', origin='lower')
         # ax1.set_title(f"Probe on DM \n(dm coordinates)")
         # cb = fig.colorbar(im1, ax=ax1)
         #
-        # im2 = ax2.imshow(np.sqrt(probe_ft.imag ** 2 + probe_ft.real ** 2), interpolation='none', origin='lower')
-        # ax2.set_title("Focal Plane Amplitude")
-        # cb = fig.colorbar(im2, ax=ax2)
+        # im2 = ax2.imshow(probe_ft.real, interpolation='none', origin='lower')
+        # ax2.set_title(f"Real FT of Probe")
         #
-        # ax3.imshow(np.arctan2(probe_ft.imag, probe_ft.real), interpolation='none', origin='lower', cmap='hsv')
-        # ax3.set_title("Focal Plane Phase")
-
-        # plt.show()
-
-        # Fig 2
-        fig, ax = plt.subplots(1, 3, figsize=(12, 5))
-        fig.subplots_adjust(wspace=0.5)
-        ax1, ax2, ax3 = ax.flatten()
-        fig.suptitle(f'Real & Imaginary Probe Response in Focal Plane\n'
-                     f' '+r'$\theta$'+f'={theta/np.pi:.3f}'+r'$\pi$'+f', n_actuators = {nact}\n')
-
-        im1 = ax1.imshow(probe, interpolation='none', origin='lower')
-        ax1.set_title(f"Probe on DM \n(dm coordinates)")
-        cb = fig.colorbar(im1, ax=ax1)
-
-        im2 = ax2.imshow(probe_ft.real, interpolation='none', origin='lower')
-        ax2.set_title(f"Real FT of Probe")
-
-        im3 = ax3.imshow(probe_ft.imag, interpolation='none', origin='lower')
-        ax3.set_title(f"Imag FT of Probe")
+        # im3 = ax3.imshow(probe_ft.imag, interpolation='none', origin='lower')
+        # ax3.set_title(f"Imag FT of Probe")
 
         plt.show()
 
@@ -225,6 +232,7 @@ def config_probe(theta, nact, iw=0, ib=0,tstep=0):
     return probe
 
 
+##
 def cdi_postprocess(cpx_seq, sampling, plot=False):
     """
     this is the function that accepts the timeseries of intensity images from the simulation and returns the processed
@@ -271,7 +279,7 @@ def cdi_postprocess(cpx_seq, sampling, plot=False):
                     Ip = np.abs(fp_seq[ip, i, j]) ** 2
                     Im = np.abs(fp_seq[ip + n_pairs, i, j]) ** 2
                     Io = np.abs(fp_seq[cdi.n_probes + xn, i, j]) ** 2
-                    abs = (Ip + Im) / 2 - Io
+                    abs = np.abs((Ip + Im) / 2 - Io)
                     if abs < 0:
                         abs = 0
                     absDeltaP = np.sqrt(abs)
@@ -292,6 +300,9 @@ def cdi_postprocess(cpx_seq, sampling, plot=False):
                 Exy, res, rnk, s = linalg.lstsq(a, b)  # returns tuple, not array
                 # print(f'xn={xn},i={i},j={j},ip={ip}\nExy={Exy}')
                 Epupil[xn, i, j] = Exy[0] + (1j * Exy[1])
+
+    toc = time.time()
+    dprint(f'CDI post-processing took {(toc-tic)/60:.2} minutes')
 
     if plot:
         # ==================
@@ -321,8 +332,8 @@ def cdi_postprocess(cpx_seq, sampling, plot=False):
 
         for ax, ix in zip(subplot.flatten(), range(n_nulls)):
             im = ax.imshow(np.abs(Epupil[ix])**2, interpolation='none', origin='lower',
-                           norm=LogNorm())
-                           # vmin=-1, vmax=1)  # , norm=SymLogNorm(linthresh=1e-5))
+                           norm=LogNorm(),
+                           vmin=1e-8, vmax=1e-2)  # , norm=SymLogNorm(linthresh=1e-5))
             ax.set_title(f'Null Step {ix}')
 
         cax = fig.add_axes([0.9, 0.2, 0.03, 0.6])  # Add axes for colorbar @ position [left,bottom,width,height]
@@ -338,17 +349,93 @@ def cdi_postprocess(cpx_seq, sampling, plot=False):
 
         for ax, ix in zip(subplot.flatten(), range(n_nulls)):
             im = ax.imshow(np.abs(fp_seq[n_pairs+ix] - np.conjugate(Epupil[ix])) ** 2,
-                           interpolation='none', origin='lower', norm=LogNorm())
+                           interpolation='none', origin='lower', norm=LogNorm(),
+                           vmin=1e-8, vmax=1e-2)
             ax.set_title(f'Null Step {ix}')
 
         cax = fig.add_axes([0.9, 0.2, 0.03, 0.6])  # Add axes for colorbar @ position [left,bottom,width,height]
         cb = fig.colorbar(im, orientation='vertical', cax=cax)  #
         cb.set_label('Intensity')
 
-        plt.show()
-    toc = time.time()
-    dprint(f'CDI post-processing took {(toc-tic)/60:.2} minutes')
+        # ==================
+        # Original E-Field
+        # ==================
+        fig, subplot = plt.subplots(1, n_nulls, figsize=(14, 5))
+        fig.subplots_adjust(wspace=0.5, right=0.85)
+        fig.suptitle('Original E-field')
 
+        for ax, ix in zip(subplot.flatten(), range(n_nulls)):
+            im = ax.imshow(np.abs(fp_seq[n_pairs + ix]) ** 2,
+                           interpolation='none', origin='lower', norm=LogNorm(),
+                           vmin=1e-8, vmax=1e-2)
+            ax.set_title(f'Null Step {ix}')
+
+        cax = fig.add_axes([0.9, 0.2, 0.03, 0.6])  # Add axes for colorbar @ position [left,bottom,width,height]
+        cb = fig.colorbar(im, orientation='vertical', cax=cax)  #
+        cb.set_label('Intensity')
+
+        # ==================
+        # FFT of Tweeter Plane
+        # ==================
+        fig, subplot = plt.subplots(1, n_pairs, figsize=(14, 5))
+        fig.subplots_adjust(wspace=0.5, right=0.85)
+        fig.suptitle('FFT of Tweeter DM Plane')
+
+        tweet = extract_plane(cpx_seq, 'tweeter')  # eliminates astro_body axis [tsteps,wvl,obj,x,y]
+        tweeter = np.sum(tweet, axis=(1, 2))
+        for ax, ix in zip(subplot.flatten(), range(n_pairs)):
+            fft_tweeter = (1 / np.sqrt(2 * np.pi) *
+                           np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(tweeter[ix]))))
+            im = ax.imshow(np.abs(fft_tweeter) ** 2,
+                           interpolation='none', norm=LogNorm()) #,
+                           # vmin=1e-3, vmax=1e-2)
+            ax.set_title(f'Probe Phase ' r'$\theta$' f'={cdi.phase_cycle[ix]/np.pi:.2f}' r'$\pi$')
+
+        cax = fig.add_axes([0.9, 0.2, 0.03, 0.6])  # Add axes for colorbar @ position [left,bottom,width,height]
+        cb = fig.colorbar(im, orientation='vertical', cax=cax)  #
+        cb.set_label('Intensity')
+        plt.show()
+
+
+##
+def get_fp_mask(cdi, plot=False):
+    """
+    dreturns a mask of the CDI probe pattern in focal plane coordinates
+
+    :param cdi: structure containing all CDI probe parameters
+    :param plot: will plot or not
+    :return:
+    """
+    nx = sp.grid_size
+    ny = sp.grid_size
+    dm_act = cdi.nact
+
+    fftA = (1 / np.sqrt(2 * np.pi) *
+            np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(cdi.cout.DM_probe_series[0]))))
+
+    Ar = interpolate.interp2d(range(dm_act), range(dm_act), fftA.real, kind='cubic')
+    Ai = interpolate.interp2d(range(dm_act), range(dm_act), fftA.imag, kind='cubic')
+    ArI = Ar(np.linspace(0, dm_act, ny), np.linspace(0, dm_act, nx))
+    AiI = Ai(np.linspace(0, dm_act, ny), np.linspace(0, dm_act, nx))
+
+    fp_probe = np.sqrt(ArI**2 + AiI**2)
+    fp_mask = (fp_probe>0.1).nonzero()
+    (i,j) = (fp_probe>0.1).nonzero()
+    return fp_mask, i, j
+
+
+##
+def add_colorbar(im, aspect=20, pad_fraction=0.5, **kwargs):
+    """Add a vertical color bar to an image plot."""
+    divider = axes_grid1.make_axes_locatable(im.axes)
+    width = axes_grid1.axes_size.AxesY(im.axes, aspect=1./aspect)
+    pad = axes_grid1.axes_size.Fraction(pad_fraction, width)
+    current_ax = plt.gca()
+    cax = divider.append_axes("right", size=width, pad=pad)
+    plt.sca(current_ax)
+    return im.axes.figure.colorbar(im, cax=cax, **kwargs)
+
+##
 if __name__ == '__main__':
     dprint(f"Testing CDI probe")
     cdi.use_cdi = True; cdishow_probe = True
@@ -366,3 +453,5 @@ if __name__ == '__main__':
     cdi.init_probes(tp.act_tweeter)
     # cdiphase_series = [-1*np.pi/4]
     config_probe(cdi.phase_series[0], tp.act_tweeter)  #
+
+

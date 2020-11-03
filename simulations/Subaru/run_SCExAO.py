@@ -57,8 +57,8 @@ ap.wvl_range = np.array([950, 1300]) / 1e9  # wavelength range in [m]
 cdi.use_cdi = True
 cdi.probe_w = 15  # [actuator coordinates] width of the probe
 cdi.probe_h = 30  # [actuator coordinates] height of the probe
-cdi.probe_center = (10,10)  # [actuator coordinates] center position of the probe
-cdi.probe_amp = 2e-8  # [m] probe amplitude, scale should be in units of actuator height limits
+cdi.probe_shift = (7,7)  # [actuator coordinates] center position of the probe
+cdi.probe_amp = 2e-6  # [m] probe amplitude, scale should be in units of actuator height limits
 cdi.which_DM = 'tweeter'
 cdi.phs_intervals = np.pi/3
 cdi.phase_integration_time = 0.01
@@ -66,8 +66,8 @@ cdi.phase_integration_time = 0.01
 
 # Toggles for Aberrations and Control
 tp.obscure = False
-tp.use_atmos = True
-tp.use_aber = True
+tp.use_atmos = False
+tp.use_aber = False
 tp.add_zern = False  # Just a note: zernike aberrations generate randomly each time the telescope is run, so introduces
                      # potentially inconsistent results
 tp.use_ao = True
@@ -98,7 +98,7 @@ sp.debug = False
 
 # Saving
 sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
-sp.save_list = ['entrance_pupil', 'detector']  # list of locations in optics train to save 'entrance_pupil',
+sp.save_list = ['tweeter', 'detector']  # list of locations in optics train to save 'entrance_pupil',
                 # 'entrance_pupil','post-DM-focus', 'coronagraph', 'woofer', 'tweeter',
 ##
 if __name__ == '__main__':
