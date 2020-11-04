@@ -9,11 +9,11 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm, SymLogNorm
 import matplotlib.ticker as ticker
 import matplotlib.gridspec as gridspec
+from mpl_toolkits import axes_grid1
 from mpl_toolkits.axes_grid1 import ImageGrid
 import warnings
 
 from medis.params import tp, sp, ap
-from medis.CDI import cdi
 from medis.utils import dprint
 import medis.optics as opx
 from medis.twilight_colormaps import sunlight
@@ -255,12 +255,13 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
         plt.show(block=True)
 
 
-def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=True, vlim =(None,None),
+def view_timeseries(img_tseries, cdi, title=None, show=True, logZ=False, use_axis=True, vlim =(None,None),
                     dx=None, subplt_cols=3):
     """
     view white light images in the timeseries
 
     :param img_tseries: complex timeseries
+    :param cdi: struct that contains the CDI params (from CDI.py)
     :param title: string, must be set or will error!
     :param show: flag possibly useful for plotting loops of things?
     :param logZ: turn logscale plotting for Z-axis on or off
@@ -508,3 +509,15 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=[None, No
         # fig.tight_layout(pad=50)
 
     # plt.show(block=True)
+
+
+##
+def add_colorbar(im, aspect=20, pad_fraction=0.5, **kwargs):
+    """Add a vertical color bar to an image plot."""
+    divider = axes_grid1.make_axes_locatable(im.axes)
+    width = axes_grid1.axes_size.AxesY(im.axes, aspect=1./aspect)
+    pad = axes_grid1.axes_size.Fraction(pad_fraction, width)
+    current_ax = plt.gca()
+    cax = divider.append_axes("right", size=width, pad=pad)
+    plt.sca(current_ax)
+    return im.axes.figure.colorbar(im, cax=cax, **kwargs)
