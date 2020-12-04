@@ -242,14 +242,15 @@ def cdi_postprocess(cpx_sequence, sampling, plot=False):
     hole over the specified region of the image.
 
     From Give'on et al 2011, we have in eq 10 two different values: DeltaP-the change in the focal plane due to the
-    probe, and delta, the intensity difference measurements between pairs of phase probes.
+    probe, and delta, the intensity difference measurements between pairs of phase probes. (It is unfortunate that
+    both these terms use delta, so I have done my best to distinguish them in the variable names)
 
     Here I note that in the CDI phase stream generation, for n_probes there are n_pairs = n_probes/2 pairs of probes.
     These get applied to the DM in a series such that the two probes that form the conjugate pair are separated by
     n_pairs of probes. In other words, for n_probes = 6, the 0th and 3rd probes are a pair, the 1st and 4th are a pair,
     and so on. This is a choice made when creating cdi.phase_series.
 
-    :param cpx_sequence: #timestream of 2D images (intensity only) from the focal plane complex field
+    :param cpx_sequence: #timestream of 2D images (complex) from the focal plane complex field
     :param sampling: focal plane sampling
     :return:
     """
@@ -262,7 +263,7 @@ def cdi_postprocess(cpx_sequence, sampling, plot=False):
     n_nulls = sp.numframes - cdi.n_probes
     delta = np.zeros((n_pairs, sp.grid_size, sp.grid_size), dtype=float)
     # absDelta = np.zeros((n_nulls, sp.grid_size, sp.grid_size))
-    phsDelta = np.zeros((n_pairs, sp.grid_size, sp.grid_size), dtype=float)
+    # phsDelta = np.zeros((n_pairs, sp.grid_size, sp.grid_size), dtype=float)
     E_pupil = np.zeros((n_nulls, sp.grid_size, sp.grid_size), dtype=complex)
     I_processed = np.zeros((n_nulls, sp.grid_size, sp.grid_size))
     H = np.zeros((n_pairs, 2), dtype=float)
@@ -270,43 +271,45 @@ def cdi_postprocess(cpx_sequence, sampling, plot=False):
 
     # Get Masked Data
     mask2D, imsk, jmsk = get_fp_mask(cdi)
-    if plot:
-        fig, ax = plt.subplots(1,1)
-        fig.suptitle(f'Masked FP in CDI probe Region')
-        im = ax.imshow(cpx_to_intensity(fp_seq[0,:,:]*mask2D))
+    # if plot:
+    #     fig, ax = plt.subplots(1,1)
+    #     fig.suptitle(f'Masked FP in CDI probe Region')
+    #     im = ax.imshow(cpx_to_intensity(fp_seq[0,:,:]*mask2D))
 
     for ip in range(n_pairs):
         # Compute deltas (I_ip+ - I_ip-)/2
-        delta[ip] = (np.abs(fp_seq[ip])**2 - np.abs(fp_seq[ip + n_pairs])**2) / 2
+        delta[ip] = (np.abs(fp_seq[ip])**2 - np.abs(fp_seq[ip + n_pairs])**2) / 4
 
-        # Phase DeltaP
-        # The phase of the change in the focal plane of the probe applied to the DM
-        phsDelta[ip,:,:] = np.arctan2(fp_seq[ip].imag - fp_seq[ip + n_pairs].imag,
-                                      fp_seq[ip].real - fp_seq[ip + n_pairs].real)
+    for i, j in zip(imsk, jmsk):
+        for xn in range(n_nulls):
+            for ip in range(n_pairs):
+                # Amplitude Delta
+                Ip = np.abs(fp_seq[ip, i, j]) ** 2
+                Im = np.abs(fp_seq[ip + n_pairs, i, j]) ** 2
+                Io = np.abs(fp_seq[cdi.n_probes + xn, i, j]) ** 2
+                abs = (Ip + Im) / 2 - Io
+                if abs < 0:
+                    abs = 0
+                absDeltaP = np.sqrt(abs)
+                # absDeltaP = np.sqrt(np.abs((Ip + Im) / 2 - Io))
 
-    for i in range(sp.grid_size):
-        for j in range(sp.grid_size):
-            for xn in range(n_nulls):
-                for ip in range(n_pairs):
-                    # Amplitude Delta
-                    Ip = np.abs(fp_seq[ip, i, j]) ** 2
-                    Im = np.abs(fp_seq[ip + n_pairs, i, j]) ** 2
-                    Io = np.abs(fp_seq[cdi.n_probes + xn, i, j]) ** 2
-                    abs = (Ip + Im) / 2 - Io
-                    if abs < 0:
-                        abs = 0
-                    absDeltaP = np.sqrt(abs)
-                    # absDeltaP = np.sqrt(np.abs((Ip + Im) / 2 - Io))
+                # phsDeltaP = phsDelta[ip, i, j]
+                # Phase DeltaP
+                # The phase of the change in the focal plane of the probe applied to the DM
+                # First subtract Eo vector from each probe phase to make new field vectors dEa, dEb,
+                # then take the angle between the two
+                dEp = fp_seq[ip, i, j] - fp_seq[cdi.n_probes + xn, i, j]
+                dEm = fp_seq[ip + n_pairs, i, j] - fp_seq[cdi.n_probes + xn, i, j]
+                phsDeltaP = np.arctan2(dEp.imag - dEm.imag, dEp.real - dEm.real)
 
-                    phsDeltaP = phsDelta[ip, i, j]
-                    cpxDeltaP = absDeltaP * np.exp(1j * phsDeltaP)
+                cpxDeltaP = absDeltaP * np.exp(1j * phsDeltaP)
 
-                    H[ip, :] = [-cpxDeltaP.imag, cpxDeltaP.real]  # [n_pairs, 2]
-                    b[ip] = delta[ip, i, j]  # [n_pairs, 1]
+                H[ip, :] = [-cpxDeltaP.imag, cpxDeltaP.real]  # [n_pairs, 2]
+                b[ip] = delta[ip, i, j]  # [n_pairs, 1]
 
-                a = 2 * H
-                Exy = linalg.lstsq(a, b)[0]  # returns tuple, not array
-                E_pupil[xn, i, j] = Exy[0] + (1j * Exy[1])
+            a = 2 * H
+            Exy = linalg.lstsq(a, b)[0]  # returns tuple, not array
+            E_pupil[xn, i, j] = Exy[0] + (1j * Exy[1])
 
     toc = time.time()
     dprint(f'CDI post-processing took {(toc-tic)/60:.2} minutes\n')
@@ -320,7 +323,7 @@ def cdi_postprocess(cpx_sequence, sampling, plot=False):
     intensity_post_process = np.zeros(n_nulls)
 
     for xn in range(n_nulls):
-        # I_processed[xn] = (np.abs(fp_seq[n_pairs+xn])**2 - np.abs(E_pupil[xn]*mask2D)**2)
+        I_processed[xn] = np.sqrt(np.abs(fp_seq[n_pairs+xn])**2 - np.abs(E_pupil[xn]*mask2D)**2)
         # I_processed[xn] = np.abs(fp_seq[n_pairs+xn] - (E_pupil[xn]*mask2D))**2
         # I_processed[xn] = np.sqrt(np.abs(np.abs(fp_seq[n_pairs+xn])**2 - np.abs(E_pupil[xn]*mask2D)**2))**2
         # I_processed[xn] = np.abs(fp_seq[n_pairs+xn] - np.conj(E_pupil[xn]*mask2D))**3
@@ -328,7 +331,7 @@ def cdi_postprocess(cpx_sequence, sampling, plot=False):
         # Contrast
         intensity_probe[xn] = np.sum(np.abs(fp_seq[xn]*mask2D)**2)
         intensity_pre_process[xn] = np.sum(np.abs(fp_seq[n_pairs + xn]*mask2D)**2)
-        # intensity_post_process[xn] = np.sum(I_processed[xn]*mask2D)  #np.sum(np.abs(E_processed[xn]*mask2D)**2)
+        intensity_post_process[xn] = np.sum(I_processed[xn]*mask2D)  #np.sum(np.abs(E_processed[xn]*mask2D)**2)
 
         print(f'\nIntensity in probed region for null step {xn} is '
               f'\nprobe {intensity_probe[xn]}'
@@ -349,7 +352,7 @@ def cdi_postprocess(cpx_sequence, sampling, plot=False):
         tweeter = np.sum(tweet, axis=(1, 2))
         for ax, ix in zip(subplot.flatten(), range(n_pairs)):
             fft_tweeter = (1 / np.sqrt(2 * np.pi) *
-                           np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(tweeter[ix]))))
+                           np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(tweeter[ix+n_pairs]))))
             intensity_DM_FFT = np.sum(np.abs(fft_tweeter*mask2D)**2)
             print(f'tweeter fft intensity = {intensity_DM_FFT}')
             im = ax.imshow(np.abs(fft_tweeter*mask2D) ** 2,
@@ -387,7 +390,7 @@ def cdi_postprocess(cpx_sequence, sampling, plot=False):
         fig.suptitle('Original (Null-Probe) E-field')
 
         for ax, ix in zip(subplot.flatten(), range(n_nulls)):
-            im = ax.imshow(np.abs(fp_seq[n_pairs + ix]*mask2D) ** 2,  # , 250:270, 180:200
+            im = ax.imshow(np.abs(fp_seq[n_pairs + ix, 250:270, 150:170]) ** 2,  # , 250:270, 150:170  *mask2D
                            interpolation='none', norm=LogNorm(),
                            vmin=1e-8, vmax=1e-2)
             ax.set_title(f'Null Step {ix}')
@@ -404,7 +407,8 @@ def cdi_postprocess(cpx_sequence, sampling, plot=False):
         fig.suptitle('Estimated E-field')
 
         for ax, ix in zip(subplot.flatten(), range(n_nulls)):
-            im = ax.imshow(np.abs(E_pupil[ix]*mask2D)**2, interpolation='none',  # , 250:270, 180:200
+            im = ax.imshow(np.abs(E_pupil[ix, 250:270, 150:170])**2,  # , 250:270, 150:170  *mask2D
+                           interpolation='none',
                            norm=LogNorm(),
                            vmin=1e-8, vmax=1e-2)  # , norm=SymLogNorm(linthresh=1e-5))
             ax.set_title(f'Null Step {ix}')
@@ -431,6 +435,9 @@ def cdi_postprocess(cpx_sequence, sampling, plot=False):
         cb = fig.colorbar(im, orientation='vertical', cax=cax)  #
         cb.set_label('Intensity')
 
+        # ==================
+        # View Time Series
+        # ==================
         view_timeseries(cpx_to_intensity(fp_seq*mask2D), cdi, title=f"White Light Timeseries",
                         subplt_cols=sp.tseries_cols,
                         logZ=True,
@@ -461,8 +468,10 @@ def get_fp_mask(cdi):
     AiI = Ai(np.linspace(0, dm_act, ny), np.linspace(0, dm_act, nx))
 
     fp_probe = np.sqrt(ArI**2 + AiI**2)
-    fp_mask = (6.4e-5 > fp_probe > 1e-7).any()
-    (i, j) = (6.4e-5 > fp_probe > 1e-7).nonzero()
+    # fp_mask = (6.4e-5 > fp_probe > 1e-7)
+    # (i, j) = (6.4e-5 > fp_probe > 1e-7).nonzero()
+    fp_mask = (fp_probe > 1e-7)
+    (i, j) = (fp_probe > 1e-7).nonzero()
 
     return fp_mask, i, j
 
