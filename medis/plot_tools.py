@@ -253,7 +253,7 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
         plt.show(block=False)
 
 
-def view_timeseries(img_tseries, cdi, title=None,  logZ=False, use_axis=True, vlim =(None,None),
+def view_timeseries(img_tseries, cdi, title=None,  logZ=False, vlim =(None,None),
                     dx=None, subplt_cols=3):
     """
     view white light images in the timeseries
@@ -276,7 +276,7 @@ def view_timeseries(img_tseries, cdi, title=None,  logZ=False, use_axis=True, vl
     n_tsteps = len(img_tseries)
     n_rows = int(np.ceil(n_tsteps / float(subplt_cols)))
 
-    fig, subplot = plt.subplots(n_rows, subplt_cols, figsize=(10, 10))
+    fig, subplot = plt.subplots(n_rows, subplt_cols, figsize=(12, 10))
     fig.subplots_adjust(bottom=0.1, top=0.85, left=0.01, hspace=.4, wspace=0.02, right=0.9,)  #  wspace=0.2, right=0.95, left=0.05,
 
     # Title
@@ -342,7 +342,7 @@ def view_timeseries(img_tseries, cdi, title=None,  logZ=False, use_axis=True, vl
                 clabel = "Normalized Intensity"
 
         warnings.simplefilter("ignore", category=UserWarning)
-        cbar_ax = fig.add_axes([0.9, 0.1, 0.05, 0.8])  # Add axes for colorbar @ position [left,bottom,width,height]
+        cbar_ax = fig.add_axes([0.86, 0.1, 0.04, 0.8])  # Add axes for colorbar @ position [left,bottom,width,height]
         cb = fig.colorbar(im, cax=cbar_ax, orientation='vertical')  #
         cb.set_label(clabel, fontsize=10)
 
