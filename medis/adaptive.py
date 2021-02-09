@@ -299,7 +299,7 @@ def open_loop_wfs(wfo, plane_name='wfs'):
         #     quick2D(WFS_map[iw], title=f"WFS map after masking, lambda={wfo.wsamples[iw]*1e9:.2f}",
         #             zlabel='unwrapped phase (rad)',
         #             vlim=[-3*np.pi, 3*np.pi])
-        #     plt.show()
+        #
 
     if 'WFS' in sp.save_list or sp.closed_loop:
         wfo.save_plane(location='WFS')

@@ -175,9 +175,9 @@ class Telescope:
             cdi.gen_phaseseries()
             if cdi.use_cdi:
                 if hasattr(tp, 'act_tweeter'):
-                    cdi.init_cout(tp.act_tweeter)
+                    cdi.init_out(tp.act_tweeter)
                 else:
-                    cdi.init_cout(tp.ao_act)
+                    cdi.init_out(tp.ao_act)
 
             # Remove AO planes from save_list if use_ao is False
             if not tp.use_ao and 'woofer' in sp.save_list:
