@@ -20,7 +20,7 @@ from medis.plot_tools import add_colorbar, view_timeseries
 
 
 ##
-class CDIOut:
+class Slapper:
     """Stole this idea from falco. Just passes an object you can slap stuff onto"""
     pass
 
@@ -37,6 +37,7 @@ class CDI_params:
         # the telescope sim you are running, eg 'tweeter'
 
         # Probe Dimensions (extent in pupil plane coordinates)
+        self.probe_ax = 'X'  # 'Y' # direction of the probe
         self.probe_amp = 2e-6  # [m] probe amplitude, scale should be in units of actuator height limits
         self.probe_w = 10  # [actuator coordinates] width of the probe
         self.probe_h = 30  # [actuator coordinates] height of the probe
@@ -46,8 +47,8 @@ class CDI_params:
 
         # Phase Sequence of Probes
         self.phs_intervals = np.pi / 2  # [rad] phase interval over [0, 2pi]
-        self.phase_integration_time = 0.01  # [s]  How long in sec to apply each probe in the sequence
-        self.null_time = 0  # [s]  time between repeating probe cycles (data to be nulled using probe info)
+        self.probe_integration_time = 1  # [s]  How long in sec to apply each probe in the sequence
+        self.null_time = 5  # [s]  time between repeating probe cycles (data to be nulled using probe info)
 
     def __iter__(self):
         for attr, value in self.__dict__.items():
@@ -70,56 +71,78 @@ class CDI_params:
         """
         self.phase_series = np.zeros(sp.numframes) * np.nan
 
-        if self.use_cdi:
-            # Repeating Probe Phases for Integration time
-            self.phase_cycle = np.arange(0, 2 * np.pi, self.phs_intervals)  # FYI not inclusive of 2pi endpoint
-            self.n_probes = len(self.phase_cycle)  # number of phase probes
-            if self.n_probes % 2 != 0:
-                raise ValueError(f"must have even number of phase probes\n\tchange cdi.phs_intervals")
+        # Repeating Probe Phases for Integration time
+        self.phase_cycle = np.arange(0, 2 * np.pi, self.phs_intervals)  # FYI not inclusive of 2pi endpoint
+        self.n_probes = len(self.phase_cycle)  # number of phase probes
+        if self.n_probes % 2 != 0:
+            raise ValueError(f"must have even number of phase probes\n\tchange cdi.phs_intervals")
+        self.dummy_probe = np.zeros((self.n_probes, tp.act_tweeter, tp.act_tweeter))
 
-            if self.phase_integration_time > sp.sample_time:
-                phase_hold = self.phase_integration_time / sp.sample_time
-                phase_1cycle = np.repeat(self.phase_cycle, phase_hold)
-            elif self.phase_integration_time == sp.sample_time:
-                phase_1cycle = self.phase_cycle
-            else:
-                raise ValueError(f"Cannot have CDI phase probe integration time less than sp.sample_time")
+        if self.probe_integration_time > sp.sample_time:
+            phase_hold = self.probe_integration_time / sp.sample_time
+            phase_1cycle = np.repeat(self.phase_cycle, phase_hold)
+        elif self.probe_integration_time == sp.sample_time:
+            phase_1cycle = self.phase_cycle
+        else:
+            raise ValueError(f"Cannot have CDI phase probe integration time less than sp.sample_time")
 
-            # Repeating Cycle of Phase Probes for Simulation Duration
-            full_simulation_time = sp.numframes * sp.sample_time
-            time_for_one_cycle = len(phase_1cycle) * self.phase_integration_time + self.null_time
+        # Repeating Cycle of Phase Probes for Simulation Duration
+        full_simulation_time = sp.numframes * sp.sample_time
+        self.time_for_one_cycle = len(phase_1cycle) * self.probe_integration_time + self.null_time
 
-            if time_for_one_cycle > full_simulation_time and self.phase_integration_time >= sp.sample_time:
-                warnings.warn(f"\nLength of one full CDI probe cycle (including nulling) exceeds the "
-                              f"full simulation time \n"
-                              f"not all phases will be used\n"
-                              f"phase reconstruction will be incomplete")
-                self.phase_series = phase_1cycle[0:sp.numframes]
-            elif time_for_one_cycle <= full_simulation_time and self.n_probes < sp.numframes:
-                print(f"\nCDI Params\n\tThere will be {sp.numframes - self.n_probes} "
-                      f"nulling steps after timestep {self.n_probes}")
-                self.phase_series[0:self.n_probes] = phase_1cycle
-            else:
-                warnings.warn(f"Haven't run into  CDI phase situation like this yet")
-                raise NotImplementedError
+        if self.time_for_one_cycle > full_simulation_time and self.probe_integration_time >= sp.sample_time:
+            warnings.warn(f"\nLength of one full CDI probe cycle (including nulling) exceeds the "
+                          f"full simulation time \n"
+                          f"not all phases will be used\n"
+                          f"phase reconstruction will be incomplete")
+            self.phase_series = phase_1cycle[0:sp.numframes]
+        elif self.time_for_one_cycle <= full_simulation_time and self.n_probes < sp.numframes:
+            print(f"\nCDI Params\n\tThere will be {sp.numframes - self.n_probes} "
+                  f"nulling steps after timestep {self.n_probes}")
+            self.phase_series[0:self.n_probes] = phase_1cycle
+        else:
+            warnings.warn(f"Haven't run into  CDI phase situation like this yet")
+            raise NotImplementedError
 
         return self.phase_series
 
-    def init_cout(self, nact):
-        self.cout = CDIOut()
-        self.cout.nact = nact
-        self.cout.grid_size = sp.grid_size
-        self.cout.beam_ratio = sp.beam_ratio
-        self.cout.DM_probe_series = np.zeros((self.n_probes, nact, nact))
+    # def init_out(self, nact):
 
     def save_probe(self, ix, probe):
-        self.cout.DM_probe_series[ix] = probe
+        self.dummy_probe[ix,:,:] = probe
 
-    def save_tseries(self, ts):
+    def save_tseries(self, ix, ts):
         """saves output of medis fields as 2D intensity images for CDI postprocessing"""
-        self.cout.tseries = ts
+        self.cmd_tstamp[ix] = ts
 
-    def save_cout_to_disk(self, plot=False):
+    def save_out_to_disk(self, plot=False):
+        out = Slapper()
+        out.probe = Slapper()
+        out.ts = Slapper()
+
+        # Probe Info
+        out.probe.direction = self.probe_ax
+        out.probe.amp = self.probe_amp
+        out.probe.width = self.probe_w
+        out.probe.height = self.probe_h
+        out.probe.shift = self.probe_shift
+        out.probe.spacing = self.probe_spacing
+        out.probe.DM_cmd_cycle = self.dummy_probe
+        out.probe.phs_interval = self.phs_intervals
+
+        # Timeseries Info
+        out.ts.start = 0
+        out.ts.n_probes = self.n_probes
+        out.ts.phase_cycle = self.phase_cycle
+        out.ts.probe_integration_time = self.probe_integration_time
+        out.ts.t_one_cycle = self.time_for_one_cycle
+        out.ts.null_time = self.null_time
+        out.ts.elapsed_time = 0
+        out.ts.n_cycles = 0
+        out.ts.n_cmds = sp.numframes  # TODO verify this-this was just a late night hack
+        # print(f'{cout.n_commands} = cout.n_commands')
+        out.ts.cmd_tstamps = np.zeros((out.ts.n_cmds,), dtype='datetime64[ns]')
+
         # Fig
         if plot:
             if self.n_probes >= 4:
@@ -136,15 +159,16 @@ class CDI_params:
 
             fig.suptitle('Probe Series')
 
-            for ax, ix in zip(subplot.flatten(), range(self.n_probes)):
+            for ax, ix in zip(subplot.flatten(), range(out.ts.n_probes)):
                 # im = ax.imshow(self.DM_probe_series[ix], interpolation='none', origin='lower')
-                im = ax.imshow(self.cout.probe_series[ix], interpolation='none', origin='lower')
+                im = ax.imshow(out.probe.DM_cmd_cycle[ix].T, interpolation='none', origin='lower')
 
-                ax.set_title(f"Probe " + r'$\theta$=' + f'{self.DM_phase_series[ix]/np.pi:.2f}' + r'$\pi$')
+                ax.set_title(f"Probe " + r'$\theta$=' + f'{out.ts.phase_cycle[ix]/np.pi:.2f}' + r'$\pi$')
 
             cb = fig.colorbar(im)  #
             cb.set_label('um')
 
+        return out
 
 # Sneakily Instantiating Class Objects here
 cdi = CDI_params()
@@ -178,8 +202,15 @@ def config_probe(theta, nact, iw=0, ib=0, tstep=0):
     # dprint(f'iw = {iw}, lambda = {wvl_samples[iw]}')
     mag = 4 * np.pi * wvl_samples[iw] * cdi.probe_amp
 
+    if cdi.probe_ax == 'X' or cdi.probe_ax == 'x':
+        dir = X
+    elif cdi.probe_ax == 'Y' or cdi.probe_ax == 'y':
+        dir = Y
+    else:
+        raise ValueError('probe direction value not understood; must be string "X" or "Y"')
+
     probe = mag * np.sinc(cdi.probe_w * X) * np.sinc(cdi.probe_h * Y) \
-            * np.sin(2*np.pi*cdi.probe_spacing*X + theta)
+            * np.sin(2*np.pi*cdi.probe_spacing * dir + theta)
 
     # Testing FF propagation
     if sp.verbose and iw == 0 and ib == 0:  # and theta == cdi.phase_series[0]
@@ -228,7 +259,7 @@ def config_probe(theta, nact, iw=0, ib=0, tstep=0):
     # Saving Probe in the series
     if iw == 0 and ib == 0:
         ip = np.argwhere(cdi.phase_series == theta)
-        cdi.save_probe(ip[0,0], probe)
+        cdi.save_probe(ip[0,0], probe)  #
         cdi.nact = nact
 
     return probe
@@ -270,46 +301,49 @@ def cdi_postprocess(cpx_sequence, sampling, plot=False):
     b = np.zeros((n_pairs, 1))
 
     # Get Masked Data
-    mask2D, imsk, jmsk = get_fp_mask(cdi)
-    # if plot:
-    #     fig, ax = plt.subplots(1,1)
-    #     fig.suptitle(f'Masked FP in CDI probe Region')
-    #     im = ax.imshow(cpx_to_intensity(fp_seq[0,:,:]*mask2D))
+    mask2D, imsk, jmsk, irng, jrng, imx, imn, jmx, jmn = get_fp_mask(cdi)
+
+    if sp.debug:
+        fig, ax = plt.subplots(1,1)
+        fig.suptitle(f'Masked FP in CDI probe Region')
+        im = ax.imshow(cpx_to_intensity(fp_seq[0,:,:]*mask2D))
 
     for ip in range(n_pairs):
         # Compute deltas (I_ip+ - I_ip-)/2
-        delta[ip] = (np.abs(fp_seq[ip])**2 - np.abs(fp_seq[ip + n_pairs])**2) / 4
+        delta[ip] = (np.abs(fp_seq[ip])**2 - np.abs(fp_seq[ip + n_pairs])**2) / 2
 
-    for i, j in zip(imsk, jmsk):
-        for xn in range(n_nulls):
-            for ip in range(n_pairs):
-                # Amplitude Delta
-                Ip = np.abs(fp_seq[ip, i, j]) ** 2
-                Im = np.abs(fp_seq[ip + n_pairs, i, j]) ** 2
-                Io = np.abs(fp_seq[cdi.n_probes + xn, i, j]) ** 2
-                abs = (Ip + Im) / 2 - Io
-                if abs < 0:
-                    abs = 0
-                absDeltaP = np.sqrt(abs)
-                # absDeltaP = np.sqrt(np.abs((Ip + Im) / 2 - Io))
+    # for i,j in zip(imsk,jmsk):
+    for i in irng:
+        for j in jrng:
+            for xn in range(n_nulls):
+                for ip in range(n_pairs):
+                    # Amplitude DeltaP
+                    Ip = np.abs(fp_seq[ip, i, j]) ** 2
+                    Im = np.abs(fp_seq[ip + n_pairs, i, j]) ** 2
+                    Io = np.abs(fp_seq[cdi.n_probes + xn, i, j]) ** 2
+                    abs = (Ip + Im) / 2 - Io
+                    if abs < 0:
+                        abs = 0
+                    absDeltaP = np.sqrt(abs)
+                    # absDeltaP = np.sqrt(np.abs((Ip + Im) / 2 - Io))
 
-                # phsDeltaP = phsDelta[ip, i, j]
-                # Phase DeltaP
-                # The phase of the change in the focal plane of the probe applied to the DM
-                # First subtract Eo vector from each probe phase to make new field vectors dEa, dEb,
-                # then take the angle between the two
-                dEp = fp_seq[ip, i, j] - fp_seq[cdi.n_probes + xn, i, j]
-                dEm = fp_seq[ip + n_pairs, i, j] - fp_seq[cdi.n_probes + xn, i, j]
-                phsDeltaP = np.arctan2(dEp.imag - dEm.imag, dEp.real - dEm.real)
+                    # phsDeltaP = phsDelta[ip, i, j]
+                    # Phase DeltaP
+                    # The phase of the change in the focal plane of the probe applied to the DM
+                    # First subtract Eo vector from each probe phase to make new field vectors dEa, dEb,
+                    # then take the angle between the two
+                    dEp = fp_seq[ip, i, j] - fp_seq[cdi.n_probes + xn, i, j]
+                    dEm = fp_seq[ip + n_pairs, i, j] - fp_seq[cdi.n_probes + xn, i, j]
+                    phsDeltaP = np.arctan2(dEp.imag - dEm.imag, dEp.real - dEm.real)
 
-                cpxDeltaP = absDeltaP * np.exp(1j * phsDeltaP)
+                    cpxDeltaP = absDeltaP * np.exp(1j * phsDeltaP)
 
-                H[ip, :] = [-cpxDeltaP.imag, cpxDeltaP.real]  # [n_pairs, 2]
-                b[ip] = delta[ip, i, j]  # [n_pairs, 1]
+                    H[ip, :] = [-cpxDeltaP.imag, cpxDeltaP.real]  # [n_pairs, 2]
+                    b[ip] = delta[ip, i, j]  # [n_pairs, 1]
 
-            a = 2 * H
-            Exy = linalg.lstsq(a, b)[0]  # returns tuple, not array
-            E_pupil[xn, i, j] = Exy[0] + (1j * Exy[1])
+                a = 2 * H
+                Exy = linalg.lstsq(a, b)[0]  # returns tuple, not array
+                E_pupil[xn, i, j] = Exy[0] + (1j * Exy[1])
 
     toc = time.time()
     dprint(f'CDI post-processing took {(toc-tic)/60:.2} minutes\n')
@@ -321,14 +355,20 @@ def cdi_postprocess(cpx_sequence, sampling, plot=False):
     intensity_DM_FFT       = np.zeros(n_nulls)
     intensity_pre_process  = np.zeros(n_nulls)
     intensity_post_process = np.zeros(n_nulls)
+    E_ff = np.zeros((n_nulls, len(irng), len(jrng)), dtype=complex)
 
     for xn in range(n_nulls):
-        I_processed[xn] = np.sqrt(np.abs(fp_seq[n_pairs+xn])**2 - np.abs(E_pupil[xn]*mask2D)**2)
-        # I_processed[xn] = np.abs(fp_seq[n_pairs+xn] - (E_pupil[xn]*mask2D))**2
+        E_ff[xn] = (1 / np.sqrt(2 * np.pi) *
+                           np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(E_pupil[xn, imn:imx+1, jmn:jmx+1]))))
+        # E_ff[xn] = (1 / np.sqrt(2 * np.pi) *
+        #             np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(np.conj(E_pupil[xn])))))
+        # I_processed[xn] = np.sqrt(np.abs(fp_seq[n_pairs+xn])**2 - np.abs(E_ff[xn]*mask2D)**2)
+        I_processed[xn] = np.abs(fp_seq[n_pairs+xn])**2 - np.abs(np.conj(E_ff[xn])*mask2D)**2
         # I_processed[xn] = np.sqrt(np.abs(np.abs(fp_seq[n_pairs+xn])**2 - np.abs(E_pupil[xn]*mask2D)**2))**2
         # I_processed[xn] = np.abs(fp_seq[n_pairs+xn] - np.conj(E_pupil[xn]*mask2D))**3
 
         # Contrast
+
         intensity_probe[xn] = np.sum(np.abs(fp_seq[xn]*mask2D)**2)
         intensity_pre_process[xn] = np.sum(np.abs(fp_seq[n_pairs + xn]*mask2D)**2)
         intensity_post_process[xn] = np.sum(I_processed[xn]*mask2D)  #np.sum(np.abs(E_processed[xn]*mask2D)**2)
@@ -355,7 +395,8 @@ def cdi_postprocess(cpx_sequence, sampling, plot=False):
                            np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(tweeter[ix+n_pairs]))))
             intensity_DM_FFT = np.sum(np.abs(fft_tweeter*mask2D)**2)
             print(f'tweeter fft intensity = {intensity_DM_FFT}')
-            im = ax.imshow(np.abs(fft_tweeter*mask2D) ** 2,
+            # im = ax.imshow(np.abs(fft_tweeter*mask2D) ** 2,
+            im = ax.imshow(np.abs(tweeter[ix+n_pairs, imn:imx, jmn:jmx]) ** 2,
                            interpolation='none', norm=LogNorm())  # ,
             # vmin=1e-3, vmax=1e-2)
             ax.set_title(f'Probe Phase ' r'$\theta$' f'={cdi.phase_cycle[ix] / np.pi:.2f}' r'$\pi$')
@@ -364,9 +405,9 @@ def cdi_postprocess(cpx_sequence, sampling, plot=False):
         cb = fig.colorbar(im, orientation='vertical', cax=cax)  #
         cb.set_label('Intensity')
 
-        # ==================
-        # Deltas
-        # ==================
+        # # ==================
+        # # Deltas
+        # # ==================
         fig, subplot = plt.subplots(1, n_pairs, figsize=(14,5))
         fig.subplots_adjust(wspace=0.5, right=0.85)
         fig.suptitle('Deltas for CDI Probes')
@@ -374,7 +415,8 @@ def cdi_postprocess(cpx_sequence, sampling, plot=False):
         for ax, ix in zip(subplot.flatten(), range(n_pairs)):
             im = ax.imshow(delta[ix]*1e6*mask2D, interpolation='none',
                            norm=SymLogNorm(linthresh=1),
-                           vmin=-1, vmax=1) #, norm=SymLogNorm(linthresh=1e-5))
+                           # vmin=-1, vmax=1
+                           ) #, norm=SymLogNorm(linthresh=1e-5))
             ax.set_title(f"Diff Probe\n" + r'$\theta$' + f'={cdi.phase_series[ix]/np.pi:.3f}' +
                          r'$\pi$ -$\theta$' + f'={cdi.phase_series[ix+n_pairs]/np.pi:.3f}' + r'$\pi$')
 
@@ -382,35 +424,55 @@ def cdi_postprocess(cpx_sequence, sampling, plot=False):
         cb = fig.colorbar(im, orientation='vertical', cax=cax)  #
         cb.set_label('Intensity')
 
-        # ==================
-        # Original E-Field
-        # ==================
+        # # ==================
+        # # Original E-Field
+        # # ==================
+        # fig, subplot = plt.subplots(1, n_nulls, figsize=(14, 5))
+        # fig.subplots_adjust(wspace=0.5, right=0.85)
+        # fig.suptitle('Original (Null-Probe) E-field')
+        #
+        # for ax, ix in zip(subplot.flatten(), range(n_nulls)):
+        #     im = ax.imshow(np.abs(fp_seq[n_pairs + ix, 250:270, 150:170]) ** 2,  # , 250:270, 150:170  *mask2D
+        #                    interpolation='none', norm=LogNorm(),
+        #                    vmin=1e-8, vmax=1e-2)
+        #     ax.set_title(f'Null Step {ix}')
+        #
+        # cax = fig.add_axes([0.9, 0.2, 0.03, 0.6])  # Add axes for colorbar @ position [left,bottom,width,height]
+        # cb = fig.colorbar(im, orientation='vertical', cax=cax)  #
+        # cb.set_label('Intensity')
+
+        # ===============================
+        # E-filed Estimate--Pupil Plane
+        # ===============================
         fig, subplot = plt.subplots(1, n_nulls, figsize=(14, 5))
         fig.subplots_adjust(wspace=0.5, right=0.85)
-        fig.suptitle('Original (Null-Probe) E-field')
+        fig.suptitle('DM Plane Estimated E-field')
 
         for ax, ix in zip(subplot.flatten(), range(n_nulls)):
-            im = ax.imshow(np.abs(fp_seq[n_pairs + ix, 250:270, 150:170]) ** 2,  # , 250:270, 150:170  *mask2D
-                           interpolation='none', norm=LogNorm(),
-                           vmin=1e-8, vmax=1e-2)
+            im = ax.imshow(np.abs(E_pupil[ix, irng[0]:irng[-1], jrng[0]:jrng[-1]])**2,  # , 250:270, 150:170  *mask2D
+                           interpolation='none',
+                           norm=LogNorm(),
+                           vmin=1e-8, vmax=1
+                           )  # , norm=SymLogNorm(linthresh=1e-5))
             ax.set_title(f'Null Step {ix}')
 
         cax = fig.add_axes([0.9, 0.2, 0.03, 0.6])  # Add axes for colorbar @ position [left,bottom,width,height]
         cb = fig.colorbar(im, orientation='vertical', cax=cax)  #
         cb.set_label('Intensity')
 
-        # ==================
-        # E-filed Estimates
-        # ==================
+        # ===============================
+        # E-filed Estimate--Focal Plane
+        # ===============================
         fig, subplot = plt.subplots(1, n_nulls, figsize=(14, 5))
         fig.subplots_adjust(wspace=0.5, right=0.85)
-        fig.suptitle('Estimated E-field')
+        fig.suptitle('Focal Plane (rough FFT) Estimated E-field')
 
         for ax, ix in zip(subplot.flatten(), range(n_nulls)):
-            im = ax.imshow(np.abs(E_pupil[ix, 250:270, 150:170])**2,  # , 250:270, 150:170  *mask2D
+            im = ax.imshow(np.abs(E_ff[ix]) ** 2,  # , 250:270, 150:170  *mask2D
                            interpolation='none',
                            norm=LogNorm(),
-                           vmin=1e-8, vmax=1e-2)  # , norm=SymLogNorm(linthresh=1e-5))
+                           # vmin=1e-8, vmax=1e-2
+                           )  # , norm=SymLogNorm(linthresh=1e-5))
             ax.set_title(f'Null Step {ix}')
 
         cax = fig.add_axes([0.9, 0.2, 0.03, 0.6])  # Add axes for colorbar @ position [left,bottom,width,height]
@@ -428,7 +490,8 @@ def cdi_postprocess(cpx_sequence, sampling, plot=False):
             # im = ax.imshow(np.abs(fp_seq[n_pairs+ix] - np.conj(E_pupil[ix]*mask2D))**2,
             im = ax.imshow(I_processed[ix],  # I_processed[ix, 250:270, 180:200]  I_processed[ix]
                            interpolation='none', norm=SymLogNorm(1e4),  # ,
-                           vmin=-1e-6, vmax=1e-6)
+                           # vmin=-1e-6, vmax=1e-6
+                           )
             ax.set_title(f'Null Step {ix}')
 
         cax = fig.add_axes([0.9, 0.2, 0.03, 0.6])  # Add axes for colorbar @ position [left,bottom,width,height]
@@ -438,29 +501,33 @@ def cdi_postprocess(cpx_sequence, sampling, plot=False):
         # ==================
         # View Time Series
         # ==================
-        view_timeseries(cpx_to_intensity(fp_seq*mask2D), cdi, title=f"White Light Timeseries",
+        view_timeseries(cpx_to_intensity(fp_seq), cdi, title=f"White Light Timeseries",
                         subplt_cols=sp.tseries_cols,
-                        logZ=True,
-                        vlim=(1e-7, 1e-4),
+                        logZ=False,
+                        # vlim=(1e-7, 1e-4),
                         )
 
         plt.show()
 
 
 ##
-def get_fp_mask(cdi):
+def get_fp_mask(cdi, thresh=1e-7):
     """
     returns a mask of the CDI probe pattern in focal plane coordinates
 
     :param cdi: structure containing all CDI probe parameters
-    :return:
+    :param thresh: intensity threshold for determining probed coordinates
+    :return: fp_mask: boolean array where True marks the probed coordinates
+             imsk, jmsk:
+             irng, jrng:
+
     """
     nx = sp.grid_size
     ny = sp.grid_size
     dm_act = cdi.nact
 
     fftA = (1 / np.sqrt(2 * np.pi) *
-            np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(cdi.cout.DM_probe_series[0]))))
+            np.fft.fftshift(np.fft.fft2(np.fft.ifftshift(cdi.out.DM_probe_series[0]))))
 
     Ar = interpolate.interp2d(range(dm_act), range(dm_act), fftA.real, kind='cubic')
     Ai = interpolate.interp2d(range(dm_act), range(dm_act), fftA.imag, kind='cubic')
@@ -468,12 +535,18 @@ def get_fp_mask(cdi):
     AiI = Ai(np.linspace(0, dm_act, ny), np.linspace(0, dm_act, nx))
 
     fp_probe = np.sqrt(ArI**2 + AiI**2)
-    # fp_mask = (6.4e-5 > fp_probe > 1e-7)
-    # (i, j) = (6.4e-5 > fp_probe > 1e-7).nonzero()
     fp_mask = (fp_probe > 1e-7)
-    (i, j) = (fp_probe > 1e-7).nonzero()
+    (imsk, jmsk) = (fp_probe > 1e-7).nonzero()
 
-    return fp_mask, i, j
+    irng = range(min(imsk), max(imsk), 1)
+    jrng = range(min(jmsk), max(jmsk), 1)
+
+    imx = max(irng)-1  # -1 is to get index values for plotting purposes
+    imn = min(irng)-1
+    jmx = max(jrng)-1
+    jmn = min(jrng)-1
+
+    return fp_mask, imsk, jmsk, irng, jrng, imx, imn, jmx, jmn
 
 
 ##

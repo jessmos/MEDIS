@@ -9,6 +9,7 @@ prescription or the default params themselves.
 
 """
 import numpy as np
+import matplotlib.pyplot as plt
 
 from medis.params import sp, tp, iop, ap
 from medis.CDI import cdi, cdi_postprocess
@@ -20,7 +21,7 @@ import medis.medis_main as mm
 #################################################################################################
 #################################################################################################
 #################################################################################################
-testname = 'SCExAO-DM-test'
+testname = 'SCExAO-DM-Jan2021_test1'
 iop.update_datadir(f"/home/captainkay/mazinlab/MKIDSim/CDIsim_data/")
 iop.update_testname(testname)
 iop.makedir()
@@ -30,11 +31,12 @@ tp.prescription = 'SCExAO_DM'
 tp.entrance_d = 0.051  # diameter of optics in SCExAO train are 2 inches=0.051 m
 
 # Simulation & Timing
-sp.numframes = 7
+sp.numframes = 8
+sp.sample_time = 1
 sp.closed_loop = False
 
 # Grid Parameters
-sp.focused_sys = False
+sp.focused_sys = True
 sp.beam_ratio = 0.08  # parameter dealing with the sampling of the beam in the pupil/focal plane
 sp.grid_size = 512  # creates a nxn array of samples of the wavefront
 sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifacts) # set to grid_size if undesired
@@ -43,20 +45,22 @@ sp.maskd_size = 256  # will truncate grid_size to this range (avoids FFT artifac
 ap.n_wvl_init = 3  # initial number of wavelength bins in spectral cube (later sampled by MKID detector)
 ap.n_wvl_final = None  # final number of wavelength bins in spectral cube after interpolation (None sets equal to n_wvl_init)
 ap.interp_wvl = False  # Set to interpolate wavelengths from ap.n_wvl_init to ap.n_wvl_final
-ap.wvl_range = np.array([800, 1400]) / 1e9  # wavelength range in [m] (formerly ap.band)
+ap.wvl_range = np.array([860, 940]) / 1e9  # wavelength range in [m] (formerly ap.band)
 
 # CDI
 cdi.use_cdi = True
-cdi.probe_w = 10  # [actuator coordinates] width of the probe
-cdi.probe_h = 30  # [actuator coordinates] height of the probe
-cdi.probe_center = (10,10)  # [actuator coordinates] center position of the probe
-cdi.probe_amp = 2e-8  # [m] probe amplitude, scale should be in units of actuator height limits
+cdi.probe_ax = 'Y'
+cdi.probe_w = 30  # [actuator coordinates] width of the probe
+cdi.probe_h = 15  # [actuator coordinates] height of the probe
+cdi.probe_shift = (8,8)  # [actuator coordinates] center position of the probe
+cdi.probe_amp = 5e-2  # [m] probe amplitude, scale should be in units of actuator height limits
 cdi.which_DM = 'tweeter'
 cdi.phs_intervals = np.pi/3
-cdi.phase_integration_time = 0.01
+cdi.probe_integration_time = 1
+cdi.null_time = 2
 
 # Toggles for Aberrations and Control
-tp.act_tweeter = 49
+tp.act_tweeter = 50
 tp.use_aber = False
 tp.add_zern = False  # Just a note: zernike aberrations generate randomly each time the telescope is run, so introduces
                      # potentially inconsistent results
@@ -103,10 +107,9 @@ if __name__ == '__main__':
     # ======================================================================
     # CDI
     # ======================================================================
-    # if cdi.use_cdi:
+    if cdi.use_cdi:
+        out = cdi.save_out_to_disk(plot=True)
     #     cdi_postprocess(cpx_sequence, fp_sampling, plot=True)
-    #     cdi.save_tseries(img_tseries)
-    #     cdi.save_cout_to_disk()
 
     # =======================================================================
     # Plotting
@@ -138,7 +141,7 @@ if __name__ == '__main__':
 
     # Plotting Timeseries in White Light
     if sp.show_tseries:
-        view_timeseries(img_tseries, title=f"White Light Timeseries\n"
+        view_timeseries(img_tseries, cdi, title=f"White Light Timeseries\n"
                                             f"AO={tp.use_ao}. CDI={cdi.use_cdi}",
                         subplt_cols=sp.tseries_cols,
                         logZ=True,
@@ -159,4 +162,7 @@ if __name__ == '__main__':
                         first=True,
                         dx=sampling)
 
-    test = 1
+    plt.show()
+
+##
+

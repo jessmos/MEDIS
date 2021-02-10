@@ -173,11 +173,11 @@ class Telescope:
 
             # Initialize List of phases of CDI probes to apply
             cdi.gen_phaseseries()
-            if cdi.use_cdi:
-                if hasattr(tp, 'act_tweeter'):
-                    cdi.init_out(tp.act_tweeter)
-                else:
-                    cdi.init_out(tp.ao_act)
+            # if cdi.use_cdi:
+            #     if hasattr(tp, 'act_tweeter'):
+            #         cdi.init_out(tp.act_tweeter)
+            #     else:
+            #         cdi.init_out(tp.ao_act)
 
             # Remove AO planes from save_list if use_ao is False
             if not tp.use_ao and 'woofer' in sp.save_list:

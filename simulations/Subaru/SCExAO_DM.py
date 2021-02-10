@@ -61,14 +61,12 @@ tp.lyot_size = 0.95  # units are in fraction of surface un-blocked
 
 def SCExAO_DM(empty_lamda, grid_size, PASSVALUE):
     """
-    propagates instantaneous complex E-field thru Subaru from the primary through SCExAO
+    propagates instantaneous complex E-field thru Subaru from the DM through SCExAO
 
     this function is called a 'prescription' by proper
 
-    uses PyPROPER3 to generate the complex E-field at the source, then propagates it through atmosphere,
-        then telescope, to the focal plane
-    the AO simulator happens here
-    this does not include the observation of the wavefront by the detector
+    uses PyPROPER3 to generate the complex E-field at the pupil plane, then propagates it through SCExAO 50x50 DM,
+        then coronagraphope, to the focal plane
     :returns spectral cube at instantaneous time in the focal_plane()
     """
     # print("Propagating Broadband Wavefront Through Subaru")
