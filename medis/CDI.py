@@ -12,8 +12,9 @@ from scipy import linalg, interpolate
 from matplotlib import pyplot as plt
 from matplotlib.colors import LogNorm, SymLogNorm
 import time
+import pickle
 
-from medis.params import tp, sp, ap
+from medis.params import tp, sp, ap, iop
 from medis.utils import dprint
 from medis.optics import extract_plane, cpx_to_intensity
 from medis.plot_tools import add_colorbar, view_timeseries
@@ -77,6 +78,7 @@ class CDI_params:
         if self.n_probes % 2 != 0:
             raise ValueError(f"must have even number of phase probes\n\tchange cdi.phs_intervals")
         self.dummy_probe = np.zeros((self.n_probes, tp.act_tweeter, tp.act_tweeter))
+        self.dummy_tstamp = np.zeros((sp.numframes,),  dtype='datetime64[ns]')
 
         if self.probe_integration_time > sp.sample_time:
             phase_hold = self.probe_integration_time / sp.sample_time
@@ -106,14 +108,12 @@ class CDI_params:
 
         return self.phase_series
 
-    # def init_out(self, nact):
-
     def save_probe(self, ix, probe):
-        self.dummy_probe[ix,:,:] = probe
+        self.dummy_probe[ix, :, :] = probe
 
     def save_tseries(self, ix, ts):
         """saves output of medis fields as 2D intensity images for CDI postprocessing"""
-        self.cmd_tstamp[ix] = ts
+        self.dummy_tstamp[ix] = ts
 
     def save_out_to_disk(self, plot=False):
         out = Slapper()
@@ -140,33 +140,35 @@ class CDI_params:
         out.ts.elapsed_time = 0
         out.ts.n_cycles = 0
         out.ts.n_cmds = sp.numframes  # TODO verify this-this was just a late night hack
-        # print(f'{cout.n_commands} = cout.n_commands')
-        out.ts.cmd_tstamps = np.zeros((out.ts.n_cmds,), dtype='datetime64[ns]')
+        out.ts.cmd_tstamps = self.dummy_tstamp
+
+        save_location = iop.testdir + f"_{iop.testname}.pkl"
+        with open(save_location, 'wb') as handle:
+            pickle.dump(out, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        handle.close()
 
         # Fig
         if plot:
             if self.n_probes >= 4:
                 nrows = 2
                 ncols = self.n_probes//2
-                figheight = 5
+                figheight = 8
             else:
                 nrows = 1
                 ncols = self.n_probes
-                figheight = 12
+                figheight = 4
 
-            fig, subplot = plt.subplots(nrows, ncols, figsize=(12, figheight))
-            fig.subplots_adjust(wspace=0.5)
-
+            fig, subplot = plt.subplots(nrows, ncols, figsize=(10, figheight))
+            fig.subplots_adjust(wspace=0.5, right=0.85)
             fig.suptitle('Probe Series')
 
             for ax, ix in zip(subplot.flatten(), range(out.ts.n_probes)):
-                # im = ax.imshow(self.DM_probe_series[ix], interpolation='none', origin='lower')
-                im = ax.imshow(out.probe.DM_cmd_cycle[ix].T, interpolation='none', origin='lower')
-
+                im = ax.imshow(out.probe.DM_cmd_cycle[ix], interpolation='none', origin='lower')
                 ax.set_title(f"Probe " + r'$\theta$=' + f'{out.ts.phase_cycle[ix]/np.pi:.2f}' + r'$\pi$')
 
-            cb = fig.colorbar(im)  #
-            cb.set_label('um')
+            cax = fig.add_axes([0.9, 0.2, 0.03, 0.6])  # Add axes for colorbar @ position [left,bottom,width,height]
+            cb = fig.colorbar(im, orientation='vertical', cax=cax)  #
+            cb.set_label('Probe Height')
 
         return out
 

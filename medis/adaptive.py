@@ -19,6 +19,7 @@ from inspect import getframeinfo, stack
 from skimage.restoration import unwrap_phase
 import matplotlib.pylab as plt
 import proper
+import datetime
 
 from medis.params import sp, tp, ap
 from medis.CDI import cdi, config_probe
@@ -107,6 +108,7 @@ def deformable_mirror(wf, WFS_map, iter, previous_output=None, apodize=False, pl
         theta = cdi.phase_series[iter]
         if not np.isnan(theta):
             # dprint(f"Applying CDI probe, lambda = {wfo.wsamples[iw]*1e9:.2f} nm")
+            cdi.save_tseries(iter, datetime.datetime.now())
             probe = config_probe(theta, nact, iw=wf.iw, ib=wf.ib, tstep=iter)
             dm_map = dm_map + probe  # Add Probe to DM map
 
