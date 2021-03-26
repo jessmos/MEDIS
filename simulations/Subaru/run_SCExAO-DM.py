@@ -31,7 +31,7 @@ tp.prescription = 'SCExAO_DM'
 tp.entrance_d = 0.051  # diameter of optics in SCExAO train are 2 inches=0.051 m
 
 # Simulation & Timing
-sp.numframes = 8
+sp.numframes = 1
 sp.sample_time = 1
 sp.closed_loop = False
 
@@ -48,7 +48,7 @@ ap.interp_wvl = False  # Set to interpolate wavelengths from ap.n_wvl_init to ap
 ap.wvl_range = np.array([860, 940]) / 1e9  # wavelength range in [m] (formerly ap.band)
 
 # CDI
-cdi.use_cdi = True
+cdi.use_cdi = False
 cdi.probe_ax = 'Y'
 cdi.probe_w = 30  # [actuator coordinates] width of the probe
 cdi.probe_h = 15  # [actuator coordinates] height of the probe
@@ -61,6 +61,7 @@ cdi.null_time = 2
 
 # Toggles for Aberrations and Control
 tp.act_tweeter = 50
+tp.obscure = True
 tp.use_aber = False
 tp.add_zern = False  # Just a note: zernike aberrations generate randomly each time the telescope is run, so introduces
                      # potentially inconsistent results
@@ -68,7 +69,7 @@ tp.use_ao = True
 sp.skip_functions = []  # skip_functions is based on function name, alternate way of on/off than the toggling
                     # 'coronagraph' 'deformable_mirror' 'add_aber'
 # Plotting
-sp.show_wframe = True  # plot white light image frame
+sp.show_wframe = False  # plot white light image frame
 sp.show_spectra = False  # Plot spectral cube at single timestep
 sp.spectra_cols = 3  # number of subplots per row in view_spectra
 sp.show_tseries = True# Plot full timeseries of white light frames
@@ -79,8 +80,8 @@ sp.verbose = False
 
 # Saving
 sp.save_to_disk = False  # save obs_sequence (timestep, wavelength, x, y)
-sp.save_list = ['tweeter',   'detector']  # list of locations in optics train to save 'entrance_pupil',
-                # 'entrance_pupil','post-DM-focus', 'coronagraph',
+sp.save_list = ['SubaruPupil', 'detector']  # list of locations in optics train to save 'entrance_pupil',
+                # 'entrance_pupil','post-DM-focus', 'coronagraph', 'tweeter'
 
 if __name__ == '__main__':
     # =======================================================================
@@ -136,13 +137,14 @@ if __name__ == '__main__':
                             # f"Beam Ratio = {sp.beam_ratio:.4f}",#  sampling = {sampling*1e6:.4f} [um/gridpt]",
                       logZ=True,
                       subplt_cols=sp.spectra_cols,
-                      vlim=(1e-7, 1e-3),
+                      vlim=(1e-7, 1e-4),
                       dx=fp_sampling)
 
     # Plotting Timeseries in White Light
     if sp.show_tseries:
-        view_timeseries(img_tseries, cdi, title=f"White Light Timeseries\n"
-                                            f"AO={tp.use_ao}. CDI={cdi.use_cdi}",
+        view_timeseries(img_tseries, cdi, title=f"White Light Timeseries\n"  #f"AO={tp.use_ao}. CDI={cdi.use_cdi}"
+                                                f'n_probes={cdi.n_probes}, phase intervals = {cdi.phs_intervals/np.pi:.2f}'\
+                                                + r'$\pi$',
                         subplt_cols=sp.tseries_cols,
                         logZ=True,
                         vlim=(1e-7, 1e-4),
@@ -151,11 +153,12 @@ if __name__ == '__main__':
     # Plotting Selected Plane
     if sp.show_planes:
         # vlim = [(None, None), (None, None), (None, None), (1e-7,1e-3), (1e-7,1e-3), (1e-7,1e-3)]
-        vlim = [(None,None), (1e-7,1e-4), (1e-8,1e-4), (None,None)]  # (1e-2,1e-1) (7e-4, 6e-4)
-        logZ = [False, False, True, True, True, True]
+        vlim = [(None,None), (1e-7, 1e-4), (1e-8,1e-4), (None,None)]  # (1e-2,1e-1) (7e-4, 6e-4)
+        logZ = [False, True, True, True, True, True]
         if sp.save_list:
             plot_planes(cpx_sequence,
-                        title=f"White Light through Optical System",
+                        title=f"White Light through Optical System"
+                              f"\nFirst Timestep",
                         subplt_cols=2,
                         vlim=vlim,
                         logZ=logZ,

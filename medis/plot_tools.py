@@ -344,7 +344,8 @@ def view_timeseries(img_tseries, cdi, title=None,  logZ=False, vlim =(None,None)
         warnings.simplefilter("ignore", category=UserWarning)
         cbar_ax = fig.add_axes([0.86, 0.1, 0.04, 0.8])  # Add axes for colorbar @ position [left,bottom,width,height]
         cb = fig.colorbar(im, cax=cbar_ax, orientation='vertical')  #
-        cb.set_label(clabel, fontsize=10)
+        cb.set_label(clabel, fontsize=14)
+        cb.ax.tick_params(labelsize=10)
 
 
 def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=[None, None], subplt_cols=3,

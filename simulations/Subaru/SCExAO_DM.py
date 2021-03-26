@@ -80,6 +80,7 @@ def SCExAO_DM(empty_lamda, grid_size, PASSVALUE):
     wfo.loop_collection(proper.prop_circular_aperture,
                         **{'radius': tp.entrance_d / 2})  # clear inside, dark outside
     wfo.loop_collection(proper.prop_define_entrance, plane_name='entrance_pupil')  # normalizes abs intensity
+    wfo.loop_collection(opx.SubaruPupil, plane_name='SubaruPupil')
 
     # Test Sampling
     if sp.verbose:

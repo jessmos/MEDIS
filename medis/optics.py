@@ -426,7 +426,7 @@ def abs_zeros(wf):
 ################################################################################################################
 # Optics in Proper
 ################################################################################################################
-def add_obscurations(wf, M2_frac=0, d_primary=0, d_secondary=0, legs_frac=0.05, plane_name=None):
+def add_obscurations(wf, M2_frac=0, d_primary=0, d_secondary=0, legs_frac=0.05):
     """
     adds central obscuration (secondary shadow) and/or spider legs as spatial mask to the wavefront
 
@@ -448,8 +448,33 @@ def add_obscurations(wf, M2_frac=0, d_primary=0, d_secondary=0, legs_frac=0.05, 
         else:
             raise ValueError('must either specify M2_frac and d_primary or d_secondary')
         if legs_frac > 0:
-            proper.prop_rectangular_obscuration(wf, legs_frac, 1.3, ROTATION=-20, NORM=True)
-            proper.prop_rectangular_obscuration(wf, 1.3, legs_frac, ROTATION=-20, NORM=True)
+            proper.prop_rectangular_obscuration(wf, legs_frac, 2, ROTATION=-50, NORM=True)
+            proper.prop_rectangular_obscuration(wf, 2, legs_frac, ROTATION=-50, NORM=True)
+
+
+def SubaruPupil(wf):
+    """
+    adds Subaru pupil mask to the optical train
+
+    :param wf: 2D proper wavefront
+    :return: acts upon wfo, applies a spatial mask of s=circular secondary obscuration and possibly spider legs
+    """
+    if tp.obscure is False:
+        pass
+    else:
+        # dprint('Applying Subaru Pupil')
+
+        # M2 shadow
+        proper.prop_circular_obscuration(wf, 14/46, NORM=True)
+        # Legs
+        proper.prop_rectangular_obscuration(wf, 1.2, 2/46, .5, -.375, ROTATION=-50, NORM=True)
+        proper.prop_rectangular_obscuration(wf, 1.2, 2/46, .5, .375, ROTATION=50, NORM=True)
+        proper.prop_rectangular_obscuration(wf, 1.2, 2/46, -.5, -.375, ROTATION=50, NORM=True)
+        proper.prop_rectangular_obscuration(wf, 1.2, 2/46, -.5, .375, ROTATION=-50, NORM=True)
+        proper.prop_rectangular_obscuration(wf, 1, 1/46, .05, .45, ROTATION=-50, NORM=True)
+        # Misc Spots
+        proper.prop_circular_obscuration(wf, .075, -.1, 0.6, NORM=True)
+        proper.prop_circular_obscuration(wf, .075, .5, -.375, NORM=True)
 
 
 def prop_pass_lens(wf, fl_lens, dist):
