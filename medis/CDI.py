@@ -49,7 +49,7 @@ class CDI_params:
         # Phase Sequence of Probes
         self.phs_intervals = np.pi / 2  # [rad] phase interval over [0, 2pi]
         self.probe_integration_time = 1  # [s]  How long in sec to apply each probe in the sequence
-        self.null_time = 5  # [s]  time between repeating probe cycles (data to be nulled using probe info)
+        self.null_time = 5 * sp.sample_time # [s]  time between repeating probe cycles (data to be nulled using probe info)
 
     def __iter__(self):
         for attr, value in self.__dict__.items():
@@ -84,7 +84,8 @@ class CDI_params:
             phase_hold = self.probe_integration_time / sp.sample_time
             phase_1cycle = np.repeat(self.phase_cycle, phase_hold)
         elif self.probe_integration_time == sp.sample_time:
-            phase_1cycle = self.phase_cycle
+            phase_1cycle = np.zeros(sp.numframes)
+            phase_1cycle[0:self.n_probes] = self.phase_cycle
         else:
             raise ValueError(f"Cannot have CDI phase probe integration time less than sp.sample_time")
 
@@ -142,7 +143,8 @@ class CDI_params:
         out.ts.n_cmds = sp.numframes  # TODO verify this-this was just a late night hack
         out.ts.cmd_tstamps = self.dummy_tstamp
 
-        save_location = iop.testdir + f"_{iop.testname}.pkl"
+        save_location = iop.testdir + f"/{iop.testname}_CDIparams.pkl"
+        dprint(f'save_location={save_location}')
         with open(save_location, 'wb') as handle:
             pickle.dump(out, handle, protocol=pickle.HIGHEST_PROTOCOL)
         handle.close()
@@ -159,7 +161,7 @@ class CDI_params:
                 figheight = 4
 
             fig, subplot = plt.subplots(nrows, ncols, figsize=(10, figheight))
-            fig.subplots_adjust(wspace=0.5, right=0.85)
+            fig.subplots_adjust(wspace=0.5, right=0.85, left=0.05)
             fig.suptitle('Probe Series')
 
             for ax, ix in zip(subplot.flatten(), range(out.ts.n_probes)):
@@ -168,7 +170,7 @@ class CDI_params:
 
             cax = fig.add_axes([0.9, 0.2, 0.03, 0.6])  # Add axes for colorbar @ position [left,bottom,width,height]
             cb = fig.colorbar(im, orientation='vertical', cax=cax)  #
-            cb.set_label('Probe Height')
+            cb.set_label('Probe Height (m)')
 
         return out
 
