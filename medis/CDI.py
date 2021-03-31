@@ -84,7 +84,8 @@ class CDI_params:
             phase_hold = self.probe_integration_time / sp.sample_time
             phase_1cycle = np.repeat(self.phase_cycle, phase_hold)
         elif self.probe_integration_time == sp.sample_time:
-            phase_1cycle = np.zeros(sp.numframes)
+            phase_1cycle = np.empty(sp.numframes)
+            phase_1cycle[:] = np.nan
             phase_1cycle[0:self.n_probes] = self.phase_cycle
         else:
             raise ValueError(f"Cannot have CDI phase probe integration time less than sp.sample_time")
