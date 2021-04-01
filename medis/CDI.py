@@ -84,18 +84,16 @@ class CDI_params:
             phase_hold = self.probe_integration_time / sp.sample_time
             phase_1cycle = np.repeat(self.phase_cycle, phase_hold)
         elif self.probe_integration_time == sp.sample_time:
-            phase_1cycle = np.empty(sp.numframes)
-            phase_1cycle[:] = np.nan
-            phase_1cycle[0:self.n_probes] = self.phase_cycle
+            phase_1cycle = self.phase_cycle
         else:
             raise ValueError(f"Cannot have CDI phase probe integration time less than sp.sample_time")
 
         # Repeating Cycle of Phase Probes for Simulation Duration
         full_simulation_time = sp.numframes * sp.sample_time
-        self.time_for_one_cycle = len(phase_1cycle) * self.probe_integration_time + self.null_time
+        self.time_for_one_cycle = len(phase_1cycle) * self.probe_integration_time
 
         if self.time_for_one_cycle > full_simulation_time and self.probe_integration_time >= sp.sample_time:
-            warnings.warn(f"\nLength of one full CDI probe cycle (including nulling) exceeds the "
+            warnings.warn(f"\nLength of one full CDI probe cycle exceeds the "
                           f"full simulation time \n"
                           f"not all phases will be used\n"
                           f"phase reconstruction will be incomplete")

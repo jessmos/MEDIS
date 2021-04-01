@@ -21,7 +21,7 @@ import medis.medis_main as mm
 
 # ################################################################################################
 # ################################################################################################
-#################################################################################################
+# ################################################################################################
 testname = 'SCExAO-CDI5'
 iop.update_datadir(f"/home/captainkay/mazinlab/MKIDSim/CDIsim_data/")
 iop.update_testname(testname)
@@ -61,11 +61,11 @@ cdi.probe_shift = (9,9)  # [actuator coordinates] center position of the probe
 cdi.probe_amp = 5e-2  # [m] probe amplitude, scale should be in units of actuator height limits
 cdi.which_DM = 'tweeter'
 cdi.phs_intervals = np.pi/3
-cdi.phase_integration_time = 0.01
+cdi.probe_integration_time = 0.01
 
 
 # Toggles for Aberrations and Control
-tp.obscure = False
+tp.obscure = True
 tp.use_atmos = False
 tp.use_aber = True
 tp.add_zern = False  # Just a note: zernike aberrations generate randomly each time the telescope is run, so introduces
@@ -116,7 +116,7 @@ if __name__ == '__main__':
     # =======================================================================
     # cpx_sequence = (n_timesteps ,n_planes, n_waves_init, n_astro_bodies, nx ,ny)
     cpx_sequence = opx.interp_wavelength(cpx_sequence, 2)  # interpolate over wavelength
-    focal_plane = opx.extract_plane(cpx_sequence, 'detector')  # eliminates astro_body axis
+    focal_plane = opx.extract_plane(cpx_sequence, 'detector')  # eliminates plane axis
     # convert to intensity THEN sum over object, keeping the dimension of tstep even if it's one
     focal_plane = np.sum(opx.cpx_to_intensity(focal_plane), axis=2)  # [tstep, wavelength, x, y]
     fp_sampling = np.copy(sampling[cpx_sequence.shape[1]-1,:])  # numpy arrays have some weird effects that make copying the array necessary
@@ -152,7 +152,7 @@ if __name__ == '__main__':
             img = np.sum(focal_plane[sp.numframes-1], axis=0)  # sum over wavelength
             quick2D(opx.extract_center(img),  # focal_plane[sp.numframes-1]),
                     title=f"White light image at timestep {sp.numframes} \n"  # img
-                          f"AO={tp.use_ao}, CDI={cdi.use_cdi} ",
+                          f"CDI={cdi.use_cdi}, Atmos={tp.use_atmos}, Aberrations={tp.use_aber}",
                            # f"Grid Size = {sp.grid_size}, Beam Ratio = {sp.beam_ratio} ",
                            # f"sampling = {sampling*1e6:.4f} (um/gridpt)",
                     logZ=True,
@@ -177,11 +177,11 @@ if __name__ == '__main__':
         tstep = sp.numframes-1
         view_spectra(focal_plane[sp.numframes-1],
                       title=f"Intensity per Spectral Bin at Timestep {tstep} \n"
-                            f" AO={tp.use_ao}, CDI={cdi.use_cdi}",
+                            f"CDI={cdi.use_cdi}, Atmos={tp.use_atmos}, Aberrations={tp.use_aber}",
                             # f"Beam Ratio = {sp.beam_ratio:.4f}",#  sampling = {sampling*1e6:.4f} [um/gridpt]",
                       logZ=True,
                       subplt_cols=sp.spectra_cols,
-                      vlim=(1e-7, 1e-3),
+                      #vlim=(1e-7, 1e-3),
                       dx=fp_sampling,
                       show=False)
 
@@ -189,7 +189,7 @@ if __name__ == '__main__':
     if sp.show_tseries:
         img_tseries = np.sum(focal_plane, axis=1)  # sum over wavelength
         view_timeseries(img_tseries, cdi, title=f"White Light Timeseries\n"
-                                            f"AO={tp.use_ao}. CDI={cdi.use_cdi}",
+                                                f"CDI={cdi.use_cdi}, Atmos={tp.use_atmos}, Aberrations={tp.use_aber}",
                         subplt_cols=sp.tseries_cols,
                         logZ=True,
                         vlim=(1e-7, 1e-4),
@@ -198,7 +198,7 @@ if __name__ == '__main__':
 
     # Plotting Selected Plane
     if sp.show_planes:
-        vlim = [(None, None), (1e-7,1e-3), (None, None), (1e-7,1e-3), (1e-7,1e-3), (1e-7,1e-3)]
+        vlim = [(None, None), (1e-7, 1e-4), (None, None), (1e-7,1e-3), (1e-7,1e-3), (1e-7,1e-3)]
         # vlim = [(None,None), (None,None), (None,None), (None,None)]  # (1e-2,1e-1) (7e-4, 6e-4)
         logZ = [True, True, True, True, True, True]
         if sp.save_list:
