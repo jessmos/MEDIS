@@ -9,11 +9,11 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm, SymLogNorm
 import matplotlib.ticker as ticker
 import matplotlib.gridspec as gridspec
+from mpl_toolkits import axes_grid1
 from mpl_toolkits.axes_grid1 import ImageGrid
 import warnings
 
 from medis.params import tp, sp, ap
-from medis.CDI import cdi
 from medis.utils import dprint
 import medis.optics as opx
 from medis.twilight_colormaps import sunlight
@@ -181,8 +181,6 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
     :param dx: sampling of the image in m. Hardcoded to convert to um
     :return:
     """
-    plt.close('all')
-
     # Create figure & adjust subplot number, layout, size, whitespace
     fig = plt.figure()
     n_colors = len(datacube)
@@ -252,17 +250,17 @@ def view_spectra(datacube, title=None, show=True, logZ=False, use_axis=True, vli
         cb.set_label(clabel)
 
     if show is True:
-        plt.show(block=True)
+        plt.show(block=False)
 
 
-def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=True, vlim =(None,None),
+def view_timeseries(img_tseries, cdi, title=None,  logZ=False, vlim =(None,None),
                     dx=None, subplt_cols=3):
     """
     view white light images in the timeseries
 
     :param img_tseries: complex timeseries
+    :param cdi: struct that contains the CDI params (from CDI.py)
     :param title: string, must be set or will error!
-    :param show: flag possibly useful for plotting loops of things?
     :param logZ: turn logscale plotting for Z-axis on or off
     :param use_axis: turn on/off using axis ticks, colorbar, etc
     :param vlim: tuple of colorbar axis limits (min,max)
@@ -270,8 +268,6 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
     :param dx: sampling of the image in m. Hardcoded to convert to um
     :return:
     """
-    plt.close('all')
-
     # Recreate CDI phase stream for plot titles
     if cdi.use_cdi:
         phases = cdi.phase_series
@@ -280,8 +276,8 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
     n_tsteps = len(img_tseries)
     n_rows = int(np.ceil(n_tsteps / float(subplt_cols)))
 
-    fig, subplot = plt.subplots(n_rows, subplt_cols, figsize=(10, 10))
-    fig.subplots_adjust(bottom=0.1, top=0.85, hspace=.4)  #  wspace=0.2, right=0.95, left=0.05,
+    fig, subplot = plt.subplots(n_rows, subplt_cols, figsize=(12, 10))
+    fig.subplots_adjust(bottom=0.1, top=0.85, left=0.01, hspace=.4, wspace=0.02, right=0.9,)  #  wspace=0.2, right=0.95, left=0.05,
 
     # Title
     if title is None:
@@ -292,7 +288,6 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
 
     for ax, t in zip(subplot.flatten(), range(n_rows*subplt_cols)):  # range(n_tsteps)
         if t > n_tsteps-1:
-            # ax.set_aspect('equal')
             ax.axis('off')  # hides axis
             pass
         else:
@@ -323,49 +318,34 @@ def view_timeseries(img_tseries, title=None, show=True, logZ=False, use_axis=Tru
                 # plt.xlabel('[um]', fontsize=8)
                 plt.ylabel(axlabel, fontsize=8)
 
+            # Axis (Subplot) title
+            if cdi.use_cdi and not np.isnan(phases[t]):
+                ax.set_title(f"probe  " r'$\theta$' + f"={phases[t] / np.pi:.2f}" + r'$\pi$')
+            else:
+                ax.set_title(f"t={t * sp.sample_time}")
+
             if logZ:
                 if vlim[0] is not None and vlim[0] <= 0:
-                    if cdi.use_cdi and not np.isnan(phases[t]):
-                        ax.set_title(f"probe " r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
-                    else:
-                        ax.set_title(f"t={t*sp.sample_time}")
                     im = ax.imshow(img_tseries[t], interpolation='none', origin='lower',
                                    vmin=vlim[0], vmax=vlim[1],
                                    norm=SymLogNorm(linthresh=1e-5), cmap="YlGnBu_r")
                     clabel = "Log Normalized Intensity"
                 else:
-                    if cdi.use_cdi and not np.isnan(phases[t]):
-                        ax.set_title(f"probe" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
-                    else:
-                        ax.set_title(f"t={t * sp.sample_time}")
                     im = ax.imshow(img_tseries[t], interpolation='none', origin='lower',
                                    vmin=vlim[0], vmax=vlim[1],
                                    norm=LogNorm(), cmap="YlGnBu_r")
                     clabel = "Log Normalized Intensity"
             else:
-                if cdi.use_cdi and not np.isnan(phases[t]):
-                    ax.set_title(f"t={t * sp.sample_time},\nprobe" r'$\theta$' + f"={phases[t]/np.pi:.2f}" + r'$\pi$')
-                else:
-                    ax.set_title(f"t={t * sp.sample_time}\n")
                 im = ax.imshow(img_tseries[t], interpolation='none', origin='lower',
                                vmin=vlim[0], vmax=vlim[1],
                                cmap="YlGnBu_r")
                 clabel = "Normalized Intensity"
 
-            if use_axis == 'anno':
-                ax.annotate_axis(im, ax, img_tseries.shape[1])
-            if use_axis is None:
-                plt.axis('off')
-
-        if use_axis:
-            warnings.simplefilter("ignore", category=UserWarning)
-            cbar_ax = fig.add_axes([0.85, 0.1, 0.05, 0.8])  # Add axes for colorbar @ position [left,bottom,width,height]
-            cb = fig.colorbar(im, cax=cbar_ax, orientation='vertical')  #
-            cb.set_label(clabel, fontsize=12)
-
-    if show is True:
-        plt.tight_layout(rect=[0, 0, 0.85, 0.9])  # rect = (left, bottom, right, top)
-        plt.show(block=True)
+        warnings.simplefilter("ignore", category=UserWarning)
+        cbar_ax = fig.add_axes([0.86, 0.1, 0.04, 0.8])  # Add axes for colorbar @ position [left,bottom,width,height]
+        cb = fig.colorbar(im, cax=cbar_ax, orientation='vertical')  #
+        cb.set_label(clabel, fontsize=14)
+        cb.ax.tick_params(labelsize=10)
 
 
 def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=[None, None], subplt_cols=3,
@@ -387,8 +367,6 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=[None, No
     :param dx: sampling of the image at each saved plane
     :return:
     """
-    plt.close('all')
-
     # Create figure & adjust subplot number, layout, size, whitespace
     fig = plt.figure()
     n_planes = len(sp.save_list)
@@ -487,18 +465,18 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=[None, No
                 im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[p][0], vmax=vlim[p][1],
                                norm=SymLogNorm(linthresh=1e-5),
                                cmap=cmap)
-                cb = fig.colorbar(im)
+                add_colorbar(im)
                 # clabel = "Log Normalized Intensity"
             else:
                 im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[p][0], vmax=vlim[p][1],
                                norm=LogNorm(), cmap=cmap)  #(1e-6,1e-3)
-                cb = fig.colorbar(im)
+                add_colorbar(im)
                 # clabel = "Log Normalized Intensity"
                 # cb.set_label(clabel)
         else:
             im = ax.imshow(plane, interpolation='none', origin='lower', vmin=vlim[p][0], vmax=vlim[p][1],
                            cmap=cmap)  #  "twilight"
-            cb = fig.colorbar(im)  #
+            add_colorbar(im)
             # clabel = "Normalized Intensity"
             # cb.set_label(clabel)
 
@@ -508,3 +486,15 @@ def plot_planes(cpx_seq, title=None, logZ=[False], use_axis=True, vlim=[None, No
         # fig.tight_layout(pad=50)
 
     # plt.show(block=True)
+
+
+##
+def add_colorbar(im, aspect=20, pad_fraction=0.5, **kwargs):
+    """Add a vertical color bar to an image plot."""
+    divider = axes_grid1.make_axes_locatable(im.axes)
+    width = axes_grid1.axes_size.AxesY(im.axes, aspect=1./aspect)
+    pad = axes_grid1.axes_size.Fraction(pad_fraction, width)
+    current_ax = plt.gca()
+    cax = divider.append_axes("right", size=width, pad=pad)
+    plt.sca(current_ax)
+    return im.axes.figure.colorbar(im, cax=cax, **kwargs)

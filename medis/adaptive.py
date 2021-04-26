@@ -19,6 +19,7 @@ from inspect import getframeinfo, stack
 from skimage.restoration import unwrap_phase
 import matplotlib.pylab as plt
 import proper
+import datetime
 
 from medis.params import sp, tp, ap
 from medis.CDI import cdi, config_probe
@@ -107,7 +108,8 @@ def deformable_mirror(wf, WFS_map, iter, previous_output=None, apodize=False, pl
         theta = cdi.phase_series[iter]
         if not np.isnan(theta):
             # dprint(f"Applying CDI probe, lambda = {wfo.wsamples[iw]*1e9:.2f} nm")
-            probe = config_probe(theta, nact, iw=wf.iw, ib=wf.ib, tstep=iter)  # iw and ib only used for plotting, and only if sp.verbose=true
+            cdi.save_tseries(iter, datetime.datetime.now())
+            probe = config_probe(theta, nact, iw=wf.iw, ib=wf.ib, tstep=iter)
             dm_map = dm_map + probe  # Add Probe to DM map
 
     #########################
@@ -299,7 +301,7 @@ def open_loop_wfs(wfo, plane_name='wfs'):
         #     quick2D(WFS_map[iw], title=f"WFS map after masking, lambda={wfo.wsamples[iw]*1e9:.2f}",
         #             zlabel='unwrapped phase (rad)',
         #             vlim=[-3*np.pi, 3*np.pi])
-        #     plt.show()
+        #
 
     if 'WFS' in sp.save_list or sp.closed_loop:
         wfo.save_plane(location='WFS')

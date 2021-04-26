@@ -173,11 +173,6 @@ class Telescope:
 
             # Initialize List of phases of CDI probes to apply
             cdi.gen_phaseseries()
-            if cdi.use_cdi:
-                if hasattr(tp, 'act_tweeter'):
-                    cdi.init_cout(tp.act_tweeter)
-                else:
-                    cdi.init_cout(tp.ao_act)
 
             # Remove AO planes from save_list if use_ao is False
             if not tp.use_ao and 'woofer' in sp.save_list:
@@ -329,6 +324,7 @@ class Telescope:
         h5file = tables.open_file(iop.fields, mode="a", title="MEDIS Electric Fields File")
         if "/data" not in h5file:
             ds = h5file.create_earray(h5file.root, 'data', obj=fields)
+            ss = h5file.create_earray(h5file.root, 'sampling', obj=self.sampling)
         else:
             ds = h5file.root.data
             ds.append(fields)
@@ -348,7 +344,7 @@ class Telescope:
             self.cpx_sequence = h5file.root.data[span[0]:span[1]]
         h5file.close()
         self.pretty_sequence_shape()
-        self.sampling = None
+        self.sampling = h5file.root.sampling[0]
 
         return {'fields': self.cpx_sequence, 'sampling': self.sampling}
 

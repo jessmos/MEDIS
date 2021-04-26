@@ -178,8 +178,8 @@ class Camera():
             max_steps = self.max_chunk(self.rebinned_cube)
             num_chunks = int(np.ceil(len(self.rebinned_cube) / max_steps))
             # dprint(len(self.rebinned_cube), max_steps, len(self.rebinned_cube) / max_steps, num_chunks)
-            dprint(f"@Rup Please specify what you are trying to print here")
-            #TODO Rupert-put a helpful print statement here instead
+            # dprint(f"@Rup Please specify what you are trying to print here")
+            #TODO Rupert-please add descriptors to this print statement
             self.photons = np.empty((4, 0))
             if self.product == 'photons':
                 if num_chunks == 1:
