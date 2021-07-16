@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Created on Tue Jan 26 18:48:32 2021
 
@@ -58,15 +57,14 @@ ax[1].set_title('Otsu Thresholded Inpainted Image')
 
 ax[2].imshow(masked, origin='lower', cmap=plt.cm.gray)
 ax[2].set_title("Image with the Background Masked Out \nLeaving Only Speckles")
-
 plt.show()
-
 
 plt.imshow(masked, origin='lower', cmap=plt.cm.gray)
 plt.title("Image with the Background Masked Out \nLeaving Only Speckles")
 plt.show()
 
-def draw_ring(x, y, r, shape, inside):
+
+def draw_ring(x, y, r, shape, inside): #these are (x,y) coords, radius of circle, the shape of the file image, and the width of the annulus
     circle_image = np.zeros(shape, np.uint8)
     rr, cc = disk((x, y), r)
     circle_image[rr, cc] = 1 #this creates a solid circle of value 1
@@ -80,14 +78,14 @@ def draw_ring(x, y, r, shape, inside):
 
 """This giant function accepts the radius on the annulus, the threshold mask, and the image file 
 it then computes and records analysis per annulus"""
-def annulus(thickness, threshfile, img): 
+def annulus(width, threshfile, img): 
     d=0
-    firstthick=thickness 
+    firstwidth=width
     shape=threshfile.shape
     x0=(int((shape[0])/2))
     #x1=(int((shape[1])/2))
     
-    tablerow=int(x0/firstthick)
+    tablerow=int(x0/firstwidth)
     #columns will be 
     #number of pixels in ring
     #number of speckles in ring
@@ -101,11 +99,11 @@ def annulus(thickness, threshfile, img):
     
     masked=threshfile*img
     
-    while thickness <= x0: 
-        #here thickness is basically the outside boundry of the ring
-        ring=draw_ring(x0, x0, thickness, shape, firstthick)
+    while width <= x0: 
+        #here width is the outside radius of the circle
+        ring=draw_ring(x0, x0, width, shape, firstwidth)
         specklering=ring*masked
-        thickness+=firstthick
+        width+=firstwidth
         numwhitecircle=np.count_nonzero(ring)
         whitespeckle=(specklering[specklering>0])
         numwhitespeckle=len(whitespeckle)
@@ -139,5 +137,4 @@ def annulus(thickness, threshfile, img):
     np.save(savename, table)
 
 annulus(pixels_int, thresh, image)
-
 
