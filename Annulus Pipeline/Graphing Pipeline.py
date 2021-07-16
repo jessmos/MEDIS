@@ -63,8 +63,7 @@ def crop_center(img):
         print("it is already a cube")
         return img
     
-#rebinned = open_obs_sequence_hdf5('C:/Users/jessm/OneDrive/Documents/Coding/rebinned_cube_PT2.h5')
-#rebinned = open_obs_sequence_hdf5('C:/Users/jessm/.spyder-py3/MEDIS_spy/rebinned_cube_418_5e7.h5')
+"""you have to put in the path to your own file"""
 rebinned = open_obs_sequence_hdf5('C:/Users/jessm/.spyder-py3/MEDIS_spy/rebinned_cube5e8.h5')
 #C:\Users\jessm\.spyder-py3\MEDIS_spy\
 savename='np_rebinned5e8'
