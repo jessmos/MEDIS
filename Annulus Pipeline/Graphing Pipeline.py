@@ -67,7 +67,7 @@ def crop_center(img):
 #rebinned = open_obs_sequence_hdf5('C:/Users/jessm/.spyder-py3/MEDIS_spy/rebinned_cube_418_5e7.h5')
 rebinned = open_obs_sequence_hdf5('C:/Users/jessm/.spyder-py3/MEDIS_spy/rebinned_cube5e8.h5')
 #C:\Users\jessm\.spyder-py3\MEDIS_spy\
-savename='np_rebinned5e7'
+savename='np_rebinned5e8'
 
 """looking at fields"""
 fields0 = open_obs_sequence_hdf5('C:/Users/jessm/.spyder-py3/MEDIS_spy/fields5e8.h5')
