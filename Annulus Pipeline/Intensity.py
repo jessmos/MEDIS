@@ -12,10 +12,7 @@ import numpy as np
 from skimage.draw import disk
 import math
 import sys 
-from skimage.util import img_as_ubyte
-from skimage import color
-from skimage import io
-from skimage.util import crop
+
 #sys.path.append("C:/Users/jessm/OneDrive/Documents/Coding/proper_v3.2.3_python_3.x")
 #import proper
 #import optics as opx
