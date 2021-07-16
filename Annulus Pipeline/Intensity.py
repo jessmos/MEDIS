@@ -4,7 +4,8 @@ Created on Tue Jan 26 18:48:32 2021
 @author: jessm
 
 This is the heart of the pipeline
-it 
+it saves the number of pixels, number of speckle pixels, percent speckle pixels, and average intensity per annulus
+it also saves the locations and values of speckle pixels seperately for later use
 """
 import matplotlib.pyplot as plt
 import numpy as np
